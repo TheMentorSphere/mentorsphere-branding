@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://www.thementorsphere.co.uk/sitemap.xml
