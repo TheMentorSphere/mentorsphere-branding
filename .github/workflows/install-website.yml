@@ -1,0 +1,56 @@
+name: Install website rebuild
+
+on:
+  push:
+    branches:
+      - agent/website-rebuild
+    paths:
+      - ".site-package/**"
+      - ".github/workflows/install-website.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out website branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/website-rebuild
+
+      - name: Extract the verified website package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .site-package/part-* | base64 --decode > /tmp/docs.tar.gz
+          tar -xzf /tmp/docs.tar.gz
+          printf '%s\n' 'www.thementorsphere.co.uk' > docs/CNAME
+          cat > WEBSITE-README.md <<'EOF'
+          # The MentorSphere website rebuild
+
+          This branch contains the complete static rebuild of The MentorSphere website.
+
+          The production-ready site is in `docs/` for GitHub Pages deployment. It includes 16 pages, responsive layouts, accessible navigation, policy pages, structured metadata, a sitemap and The MentorSphere's established branding.
+
+          ## Deployment
+
+          After review and merge, enable GitHub Pages from the `main` branch and `/docs` folder. The existing website and DNS should remain unchanged until the replacement has been reviewed and approved.
+          EOF
+          rm -rf .site-package
+
+      - name: Commit the generated website
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No website changes to commit."
+            exit 0
+          fi
+          git commit -m "Install complete MentorSphere website"
+          git push
