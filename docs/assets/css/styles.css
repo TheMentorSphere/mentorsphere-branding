@@ -129,6 +129,10 @@ h4 {
   outline-offset: 0.22rem;
 }
 
+:target {
+  scroll-margin-top: 10rem;
+}
+
 .skip-link {
   position: fixed;
   z-index: 1000;
@@ -198,6 +202,10 @@ h4 {
   align-items: center;
   justify-content: space-between;
   gap: 1.25rem;
+}
+
+.site-header .header-inner {
+  width: min(calc(100% - 2rem), 86rem);
 }
 
 .brand-link {
@@ -599,7 +607,7 @@ main {
 .orbit-item {
   position: absolute;
   z-index: 3;
-  width: 5.2rem;
+  width: 6rem;
   aspect-ratio: 1;
   display: grid;
   place-items: center;
@@ -616,11 +624,22 @@ main {
   object-fit: contain;
 }
 
-.orbit-item.maths { top: 5%; left: 11%; }
-.orbit-item.english { top: 7%; right: 10%; }
-.orbit-item.science { bottom: 7%; left: 8%; }
-.orbit-item.adhd { bottom: 3%; right: 10%; }
-.orbit-item.support { top: 43%; right: -1%; }
+.orbit-logo-cluster {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.orbit-logo-cluster img {
+  width: 100%;
+  height: auto;
+}
+
+.orbit-item.tutoring { top: 8%; left: 5%; }
+.orbit-item.adhd { top: 8%; right: 5%; }
+.orbit-item.support { bottom: 2%; left: calc(50% - 3rem); }
 
 .trust-strip {
   position: relative;
@@ -686,6 +705,47 @@ main {
   border-radius: var(--radius-lg);
   background: var(--paper);
   box-shadow: var(--shadow-sm);
+}
+
+.card-media {
+  display: grid;
+  min-height: 13rem;
+  place-items: center;
+  padding: 1.4rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.card-media-blue {
+  background: linear-gradient(145deg, rgba(63, 169, 206, 0.12), rgba(249, 247, 244, 0.95));
+}
+
+.card-media-yellow {
+  background: linear-gradient(145deg, rgba(229, 174, 41, 0.14), rgba(249, 247, 244, 0.95));
+}
+
+.card-media-red {
+  background: linear-gradient(145deg, rgba(216, 74, 57, 0.12), rgba(249, 247, 244, 0.95));
+}
+
+.card-logo {
+  width: 9rem;
+  height: 9rem;
+  object-fit: contain;
+}
+
+.mini-logo-row {
+  width: min(100%, 16rem);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.mini-logo-row img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
 }
 
 .card-body {
@@ -1593,7 +1653,28 @@ tbody tr:hover {
   }
 }
 
+@media (max-width: 82rem) and (min-width: 55.01rem) {
+  .header-inner {
+    flex-wrap: wrap;
+    gap: 0.45rem 1rem;
+    padding-block: 0.55rem;
+  }
+
+  .primary-nav {
+    width: 100%;
+  }
+
+  .primary-nav ul {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 @media (max-width: 55rem) {
+  :target {
+    scroll-margin-top: 6rem;
+  }
+
   .header-inner {
     flex-wrap: wrap;
   }
@@ -1727,11 +1808,11 @@ tbody tr:hover {
   }
 
   .orbit-item {
-    width: 4.1rem;
+    width: 4.8rem;
   }
 
   .orbit-item.support {
-    right: 0;
+    left: calc(50% - 2.4rem);
   }
 
   .trust-strip {
