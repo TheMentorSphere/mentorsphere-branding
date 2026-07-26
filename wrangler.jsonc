@@ -6,5 +6,11 @@
     "directory": "./docs",
     "not_found_handling": "404-page",
     "html_handling": "auto-trailing-slash"
-  }
+  },
+  "routes": [
+    {
+      "pattern": "www.thementorsphere.co.uk",
+      "custom_domain": true
+    }
+  ]
 }
