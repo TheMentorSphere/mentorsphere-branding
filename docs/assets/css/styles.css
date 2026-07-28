@@ -1706,6 +1706,11 @@ tbody tr:hover {
   resize: vertical;
 }
 
+.form-field [aria-invalid="true"] {
+  border-color: var(--warm-red-dark);
+  box-shadow: 0 0 0 0.12rem rgba(216, 74, 57, 0.18);
+}
+
 .form-field input:focus,
 .form-field select:focus,
 .form-field textarea:focus {
@@ -1728,20 +1733,100 @@ tbody tr:hover {
   accent-color: var(--deep-blue);
 }
 
+.form-required {
+  color: var(--warm-red-dark);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
 .form-help,
 .form-status {
   color: var(--muted);
   font-size: 0.84rem;
 }
 
+.form-help {
+  margin: 0;
+}
+
+.form-error {
+  min-height: 1.15rem;
+  color: var(--warm-red-dark);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.form-honeypot {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
 .form-status {
-  min-height: 1.4rem;
-  margin: 0.8rem 0 0;
-  font-weight: 700;
+  padding: 1rem 1.1rem;
+  margin: 1rem 0 0;
+  border-left: 0.35rem solid var(--deep-blue);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--sky-blue-soft);
+  color: var(--charcoal);
+}
+
+.form-status[hidden] {
+  display: none;
+}
+
+.form-status h3 {
+  margin-bottom: 0.35rem;
+  color: var(--deep-blue-ink);
+  font-size: 1.05rem;
+}
+
+.form-status p {
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+}
+
+.form-status p:last-child {
+  margin-bottom: 0;
+}
+
+.form-status.success {
+  border-left-color: #25714a;
+  background: #eaf5ef;
 }
 
 .form-status.error {
+  border-left-color: var(--warm-red-dark);
+  background: #fcecea;
   color: var(--warm-red-dark);
+}
+
+.form-status.error h3 {
+  color: var(--warm-red-dark);
+}
+
+.form-card button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.whatsapp-button {
+  gap: 0.55rem;
+  background: #075e54;
+  color: #fff;
+}
+
+.whatsapp-button:hover {
+  background: #064c44;
+  color: #fff;
+}
+
+.whatsapp-button img {
+  width: 1.1rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
 }
 
 .contact-list {

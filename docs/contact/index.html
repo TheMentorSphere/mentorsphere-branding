@@ -23,7 +23,7 @@
   <link rel="icon" href="../assets/images/main-logo.svg" sizes="any" type="image/svg+xml">
   <link rel="apple-touch-icon" href="../assets/images/main-logo.svg">
   <link rel="manifest" href="../site.webmanifest">
-  <link rel="stylesheet" href="../assets/css/styles.css">
+  <link rel="stylesheet" href="../assets/css/styles.css?v=20260728-formspree">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"EducationalOrganization","name":"The MentorSphere","url":"https://www.thementorsphere.co.uk/","logo":"https://www.thementorsphere.co.uk/assets/images/main-logo.svg","description":"A UK online education and neurodiversity support service providing personalised tutoring, ADHD coaching and education/SEND support.","email":"luke@thementorsphere.co.uk","telephone":"+44 7955 723133","areaServed":{"@type":"Country","name":"United Kingdom"},"founder":{"@type":"Person","name":"Luke Turner"},"sameAs":["https://www.facebook.com/TheMentorSphere"],"hasOfferCatalog":{"@type":"OfferCatalog","name":"The MentorSphere pathways","itemListElement":[{"@type":"OfferCatalog","name":"Learning and tutoring"},{"@type":"OfferCatalog","name":"ADHD coaching"},{"@type":"OfferCatalog","name":"Education and SEND support"}]}}</script>
 </head>
 <body class="page-contact">
@@ -92,57 +92,73 @@
         <div class="form-card">
           <div class="section-heading" style="margin-bottom: 1.5rem;">
             <p class="eyebrow">Send an enquiry</p>
-            <h2>Prepare an email from the website</h2>
-            <p>This form opens your own email application with the details prepared. Nothing is submitted to a third-party form processor.</p>
+            <h2>Send an enquiry</h2>
+            <p>Complete the form below and your message will be sent securely to The MentorSphere. You will remain on this page and receive confirmation once the enquiry has been submitted.</p>
           </div>
-          <form data-contact-form>
+          <form action="https://formspree.io/f/meeynlze" method="POST" accept-charset="UTF-8" data-contact-form>
+            <input type="hidden" name="subject" value="Website enquiry from The MentorSphere contact form" data-enquiry-subject>
+            <input type="hidden" name="source_page" value="https://www.thementorsphere.co.uk/contact/" data-source-page>
+            <div class="form-honeypot" aria-hidden="true">
+              <label for="company-website">Leave this field blank</label>
+              <input id="company-website" name="_gotcha" type="text" tabindex="-1" autocomplete="off">
+            </div>
             <div class="form-grid">
               <div class="form-field">
-                <label for="name">Name</label>
-                <input id="name" name="name" type="text" autocomplete="name" required>
+                <label for="name">Name <span class="form-required">required</span></label>
+                <input id="name" name="name" type="text" autocomplete="name" aria-describedby="name-error" required>
+                <span class="form-error" id="name-error" data-error-for="name"></span>
               </div>
               <div class="form-field">
-                <label for="email">Email address</label>
-                <input id="email" name="email" type="email" autocomplete="email" required>
+                <label for="email">Email address <span class="form-required">required</span></label>
+                <input id="email" name="email" type="email" autocomplete="email" inputmode="email" aria-describedby="email-error" required>
+                <span class="form-error" id="email-error" data-error-for="email"></span>
               </div>
               <div class="form-field">
                 <label for="phone">Telephone number <span class="form-help">optional</span></label>
                 <input id="phone" name="phone" type="tel" autocomplete="tel">
               </div>
               <div class="form-field">
-                <label for="contact-method">Preferred contact method</label>
-                <select id="contact-method" name="contact-method">
-                  <option>Email</option>
-                  <option>Telephone</option>
-                  <option>WhatsApp</option>
+                <label for="contact-method">Preferred contact method <span class="form-help">optional</span></label>
+                <select id="contact-method" name="preferred_contact_method">
+                  <option value="">No preference</option>
+                  <option value="Email">Email</option>
+                  <option value="Telephone">Telephone</option>
+                  <option value="WhatsApp">WhatsApp</option>
                 </select>
               </div>
               <div class="form-field full">
-                <label for="service">What would you like to discuss?</label>
-                <select id="service" name="service" required>
+                <label for="service">Area of support <span class="form-required">required</span></label>
+                <select id="service" name="area_of_support" aria-describedby="service-error" required>
                   <option value="">Choose an option</option>
-                  <option>Learning and tutoring</option>
-                  <option>ADHD coaching</option>
-                  <option>Education and SEND support</option>
-                  <option>Unsure or mixed needs</option>
+                  <option value="Learning and tutoring">Learning and tutoring</option>
+                  <option value="ADHD coaching">ADHD coaching</option>
+                  <option value="Education and SEND support">Education and SEND support</option>
+                  <option value="Employer-funded support">Employer-funded support</option>
+                  <option value="Access to Work">Access to Work</option>
+                  <option value="Unsure or mixed needs">Unsure or mixed needs</option>
+                  <option value="Other enquiry">Other enquiry</option>
                 </select>
+                <span class="form-error" id="service-error" data-error-for="area_of_support"></span>
               </div>
               <div class="form-field full">
-                <label for="message">Message</label>
-                <textarea id="message" name="message" required placeholder="Please include who the support is for, the main concern or goal, and any important deadline."></textarea>
+                <label for="message">Message <span class="form-required">required</span></label>
+                <textarea id="message" name="message" aria-describedby="message-help message-error" required placeholder="Please include who the support is for, the main concern or goal, and any important deadline."></textarea>
+                <p class="form-help" id="message-help">Please do not include detailed medical records, identification documents or highly sensitive personal information in this initial enquiry. These can be discussed securely after contact has been established.</p>
+                <span class="form-error" id="message-error" data-error-for="message"></span>
               </div>
               <div class="form-field full">
                 <label class="checkbox-field">
-                  <input type="checkbox" name="consent" required>
-                  <span>I understand that selecting “Prepare email” will open my email application and I will choose whether to send the message.</span>
+                  <input id="privacy-acknowledgement" type="checkbox" name="privacy_acknowledgement" value="Acknowledged" aria-describedby="privacy-error" required>
+                  <span>I understand that the information I provide will be used to respond to my enquiry. I have read The MentorSphere <a href="../privacy-policy/">Privacy Policy</a>. <span class="form-required">Required</span></span>
                 </label>
+                <span class="form-error" id="privacy-error" data-error-for="privacy_acknowledgement"></span>
               </div>
             </div>
             <div class="button-row" style="margin-top: 1.2rem;">
-              <button class="button" type="submit">Prepare email</button>
+              <button class="button" type="submit" data-submit-button>Send enquiry</button>
               <button class="button button-secondary" type="button" data-copy-email>Copy email address</button>
             </div>
-            <p class="form-status" role="status" aria-live="polite" data-form-status></p>
+            <div class="form-status" role="status" aria-live="polite" aria-atomic="true" tabindex="-1" data-form-status hidden></div>
           </form>
         </div>
 
@@ -154,8 +170,16 @@
               <a href="mailto:luke@thementorsphere.co.uk">luke@thementorsphere.co.uk</a>
             </li>
             <li>
-              <strong>Telephone and business WhatsApp</strong>
+              <strong>Telephone</strong>
               <a href="tel:+447955723133">07955 723 133</a>
+            </li>
+            <li>
+              <strong>WhatsApp</strong>
+              <a class="button whatsapp-button" href="https://wa.me/447955723133?text=Hi%20Luke%2C%20I%20found%20The%20MentorSphere%20through%20your%20website%20and%20would%20like%20to%20enquire%20about%20support." target="_blank" rel="noopener" aria-label="Message The MentorSphere on WhatsApp, opens WhatsApp in a new tab">
+                <img src="../assets/images/whatsapp-icon.svg" width="20" height="23" alt="" aria-hidden="true">
+                <span>Message The MentorSphere on WhatsApp</span>
+              </a>
+              <span class="form-help">Opens a WhatsApp conversation in a new tab.</span>
             </li>
             <li>
               <strong>Free online introduction</strong>
@@ -297,6 +321,6 @@
       </div>
     </footer>
     <button class="back-to-top" type="button" aria-label="Back to top" data-back-to-top>↑</button>
-  <script src="../assets/js/site.js" defer></script>
+  <script src="../assets/js/site.js?v=20260728-formspree" defer></script>
 </body>
 </html>
