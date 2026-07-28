@@ -196,45 +196,185 @@
   const contactStatus = document.querySelector('[data-form-status]');
 
   if (contactForm) {
-    contactForm.addEventListener('submit', (event) => {
+    const submitButton = contactForm.querySelector('[data-submit-button]');
+    const subjectInput = contactForm.querySelector('[data-enquiry-subject]');
+    const sourceInput = contactForm.querySelector('[data-source-page]');
+    const whatsappUrl = 'https://wa.me/447955723133?text=Hi%20Luke%2C%20I%20found%20The%20MentorSphere%20through%20your%20website%20and%20would%20like%20to%20enquire%20about%20support.';
+    const errorElements = new Map(
+      Array.from(contactForm.querySelectorAll('[data-error-for]')).map((element) => [element.dataset.errorFor, element]),
+    );
+    let submissionInProgress = false;
+
+    const getErrorElement = (fieldName) => errorElements.get(fieldName);
+
+    const clearFieldError = (field) => {
+      if (!field || !field.name) return;
+      field.removeAttribute('aria-invalid');
+      const errorElement = getErrorElement(field.name);
+      if (errorElement) errorElement.textContent = '';
+    };
+
+    const setFieldError = (field, message) => {
+      if (!field || !field.name) return;
+      field.setAttribute('aria-invalid', 'true');
+      const errorElement = getErrorElement(field.name);
+      if (errorElement) errorElement.textContent = message;
+    };
+
+    const clearAllFieldErrors = () => {
+      contactForm.querySelectorAll('[aria-invalid="true"]').forEach(clearFieldError);
+      contactForm.querySelectorAll('[data-error-for]').forEach((element) => {
+        element.textContent = '';
+      });
+    };
+
+    const validationMessageFor = (field) => {
+      if (field.validity.typeMismatch && field.type === 'email') {
+        return 'Enter an email address in the correct format, such as name@example.com.';
+      }
+      if (field.validity.valueMissing) return 'This field is required.';
+      return field.validationMessage || 'Check this field and try again.';
+    };
+
+    const showStatus = ({ type, heading, message, includeFallbacks = false, focus = false }) => {
+      if (!contactStatus) return;
+
+      contactStatus.replaceChildren();
+      contactStatus.hidden = false;
+      contactStatus.classList.toggle('success', type === 'success');
+      contactStatus.classList.toggle('error', type === 'error');
+
+      const statusHeading = document.createElement('h3');
+      statusHeading.textContent = heading;
+      contactStatus.append(statusHeading);
+
+      const statusMessage = document.createElement('p');
+      statusMessage.textContent = message;
+      contactStatus.append(statusMessage);
+
+      if (includeFallbacks) {
+        const fallbackMessage = document.createElement('p');
+        fallbackMessage.append('You can also ');
+
+        const emailLink = document.createElement('a');
+        emailLink.href = 'mailto:luke@thementorsphere.co.uk';
+        emailLink.textContent = 'email The MentorSphere';
+        fallbackMessage.append(emailLink, ' or ');
+
+        const whatsappLink = document.createElement('a');
+        whatsappLink.href = whatsappUrl;
+        whatsappLink.target = '_blank';
+        whatsappLink.rel = 'noopener';
+        whatsappLink.textContent = 'send a WhatsApp message';
+        fallbackMessage.append(whatsappLink, '.');
+        contactStatus.append(fallbackMessage);
+      }
+
+      if (focus) contactStatus.focus();
+    };
+
+    contactForm.addEventListener('invalid', (event) => {
+      const field = event.target;
+      if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement) {
+        setFieldError(field, validationMessageFor(field));
+      }
+    }, true);
+
+    contactForm.querySelectorAll('input, select, textarea').forEach((field) => {
+      const clearWhenValid = () => {
+        if (field.validity.valid) clearFieldError(field);
+      };
+      field.addEventListener('input', clearWhenValid);
+      field.addEventListener('change', clearWhenValid);
+    });
+
+    contactForm.addEventListener('submit', async (event) => {
       event.preventDefault();
 
-      if (!contactForm.reportValidity()) {
-        if (contactStatus) {
-          contactStatus.textContent = 'Please complete the required fields before continuing.';
-          contactStatus.classList.add('error');
-        }
+      if (submissionInProgress) return;
+      if (!contactForm.checkValidity()) {
+        contactForm.reportValidity();
         return;
       }
 
-      const data = new FormData(contactForm);
-      const name = String(data.get('name') || '').trim();
-      const email = String(data.get('email') || '').trim();
-      const phone = String(data.get('phone') || '').trim();
-      const service = String(data.get('service') || 'General enquiry').trim();
-      const contactMethod = String(data.get('contact-method') || 'Email').trim();
-      const message = String(data.get('message') || '').trim();
+      submissionInProgress = true;
+      clearAllFieldErrors();
 
-      const subject = `Website enquiry: ${service}`;
-      const body = [
-        `Name: ${name}`,
-        `Email: ${email}`,
-        phone ? `Telephone: ${phone}` : null,
-        `Preferred contact method: ${contactMethod}`,
-        `Area of support: ${service}`,
-        '',
-        'Message:',
-        message,
-      ].filter((line) => line !== null).join('\n');
-
-      const mailto = `mailto:luke@thementorsphere.co.uk?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-      if (contactStatus) {
-        contactStatus.textContent = 'Your email application should now open with the message prepared.';
-        contactStatus.classList.remove('error');
+      const originalButtonText = submitButton ? submitButton.textContent : 'Send enquiry';
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = 'Sending enquiry…';
       }
 
-      window.location.href = mailto;
+      showStatus({
+        type: 'sending',
+        heading: 'Sending enquiry',
+        message: 'Please wait while your message is submitted.',
+      });
+
+      const data = new FormData(contactForm);
+      const service = String(data.get('area_of_support') || 'General enquiry').trim();
+      const subject = `Website enquiry: ${service}`;
+
+      if (subjectInput) subjectInput.value = subject;
+      if (sourceInput) sourceInput.value = window.location.href;
+      data.set('subject', subject);
+      data.set('source_page', window.location.href);
+
+      try {
+        const response = await fetch(contactForm.action, {
+          method: contactForm.method,
+          body: data,
+          headers: {
+            Accept: 'application/json',
+          },
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (response.ok) {
+          contactForm.reset();
+          clearAllFieldErrors();
+          showStatus({
+            type: 'success',
+            heading: 'Enquiry sent',
+            message: 'Thank you. Your message has been sent to The MentorSphere. Enquiries are normally acknowledged within 48 hours, although responses may take longer during illness, annual leave or unusually busy periods.',
+            focus: true,
+          });
+          return;
+        }
+
+        const errors = Array.isArray(result.errors) ? result.errors : [];
+        errors.forEach((error) => {
+          const fieldName = typeof error.field === 'string' ? error.field : error.field?.name;
+          const field = fieldName ? contactForm.elements.namedItem(fieldName) : null;
+          if (field instanceof HTMLElement) {
+            setFieldError(field, error.message || 'Check this field and try again.');
+          }
+        });
+
+        showStatus({
+          type: 'error',
+          heading: 'Your enquiry could not be sent',
+          message: 'Your message has not been submitted. Please check your connection and try again.',
+          includeFallbacks: true,
+          focus: true,
+        });
+      } catch {
+        showStatus({
+          type: 'error',
+          heading: 'Your enquiry could not be sent',
+          message: 'Your message has not been submitted. Please check your connection and try again.',
+          includeFallbacks: true,
+          focus: true,
+        });
+      } finally {
+        submissionInProgress = false;
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent = originalButtonText;
+        }
+      }
     });
   }
 
