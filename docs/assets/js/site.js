@@ -25,8 +25,30 @@
 
   if (navToggle && nav) {
     const toggleLabel = navToggle.querySelector('.sr-only');
+    const navItems = Array.from(nav.querySelectorAll('[data-nav-item]'));
+    let pointerCloseTimer = 0;
+
+    const closeSubmenu = (item) => {
+      const toggle = item.querySelector('[data-submenu-toggle]');
+      item.classList.remove('is-open');
+      if (toggle) toggle.setAttribute('aria-expanded', 'false');
+    };
+
+    const closeSubmenus = (exceptItem = null) => {
+      navItems.forEach((item) => {
+        if (item !== exceptItem) closeSubmenu(item);
+      });
+    };
+
+    const openSubmenu = (item) => {
+      const toggle = item.querySelector('[data-submenu-toggle]');
+      closeSubmenus(item);
+      item.classList.add('is-open');
+      if (toggle) toggle.setAttribute('aria-expanded', 'true');
+    };
 
     const closeMenu = ({ restoreFocus = false } = {}) => {
+      closeSubmenus();
       navToggle.setAttribute('aria-expanded', 'false');
       nav.classList.remove('open');
       document.body.classList.remove('nav-open');
@@ -36,10 +58,47 @@
 
     navToggle.addEventListener('click', () => {
       const isOpen = navToggle.getAttribute('aria-expanded') === 'true';
+      if (isOpen) closeSubmenus();
       navToggle.setAttribute('aria-expanded', String(!isOpen));
       nav.classList.toggle('open', !isOpen);
       document.body.classList.toggle('nav-open', !isOpen);
       if (toggleLabel) toggleLabel.textContent = isOpen ? 'Open navigation' : 'Close navigation';
+    });
+
+    navItems.forEach((item) => {
+      const submenuToggle = item.querySelector('[data-submenu-toggle]');
+      if (!submenuToggle) return;
+
+      submenuToggle.addEventListener('click', () => {
+        const isOpen = submenuToggle.getAttribute('aria-expanded') === 'true';
+        if (isOpen) {
+          closeSubmenu(item);
+        } else {
+          openSubmenu(item);
+        }
+      });
+
+      item.addEventListener('focusin', (event) => {
+        if (window.innerWidth > 880 && event.target.matches('a')) openSubmenu(item);
+      });
+
+      item.addEventListener('focusout', (event) => {
+        if (!item.contains(event.relatedTarget)) closeSubmenu(item);
+      });
+
+      item.addEventListener('pointerenter', () => {
+        if (!finePointerQuery.matches) return;
+        window.clearTimeout(pointerCloseTimer);
+        openSubmenu(item);
+      });
+
+      item.addEventListener('pointerleave', () => {
+        if (!finePointerQuery.matches) return;
+        window.clearTimeout(pointerCloseTimer);
+        pointerCloseTimer = window.setTimeout(() => {
+          if (!item.matches(':focus-within')) closeSubmenu(item);
+        }, 140);
+      });
     });
 
     nav.querySelectorAll('a').forEach((link) => {
@@ -47,9 +106,21 @@
     });
 
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && nav.classList.contains('open')) {
+      if (event.key !== 'Escape') return;
+
+      const openItem = navItems.find((item) => item.classList.contains('is-open'));
+      const mobileMenuOpen = nav.classList.contains('open');
+      if (!openItem && !mobileMenuOpen) return;
+
+      event.preventDefault();
+      if (mobileMenuOpen) {
         closeMenu({ restoreFocus: true });
+        return;
       }
+
+      const submenuToggle = openItem.querySelector('[data-submenu-toggle]');
+      closeSubmenu(openItem);
+      if (submenuToggle) submenuToggle.focus();
     });
 
     document.addEventListener('click', (event) => {
@@ -59,6 +130,7 @@
     });
 
     window.addEventListener('resize', () => {
+      closeSubmenus();
       if (window.innerWidth > 880) closeMenu();
     }, { passive: true });
   }

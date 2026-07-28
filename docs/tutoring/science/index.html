@@ -23,7 +23,7 @@
   <link rel="icon" href="../../assets/images/science-logo.svg" sizes="any" type="image/svg+xml">
   <link rel="apple-touch-icon" href="../../assets/images/science-logo.svg">
   <link rel="manifest" href="../../site.webmanifest">
-  <link rel="stylesheet" href="../../assets/css/styles.css">
+  <link rel="stylesheet" href="../../assets/css/styles.css?v=20260728-navigation">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"Service","name":"Online science tutoring","description":"Personalised one-to-one online science tutoring from KS1 to KS4, including GCSE Combined and separate sciences.","url":"https://www.thementorsphere.co.uk/tutoring/science/","areaServed":{"@type":"Country","name":"United Kingdom"},"provider":{"@type":"EducationalOrganization","name":"The MentorSphere","url":"https://www.thementorsphere.co.uk/"}}</script>
 </head>
 <body class="page-tutoring">
@@ -35,13 +35,62 @@
       <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-navigation" data-nav-toggle><span class="sr-only">Open navigation</span><span class="nav-toggle-lines" aria-hidden="true"></span></button>
       <nav class="primary-nav" id="primary-navigation" aria-label="Primary navigation" data-primary-nav>
         <ul>
-          <li><a href="../../">Home</a></li><li><a href="../" aria-current="page">Tutoring</a></li><li><a href="../../adhd-coaching/">ADHD Coaching</a></li><li><a href="../../support-services/">Education &amp; SEND</a></li><li><a href="../../pricing/">Pricing</a></li><li><a href="../../about/">About</a></li><li><a href="../../contact/">Contact</a></li>
+          <li><a href="../../">Home</a></li>
+          <li class="nav-item nav-item-has-submenu" data-nav-item>
+            <div class="nav-parent">
+              <a href="../../tutoring/" class="nav-section-current">Tutoring</a>
+              <button class="submenu-toggle" type="button" aria-expanded="false" aria-controls="submenu-tutoring" data-submenu-toggle>
+                <span class="sr-only">Toggle Tutoring submenu</span>
+                <span class="submenu-chevron" aria-hidden="true"></span>
+              </button>
+            </div>
+            <ul class="submenu" id="submenu-tutoring" data-submenu>
+              <li><a href="../../tutoring/">Tutoring overview</a></li>
+              <li><a href="../../tutoring/maths/">Maths tutoring</a></li>
+              <li><a href="../../tutoring/english/">English tutoring</a></li>
+              <li><a href="../../tutoring/science/" aria-current="page">Science tutoring</a></li>
+            </ul>
+          </li>
+          <li class="nav-item nav-item-has-submenu" data-nav-item>
+            <div class="nav-parent">
+              <a href="../../adhd-coaching/">ADHD Coaching</a>
+              <button class="submenu-toggle" type="button" aria-expanded="false" aria-controls="submenu-adhd-coaching" data-submenu-toggle>
+                <span class="sr-only">Toggle ADHD Coaching submenu</span>
+                <span class="submenu-chevron" aria-hidden="true"></span>
+              </button>
+            </div>
+            <ul class="submenu" id="submenu-adhd-coaching" data-submenu>
+              <li><a href="../../adhd-coaching/">ADHD coaching overview</a></li>
+              <li><a href="../../adhd-coaching/access-to-work/">Access to Work</a></li>
+              <li><a href="../../adhd-coaching/employer-funded/">Employer-funded coaching</a></li>
+              <li><a href="../../adhd-coaching/schools/">Working alongside schools</a></li>
+            </ul>
+          </li>
+          <li class="nav-item nav-item-has-submenu" data-nav-item>
+            <div class="nav-parent">
+              <a href="../../support-services/">Education &amp; SEND</a>
+              <button class="submenu-toggle" type="button" aria-expanded="false" aria-controls="submenu-education-send" data-submenu-toggle>
+                <span class="sr-only">Toggle Education and SEND submenu</span>
+                <span class="submenu-chevron" aria-hidden="true"></span>
+              </button>
+            </div>
+            <ul class="submenu" id="submenu-education-send" data-submenu>
+              <li><a href="../../support-services/">Education and SEND overview</a></li>
+              <li><a href="../../support-services/ehcp-support/">EHCP support</a></li>
+              <li><a href="../../support-services/ehe-eotas/">EHE and EOTAS</a></li>
+              <li><a href="../../support-services/private-exams/">Private exams and access arrangements</a></li>
+              <li><a href="../../support-services/referral-preparation/">ADHD and autism referral preparation</a></li>
+            </ul>
+          </li>
+          <li><a href="../../pricing/">Pricing</a></li>
+          <li><a href="../../about/">About</a></li>
+          <li><a href="../../contact/">Contact</a></li>
           <li><a class="nav-cta" href="https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ2ViGgA98iq2gb-3Xn3TdTTqfAdWXE2XN5SpS6PBaaZzRc5DXacuud78LNwUEHlSSk5VPAYTcB-" target="_blank" rel="noopener">Book a free introduction</a></li>
         </ul>
       </nav>
     </div>
   </header>
-  <nav class="breadcrumbs" aria-label="Breadcrumb"><div class="container"><ol><li><a href="../../">Home</a></li><li><a href="../">Tutoring</a></li><li><span aria-current="page">Science</span></li></ol></div></nav>
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><div class="container"><ol><li><a href="../../">Home</a></li><li><a href="../">Tutoring</a></li><li><span aria-current="page">Science tutoring</span></li></ol></div></nav>
 
   <main id="main-content">
     <section class="page-hero">
@@ -143,6 +192,6 @@
     <div class="container footer-bottom"><p>© <span data-current-year></span> The MentorSphere. All rights reserved.</p><p>The MentorSphere is not an emergency, clinical diagnostic or legal representation service.</p></div>
   </footer>
   <button class="back-to-top" type="button" aria-label="Back to top" data-back-to-top>↑</button>
-  <script src="../../assets/js/site.js" defer></script>
+  <script src="../../assets/js/site.js?v=20260728-navigation" defer></script>
 </body>
 </html>
