@@ -197,6 +197,22 @@
   animation: page-hero-float 8s ease-in-out infinite;
 }
 
+.motion-ok .adhd-orbit-dot.dot-one {
+  animation: adhd-dot-orbit 20s linear infinite;
+}
+
+.motion-ok .adhd-orbit-dot.dot-two {
+  animation: adhd-dot-orbit-two 27s linear infinite;
+}
+
+.motion-ok .adhd-orbit-dot.dot-three {
+  animation: adhd-dot-orbit-three 23s linear infinite reverse;
+}
+
+.motion-ok .adhd-orbit-dot.dot-four {
+  animation: adhd-dot-orbit-four 31s linear infinite;
+}
+
 .section-heading h2::after {
   width: 3.65rem;
   height: 0.34rem;
@@ -639,6 +655,7 @@
     .orbit-item,
     .orbit-node,
   .page-hero-visual img,
+  .adhd-orbit-dot,
   .cta-band::before,
   .cta-band::after,
   .faq-list details[open] .faq-answer {
@@ -750,6 +767,25 @@
   50% { transform: translateY(-0.34rem) rotate(-0.6deg); }
 }
 
+@keyframes adhd-dot-orbit {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes adhd-dot-orbit-two {
+  from { transform: rotate(92deg); }
+  to { transform: rotate(452deg); }
+}
+
+@keyframes adhd-dot-orbit-three {
+  from { transform: rotate(198deg); }
+  to { transform: rotate(558deg); }
+}
+
+@keyframes adhd-dot-orbit-four {
+  from { transform: rotate(286deg); }
+  to { transform: rotate(646deg); }
+}
+
 @keyframes mosaic-drift {
   from { translate: -0.45rem -0.3rem; rotate: -1deg; }
   to { translate: 0.55rem 0.45rem; rotate: 2deg; }
@@ -785,6 +821,7 @@ html:not(.motion-ok) .orbit-centre,
 html:not(.motion-ok) .orbit-item,
 html:not(.motion-ok) .orbit-node,
 html:not(.motion-ok) .page-hero-visual img,
+html:not(.motion-ok) .adhd-orbit-dot,
 html:not(.motion-ok) .cta-band::before,
 html:not(.motion-ok) .cta-band::after {
   animation: none;
