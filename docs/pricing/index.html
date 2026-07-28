@@ -87,51 +87,28 @@
       </div>
     </section>
 
-    <section class="section section-white" aria-labelledby="pricing-pathways-title">
+    <section class="section-sm section-white" aria-labelledby="pricing-pathways-title">
       <div class="container">
-        <div class="section-heading centered">
-          <p class="eyebrow">Three pathways, clear pricing</p>
-          <h2 id="pricing-pathways-title">Start with the support you need now</h2>
-          <p>Each pathway uses the pricing model that best fits the work. Mixed or uncertain needs can be discussed before any paid support is agreed.</p>
-        </div>
-        <div class="card-grid card-grid-three">
-          <article class="card card-branch-tutoring">
-            <div class="card-body">
-              <p class="eyebrow">Learning and tutoring</p>
-              <h3>PAYG or monthly plans</h3>
-              <p>Choose individual sessions or a regular plan across maths, English and science.</p>
-              <a class="card-link" href="#payg">View tutoring prices</a>
-            </div>
-          </article>
-          <article class="card card-branch-adhd">
-            <div class="card-body">
-              <p class="eyebrow">ADHD coaching</p>
-              <h3>Clear session prices</h3>
-              <p>One self-funded session price for adults, young people, and parents &amp; guardians, plus package and funded options.</p>
-              <a class="card-link" href="#adhd-coaching">View coaching prices</a>
-            </div>
-          </article>
-          <article class="card card-branch-support">
-            <div class="card-body">
-              <p class="eyebrow">Education and SEND support</p>
-              <h3>Quoted by scope</h3>
-              <p>The task, deadline and expected output are clarified before a fee is agreed.</p>
-              <a class="card-link" href="#support-pricing">Understand quoted work</a>
-            </div>
-          </article>
-        </div>
+        <nav class="section-selector" aria-labelledby="pricing-pathways-title">
+          <h2 class="section-selector-title" id="pricing-pathways-title">Jump to a pricing section</h2>
+          <ul>
+            <li><a href="#tutoring-prices"><span>Tutoring</span><small>PAYG and monthly plans</small></a></li>
+            <li><a href="#adhd-coaching"><span>ADHD coaching</span><small>Self-funded and funded</small></a></li>
+            <li><a href="#support-pricing"><span>Education and SEND</span><small>Quoted support</small></a></li>
+          </ul>
+        </nav>
       </div>
     </section>
 
-    <section class="section section-white" id="payg">
+    <section class="section section-white" id="tutoring-prices">
       <div class="container">
         <div class="section-heading">
           <p class="eyebrow">Tutoring</p>
-          <h2>Pay-as-you-go prices</h2>
+          <h2>Pay-as-you-go tutoring prices</h2>
           <p>Book individual Maths, English or Science sessions as needed. PAYG is useful for occasional support, changing schedules or trying different lesson lengths.</p>
         </div>
         <div class="table-wrap">
-          <table>
+          <table class="responsive-pricing">
             <caption>PAYG tutoring prices</caption>
             <thead>
               <tr>
@@ -141,10 +118,10 @@
               </tr>
             </thead>
             <tbody>
-              <tr><th scope="row">30 minutes</th><td>£22.50</td><td>Younger learners, focused practice or shorter attention windows</td></tr>
-              <tr><th scope="row">45 minutes</th><td>£33.75</td><td>One main topic with time to teach, practise and review</td></tr>
-              <tr><th scope="row">60 minutes</th><td>£45.00</td><td>Standard weekly tuition and exam preparation</td></tr>
-              <tr><th scope="row">90 minutes</th><td>£67.50</td><td>Extended projects, multiple topics or intensive revision</td></tr>
+              <tr><th scope="row">30 minutes</th><td data-label="Price per session">£22.50</td><td data-label="Often useful for">Younger learners, focused practice or shorter attention windows</td></tr>
+              <tr><th scope="row">45 minutes</th><td data-label="Price per session">£33.75</td><td data-label="Often useful for">One main topic with time to teach, practise and review</td></tr>
+              <tr><th scope="row">60 minutes</th><td data-label="Price per session">£45.00</td><td data-label="Often useful for">Standard weekly tuition and exam preparation</td></tr>
+              <tr><th scope="row">90 minutes</th><td data-label="Price per session">£67.50</td><td data-label="Often useful for">Extended projects, multiple topics or intensive revision</td></tr>
             </tbody>
           </table>
         </div>
@@ -159,7 +136,7 @@
           <p>These representative prices are based on a four-week month. The actual invoice reflects the sessions scheduled in that calendar month, so a five-week month may include one or two additional sessions.</p>
         </div>
         <div class="table-wrap">
-          <table>
+          <table class="responsive-pricing responsive-pricing-plans">
             <caption>Monthly tutoring plan prices, based on a four-week month</caption>
             <thead>
               <tr>
@@ -174,23 +151,23 @@
             <tbody>
               <tr>
                 <th scope="row">Essentials</th>
-                <td>2 sessions, normally fortnightly</td>
-                <td>£38</td><td>£58</td><td>£75</td><td>£109</td>
+                <td data-label="Frequency">2 sessions, normally fortnightly</td>
+                <td data-label="30 minutes">£38</td><td data-label="45 minutes">£58</td><td data-label="60 minutes">£75</td><td data-label="90 minutes">£109</td>
               </tr>
               <tr>
                 <th scope="row">Confidence Builder</th>
-                <td>4 sessions, normally weekly</td>
-                <td>£77</td><td>£115</td><td>£150</td><td>£218</td>
+                <td data-label="Frequency">4 sessions, normally weekly</td>
+                <td data-label="30 minutes">£77</td><td data-label="45 minutes">£115</td><td data-label="60 minutes">£150</td><td data-label="90 minutes">£218</td>
               </tr>
               <tr>
                 <th scope="row">Skills Booster</th>
-                <td>8 sessions, normally twice weekly</td>
-                <td>£156</td><td>£226</td><td>£295</td><td>£421</td>
+                <td data-label="Frequency">8 sessions, normally twice weekly</td>
+                <td data-label="30 minutes">£156</td><td data-label="45 minutes">£226</td><td data-label="60 minutes">£295</td><td data-label="90 minutes">£421</td>
               </tr>
               <tr>
                 <th scope="row">Fast-track</th>
-                <td>12 sessions, normally three times weekly</td>
-                <td>£228</td><td>£335</td><td>£433</td><td>£616</td>
+                <td data-label="Frequency">12 sessions, normally three times weekly</td>
+                <td data-label="30 minutes">£228</td><td data-label="45 minutes">£335</td><td data-label="60 minutes">£433</td><td data-label="90 minutes">£616</td>
               </tr>
             </tbody>
           </table>
@@ -210,21 +187,11 @@
           <h2>ADHD coaching prices</h2>
           <p>All standard coaching sessions are 60 minutes. The same self-funded price applies across the three coaching audiences.</p>
         </div>
-        <div class="card-grid">
+        <div class="card-grid two">
           <article class="price-card">
-            <h3>Adults with ADHD, age 18+</h3>
+            <h3>Single self-funded coaching session</h3>
             <p class="price">£70 <small>per 60-minute session</small></p>
-            <p>Practical and reflective coaching for executive function, emotions, work, study and relationships.</p>
-          </article>
-          <article class="price-card">
-            <h3>Young people with ADHD, ages 10 to 17</h3>
-            <p class="price">£70 <small>per 60-minute session</small></p>
-            <p>Personalised coaching with safeguarding, consent and family involvement agreed at the start.</p>
-          </article>
-          <article class="price-card">
-            <h3>Parents &amp; guardians supporting a young person with ADHD</h3>
-            <p class="price">£70 <small>per 60-minute session</small></p>
-            <p>Support to understand patterns, reduce conflict and build practical family routines.</p>
+            <p>The same price applies to adults, eligible young people, and parents or guardians. <a href="../adhd-coaching/">Explore the coaching routes and age criteria</a>.</p>
           </article>
         </div>
 
@@ -280,22 +247,17 @@
     <section class="section section-blue" id="support-pricing">
       <div class="container split reverse">
         <div class="feature-panel">
-          <h3>Examples of separately quoted work</h3>
+          <h3>How education and SEND pricing works</h3>
           <ul class="tick-list">
-            <li>Detailed document or report review</li>
-            <li>EHCP request or review preparation</li>
-            <li>Home education and EOTAS planning</li>
-            <li>Evidence summaries and bespoke letters</li>
-            <li>ADHD and autism referral preparation packages</li>
-            <li>Private exam coordination or access support</li>
-            <li>Access to Work reporting requirements</li>
-            <li>Combined tutoring, coaching and support plans</li>
+            <li>Free initial discussion to clarify the need</li>
+            <li>Defined work and fees agreed in advance</li>
+            <li>Bespoke combined packages where needs cross pathways</li>
           </ul>
         </div>
         <div class="split-copy flow">
           <p class="eyebrow">Education and SEND support</p>
           <h2>Quoted according to the scope</h2>
-          <p>A one-hour strategy conversation is not the same as reviewing several reports and preparing a detailed document. Bespoke work is therefore priced after the task, deadline and expected output have been clarified.</p>
+          <p>A one-hour strategy conversation is not the same as reviewing several reports and preparing a detailed document. Work is therefore priced after the task, deadline and expected output have been clarified.</p>
           <p>You will receive the proposed scope and fee before substantive paid work begins.</p>
           <a class="button button-light" href="../support-services/">Explore education and SEND support</a>
           <ul class="plain-list" style="margin-top: 1.2rem;">
