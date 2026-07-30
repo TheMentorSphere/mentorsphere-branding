@@ -9,7 +9,7 @@
 - JSON content-type validation and 16 KB request-body limit.
 - Seven-message, 600-character per-message and 3,000-character total conversation limits.
 - Provider output capped at 320 tokens and 2,000 response characters.
-- Twelve requests per minute per in-memory browser session through a Cloudflare Rate Limiting binding.
+- A Cloudflare Rate Limiting binding configured for 12 calls per 60 seconds for each in-memory browser session key within each Cloudflare location. Cloudflare documents enforcement as permissive and eventually consistent, not an exact request counter.
 - Twelve-second provider timeout.
 - Generic client errors and structured logs without stack traces or message text.
 - Plain-text rendering with DOM `textContent`; no unsanitised HTML or model-selected links.

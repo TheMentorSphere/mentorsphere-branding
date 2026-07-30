@@ -5,36 +5,68 @@ const MAX_MESSAGES = 7;
 const MAX_MESSAGE_LENGTH = 600;
 const MAX_TOTAL_LENGTH = 3_000;
 
-function isChatMessage(value: unknown): value is ChatMessage {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as { role?: unknown; content?: unknown };
-  return (
-    (candidate.role === "user" || candidate.role === "assistant") &&
-    typeof candidate.content === "string" &&
-    candidate.content.trim().length > 0 &&
-    candidate.content.length <= MAX_MESSAGE_LENGTH
-  );
+export type ChatRequestError =
+  | "invalid-request"
+  | "empty-message"
+  | "message-too-long"
+  | "conversation-too-long";
+
+export type ChatRequestValidation =
+  | { ok: true; request: ChatRequest }
+  | { ok: false; error: ChatRequestError };
+
+export function validateChatRequest(value: unknown): ChatRequestValidation {
+  if (!value || typeof value !== "object") return { ok: false, error: "invalid-request" };
+  const candidate = value as { sessionId?: unknown; messages?: unknown };
+  if (typeof candidate.sessionId !== "string" || !SESSION_ID.test(candidate.sessionId)) {
+    return { ok: false, error: "invalid-request" };
+  }
+  if (!Array.isArray(candidate.messages) || candidate.messages.length < 1 || candidate.messages.length > MAX_MESSAGES) {
+    return { ok: false, error: "invalid-request" };
+  }
+
+  const messages: ChatMessage[] = [];
+  for (const rawMessage of candidate.messages) {
+    if (!rawMessage || typeof rawMessage !== "object") {
+      return { ok: false, error: "invalid-request" };
+    }
+    const message = rawMessage as { role?: unknown; content?: unknown };
+    if (
+      (message.role !== "user" && message.role !== "assistant") ||
+      typeof message.content !== "string"
+    ) {
+      return { ok: false, error: "invalid-request" };
+    }
+    if (message.content.trim().length === 0) {
+      return { ok: false, error: "empty-message" };
+    }
+    if (message.content.length > MAX_MESSAGE_LENGTH) {
+      return { ok: false, error: "message-too-long" };
+    }
+    messages.push({
+      role: message.role,
+      content: message.content.trim(),
+    });
+  }
+
+  if (messages.at(-1)?.role !== "user") return { ok: false, error: "invalid-request" };
+  const totalLength = messages.reduce((total, message) => total + message.content.length, 0);
+  if (totalLength > MAX_TOTAL_LENGTH) {
+    return { ok: false, error: "conversation-too-long" };
+  }
+
+  return {
+    ok: true,
+    request: {
+      sessionId: candidate.sessionId,
+      messages,
+    },
+  };
 }
 
 export function parseChatRequest(value: unknown): ChatRequest | null {
-  if (!value || typeof value !== "object") return null;
-  const candidate = value as { sessionId?: unknown; messages?: unknown };
-  if (typeof candidate.sessionId !== "string" || !SESSION_ID.test(candidate.sessionId)) return null;
-  if (!Array.isArray(candidate.messages) || candidate.messages.length < 1 || candidate.messages.length > MAX_MESSAGES) {
-    return null;
-  }
-  if (!candidate.messages.every(isChatMessage)) return null;
-  if (candidate.messages.at(-1)?.role !== "user") return null;
-  const totalLength = candidate.messages.reduce((total, message) => total + message.content.length, 0);
-  if (totalLength > MAX_TOTAL_LENGTH) return null;
-
-  return {
-    sessionId: candidate.sessionId,
-    messages: candidate.messages.map((message) => ({
-      role: message.role,
-      content: message.content.trim(),
-    })),
-  };
+  const result = validateChatRequest(value);
+  return result.ok ? result.request : null;
 }
 
 export function isValidSessionId(value: unknown): value is string {

@@ -1,11 +1,15 @@
-import { generateGroundedAnswer } from "./assistant/openai";
+import { generateGroundedAnswer, normaliseAssistantOutput } from "./assistant/openai";
 import { buildModelInput, SYSTEM_INSTRUCTION } from "./assistant/prompt";
 import { isReliableRetrieval, retrieveKnowledge, sourceLinks } from "./assistant/retrieval";
 import { deterministicResponse } from "./assistant/safety";
 import type { ChatResponse } from "./assistant/types";
-import { isValidSessionId, parseChatRequest } from "./assistant/validation";
+import {
+  isValidSessionId,
+  type ChatRequestError,
+  validateChatRequest,
+} from "./assistant/validation";
 
-interface AssistantEnv extends Env {
+export interface AssistantEnv extends Env {
   OPENAI_API_KEY?: string;
   OPENAI_PROJECT_ID?: string;
 }
@@ -13,6 +17,10 @@ interface AssistantEnv extends Env {
 const API_PREFIX = "/api/assistant/";
 const FALLBACK =
   "I could not find a reliable answer in the current MentorSphere information. Please contact Luke so your question can be answered accurately.";
+const CONTACT_SOURCE = {
+  title: "Contact The MentorSphere",
+  url: "https://www.thementorsphere.co.uk/contact/",
+} as const;
 const ALLOWED_EVENTS = new Set([
   "chat_opened",
   "message_sent",
@@ -53,6 +61,19 @@ function isSameOrigin(request: Request): boolean {
 
 function hasJsonContentType(request: Request): boolean {
   return request.headers.get("Content-Type")?.toLowerCase().startsWith("application/json") ?? false;
+}
+
+function chatRequestError(error: ChatRequestError): string {
+  if (error === "empty-message") return "Enter a message and try again.";
+  if (error === "message-too-long") return "Keep each message to 600 characters or fewer.";
+  if (error === "conversation-too-long") return "The conversation is too long. Restart and try again.";
+  return "Invalid request.";
+}
+
+function isFallbackAnswer(answer: string): boolean {
+  return answer.startsWith(
+    "I could not find a reliable answer in the current MentorSphere information",
+  );
 }
 
 function logEvent(event: string, requestId: string, environment: string, extra: Record<string, string> = {}): void {
@@ -122,15 +143,17 @@ async function handleChat(request: Request, env: AssistantEnv, requestId: string
   const contentLength = Number(request.headers.get("Content-Length") ?? "0");
   if (contentLength > 16_384) return jsonResponse({ error: "Request too large" }, 413, requestId);
 
-  const body: unknown = await request.json().catch(() => null);
-  const chatRequest = parseChatRequest(body);
-  if (!chatRequest) {
-    return jsonResponse(
-      { error: "Check the message length and try again." },
-      400,
-      requestId,
-    );
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonResponse({ error: "Invalid request." }, 400, requestId);
   }
+  const validation = validateChatRequest(body);
+  if (!validation.ok) {
+    return jsonResponse({ error: chatRequestError(validation.error) }, 400, requestId);
+  }
+  const chatRequest = validation.request;
 
   if (!(await checkRateLimit(env, chatRequest.sessionId))) {
     return jsonResponse(
@@ -143,7 +166,7 @@ async function handleChat(request: Request, env: AssistantEnv, requestId: string
   const latestMessage = chatRequest.messages.at(-1);
   if (!latestMessage) return jsonResponse({ error: "Invalid request" }, 400, requestId);
 
-  const fixed = deterministicResponse(latestMessage.content);
+  const fixed = deterministicResponse(latestMessage.content, chatRequest.messages);
   if (fixed) {
     logEvent(`assistant_${fixed.kind}`, requestId, env.ENVIRONMENT);
     return jsonResponse(fixed, 200, requestId);
@@ -159,7 +182,7 @@ async function handleChat(request: Request, env: AssistantEnv, requestId: string
   if (!isReliableRetrieval(retrieved)) {
     const response: ChatResponse = {
       answer: FALLBACK,
-      sources: [{ title: "Contact The MentorSphere", url: "https://www.thementorsphere.co.uk/contact/" }],
+      sources: [CONTACT_SOURCE],
       kind: "fallback",
     };
     logEvent("assistant_fallback", requestId, env.ENVIRONMENT);
@@ -176,13 +199,24 @@ async function handleChat(request: Request, env: AssistantEnv, requestId: string
   }
 
   try {
-    const answer = await generateGroundedAnswer({
-      apiKey: env.OPENAI_API_KEY,
-      projectId: env.OPENAI_PROJECT_ID,
-      model: env.AI_MODEL,
-      instructions: SYSTEM_INSTRUCTION,
-      input: buildModelInput(chatRequest.messages, retrieved),
-    });
+    const answer = normaliseAssistantOutput(
+      await generateGroundedAnswer({
+        apiKey: env.OPENAI_API_KEY,
+        projectId: env.OPENAI_PROJECT_ID,
+        model: env.AI_MODEL,
+        instructions: SYSTEM_INSTRUCTION,
+        input: buildModelInput(chatRequest.messages, retrieved),
+      }),
+    );
+    if (isFallbackAnswer(answer)) {
+      const response: ChatResponse = {
+        answer: FALLBACK,
+        sources: [CONTACT_SOURCE],
+        kind: "fallback",
+      };
+      logEvent("assistant_fallback", requestId, env.ENVIRONMENT);
+      return jsonResponse(response, 200, requestId);
+    }
     const response: ChatResponse = {
       answer,
       sources: sourceLinks(retrieved),
@@ -225,7 +259,7 @@ async function handleApi(request: Request, env: AssistantEnv, requestId: string)
 }
 
 export default {
-  async fetch(request, env): Promise<Response> {
+  async fetch(request: Request, env: AssistantEnv): Promise<Response> {
     const requestId = crypto.randomUUID();
     const url = new URL(request.url);
 

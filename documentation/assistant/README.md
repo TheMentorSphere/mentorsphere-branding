@@ -113,7 +113,11 @@ Visitor text is never included. Failed-answer review can therefore identify fall
 
 ## Cost control and estimate
 
-Controls include four retrieved entries at most, six recent messages at most in the model prompt, a 320-token output cap, no model tools, no embeddings API, no vector database, deterministic fallbacks before model use and a 12 requests-per-minute session rate limit.
+Controls include four retrieved entries at most, six recent messages at most in the model prompt, a 320-token output cap, no model tools, no embeddings API, no vector database, deterministic fallbacks before model use and a Cloudflare rate-limit binding configured for 12 calls per 60 seconds for each session key within each Cloudflare location.
+
+Cloudflare documents this binding as permissive and eventually consistent. It is local to the Cloudflare location serving the request and is not an exact accounting system. It must not be tested by requiring request 13 to return `429`. A staging observation on 30 July 2026 sent 80 sequential deterministic requests using one synthetic session ID. Requests 1 to 13 returned `200`, request 14 was the first `429`, and requests 14 to 80 remained rate-limited.
+
+For Phase 1, this approximate edge limit is proportionate when combined with the owner-controlled OpenAI project spend limit, the 600-character message limit, the 3,000-character conversation limit, the 320-token output cap, the 12-second provider timeout, the pinned low-cost model and the absence of model tools. A stricter stateful limiter is not currently recommended. Durable Objects, KV, D1 or another stateful service would add architecture, processing and cost that requires separate owner approval.
 
 Estimate assumptions:
 
@@ -150,7 +154,7 @@ This stops new chat requests without deleting code. For a full rollback, use Clo
 - No file uploads, document review, client-record access, booking access, email access or memory between visits.
 - No live internet search.
 - No raw transcript analytics.
-- Session-token rate limiting is deliberately privacy-preserving but can be reset by a determined automated client. A Cloudflare WAF rule or Turnstile challenge could add stronger abuse resistance after owner and privacy review.
-- A live provider response was not tested without an owner-supplied staging API key.
+- Session-token rate limiting is deliberately privacy-preserving, location-local and approximate. A determined automated client can reset the browser-generated session ID. A Cloudflare WAF rule or Turnstile challenge could add stronger abuse resistance after owner and privacy review.
+- Live provider responses have been tested only in the owner-approved staging environment. Production remains disabled and untested.
 - Retrieval quality must be rechecked whenever prices, policies or service scope change.
 - Possible Phase 2 work includes an owner-only failed-query review workflow with explicit consent, a policy-source build pipeline, multilingual evaluation, and carefully governed secure document intake. None of these are current services or Phase 1 features.

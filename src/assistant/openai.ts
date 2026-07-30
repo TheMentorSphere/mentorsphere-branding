@@ -34,6 +34,14 @@ export function createOpenAIRequestBody(options: OpenAIRequestOptions): Record<s
   };
 }
 
+export function normaliseAssistantOutput(value: string): string {
+  return value
+    .replace(/\s*\u2014\s*/g, ": ")
+    .replace(/\s*\u2013\s*/g, "-")
+    .replace(/ {2,}/g, " ")
+    .trim();
+}
+
 function extractOutputText(body: OpenAIResponseBody): string {
   if (!Array.isArray(body.output)) return "";
 
