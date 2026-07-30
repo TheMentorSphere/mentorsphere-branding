@@ -7,7 +7,77 @@
 
 **Cloudflare staging version:** `7bccd397-df49-4c76-962b-c8ee77028e93`
 
-**Recommendation:** **Technically ready for final human review. Keep PR #18 in draft.**
+**Recommendation:** **Responsive navigation fix prepared and validated locally. A new owner-approved staging deployment and final human keyboard and native-zoom checks are required. Keep PR #18 in draft.**
+
+## Responsive navigation regression found on 31 July 2026
+
+The deployed staging version `7bccd397-df49-4c76-962b-c8ee77028e93` has a responsive navigation failure at and below the 55rem breakpoint. The current live website does not have the failure.
+
+### Live and staging comparison
+
+| Check | Current live website | Deployed staging Worker |
+|---|---|---|
+| HTML response CSP | No `Content-Security-Policy` response header | `script-src 'self'` from `docs/_headers` |
+| Inline navigation marker | `document.documentElement.classList.add('js');` executes | The same inline marker is present but blocked by the CSP |
+| `<html>` classes after load | `js motion-ok motion-ready` | `motion-ok motion-ready` |
+| External site script | Loaded and executed | Loaded and executed |
+| Additional assistant assets | None on production because the API is disabled | `assistant.css` and `assistant.js` loaded |
+| Browser console capture | No error recorded | The in-app console interface did not expose the parse-time CSP violation, but the response policy, unchanged inline script and missing `js` class independently confirm the blocked execution |
+| 881 CSS px | Normal expanded desktop navigation; toggle hidden | Normal expanded desktop navigation; toggle hidden |
+| 880 CSS px and below | Closed responsive navigation; toggle visible | Expanded no-JavaScript navigation; toggle hidden |
+
+Cloudflare Workers Static Assets parses `docs/_headers` and applies its rules to static asset responses. The current live host does not apply that file. This hosting difference explains why identical inline navigation-marker HTML succeeds live and fails on the Worker.
+
+The responsive CSS deliberately provides a usable expanded navigation when JavaScript is unavailable:
+
+- `.js .nav-toggle` displays the menu button.
+- `.js .primary-nav` creates the closed responsive panel.
+- `html:not(.js) .primary-nav .submenu` expands all no-JavaScript submenus.
+
+Because the staging CSP prevented the early `js` marker while still allowing external `site.js`, staging entered a mixed state: motion JavaScript ran, but responsive navigation retained the no-JavaScript layout.
+
+### Smallest secure fix
+
+`docs/_headers` now allows only the exact SHA-256 hash of:
+
+```javascript
+document.documentElement.classList.add('js');
+```
+
+The resulting directive is:
+
+```text
+script-src 'self' 'sha256-/x7W7R75k8Roq0WaVRQX9blP4OufE5xbAdzklGxsgpw='
+```
+
+`unsafe-inline` was not added to `script-src`. A content-validation guard now recalculates the hash, checks the exact marker on all 28 HTML pages and rejects `unsafe-inline` in `script-src`.
+
+### Local Worker validation
+
+Wrangler local staging parsed one valid `_headers` rule and served the strict CSP with the new hash. At 880 CSS px, the browser then reported:
+
+- `<html class="js motion-ok motion-ready">`;
+- a visible 46.39 by 46.39 pixel navigation toggle;
+- a closed, hidden responsive menu;
+- no console error captured;
+- the expected `site.js`, `motion.css`, `assistant.css` and `assistant.js` assets.
+
+Responsive checks passed at 1280, 881, 880, 768, 640, 390 and 320 CSS pixels. The 55rem transition occurred exactly between 881 and 880 pixels. No content extended beyond `window.innerWidth`. At 320 pixels, the open menu remained within 16 pixels of each viewport edge, submenu buttons measured approximately 48 by 48 pixels and the menu remained vertically scrollable.
+
+Menu dismissal checks passed for:
+
+- a second toggle activation;
+- Escape, with focus restored to the navigation toggle;
+- an outside click;
+- a navigation-link activation;
+- resizing from 880 to 881 pixels;
+- Escape while a submenu was expanded.
+
+Assistant control checks passed for opening focus, a deterministic response, source and feedback controls, feedback acknowledgement, Restart focus restoration, Minimise, Close and Escape. All returned assistant controls were natively focusable with `tabIndex=0` in logical DOM order.
+
+The browser-control interface did not advance focus for native Tab or activate a button with Enter, and it did not expose a native browser-zoom command. These limitations were reproduced against otherwise working controls. Reflow-equivalent checks at 640 CSS pixels, representing 200% zoom on a 1280-pixel viewport, and 320 CSS pixels, representing 400% zoom, passed without content extending beyond the viewport. Native Tab traversal and native 200% and 400% browser zoom therefore remain final human checks.
+
+This fix has not been deployed. The deployed staging URL remains on the affected version until Luke separately approves another staging-only deployment.
 
 ## Post-repair staging redeployment and live retest
 

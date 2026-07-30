@@ -1,10 +1,14 @@
 import { readFile, readdir, stat } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import process from "node:process";
 
 const workspace = process.cwd();
 const docsRoot = path.join(workspace, "docs");
 const failures = [];
+const navigationMarker = "document.documentElement.classList.add('js');";
+const navigationMarkerTag = `<script>${navigationMarker}</script>`;
+const navigationMarkerHash = `sha256-${createHash("sha256").update(navigationMarker).digest("base64")}`;
 
 async function walk(directory) {
   const entries = await readdir(directory);
@@ -48,6 +52,7 @@ for (const htmlFile of htmlFiles) {
   );
   record(matches(content, /<h1\b/gi).length === 1, `${relative}: expected exactly one H1`);
   record(/assets\/js\/site\.js/.test(content), `${relative}: site.js is not loaded`);
+  record(content.includes(navigationMarkerTag), `${relative}: JavaScript navigation marker is missing or changed`);
   record(!/\b(TODO|FIXME|lorem ipsum)\b/i.test(content), `${relative}: placeholder text found`);
 
   const ids = matches(content, /\sid="([^"]+)"/gi).map((match) => match[1]);
@@ -66,6 +71,18 @@ for (const htmlFile of htmlFiles) {
     record(exists, `${relative}: unresolved local reference ${reference}`);
   }
 }
+
+const staticHeaders = await readFile(path.join(docsRoot, "_headers"), "utf8");
+const scriptSource = staticHeaders.match(/\bscript-src\s+([^;]+);/)?.[1] ?? "";
+record(scriptSource.includes("'self'"), "docs/_headers: script-src must allow same-origin scripts");
+record(
+  scriptSource.includes(`'${navigationMarkerHash}'`),
+  "docs/_headers: script-src must allow the exact JavaScript navigation marker hash",
+);
+record(
+  !scriptSource.includes("'unsafe-inline'"),
+  "docs/_headers: script-src must not allow unsafe-inline",
+);
 
 const assistantScript = await readFile(path.join(docsRoot, "assets", "js", "assistant.js"), "utf8");
 record(!/\.innerHTML\b/.test(assistantScript), "assistant.js: innerHTML must not be used");
