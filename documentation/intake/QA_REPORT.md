@@ -34,5 +34,5 @@ Screenshots use fictional names and the reserved `.test` email domain:
 - A complete fictional browser submission passed through the local Worker, official Cloudflare Turnstile test keys and an HMAC-validating local Apps Script mock.
 - A rejected upstream attempt preserved every answer and showed the generic retry message before the successful retry.
 - Duplicate responses, honeypot handling and formula-injection protection passed automated tests.
-- The Apps Script notification template was inspected and contains only the submission ID, receipt time and private Sheet link. It contains no respondent or learner answers.
+- The Apps Script notification template was inspected and contains only the receipt time and private Sheet link. It contains no respondent or learner answers.
 - The production Apps Script deployment, private Sheet write, notification delivery and live-network interruption recovery still require the approved Google Workspace setup.
