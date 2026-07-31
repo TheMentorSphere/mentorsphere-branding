@@ -1,6 +1,6 @@
 # Primary learner profile setup checklist
 
-Status: implementation draft. Production launch is blocked until the owner approves the privacy acknowledgement, Privacy Policy amendment, retention wording and final Google Workspace setup.
+Status: controlled launch preparation. The owner approved the Article 6 split, Article 9 explicit-consent approach, exact form wording and retention wording on 31 July 2026. The LIA, DPIA, integration and fictional smoke test are complete. Production launch remains blocked pending owner residual-risk sign-off, approval and publication of Privacy Policy V1.5, notification routing and explicit release approval.
 
 No learner or respondent data, credentials or deployment URLs belong in this repository.
 
@@ -9,7 +9,7 @@ No learner or respondent data, credentials or deployment URLs belong in this rep
 1. In the approved Google Workspace account, create a dedicated spreadsheet in a restricted Drive folder.
 2. Name the response tab `Primary learner profiles`, or record a different agreed tab name for the Script Property.
 3. Remove link sharing. Give access only to Luke and any specifically authorised person who needs the information.
-4. Leave the tab empty. The integration creates and verifies the exact 40-column header row on its first authenticated submission.
+4. Leave the tab empty. The integration creates and verifies the exact 46-column header row on its first authenticated submission.
 5. Record the spreadsheet ID and its private URL for the Script Properties below.
 6. Confirm account security, authorised users, Google Workspace contractual settings, data location and international-transfer arrangements before launch.
 
@@ -59,7 +59,7 @@ The web app accepts only recent requests with a valid HMAC signature. It rejects
 1. Follow `STAGING_TEST_PLAN.md` to create the separate fictional Sheet, test Apps Script deployment and ignored `.dev.vars.staging` file.
 2. Run `pnpm install --frozen-lockfile`, `pnpm run check`, `pnpm run deploy:dry-run` and `pnpm run dev:staging`.
 3. Test desktop, tablet and mobile widths, keyboard-only use, visible focus, error summaries and screen-reader structure.
-4. Test required fields, invalid email, conditional needs fields, conditional mobile validation, Back and Continue, answer preservation and review editing.
+4. Test required fields, invalid email, conditional needs fields, conditional explicit consent and authority, restricted third-party relationships, conditional mobile validation, Back and Continue, answer preservation and review editing.
 5. Test Turnstile success, expiry and failure using Cloudflare's test keys.
 6. Test successful storage, upstream failure, network interruption, repeated submission IDs, honeypot handling and formula-prefixed fictional input.
 7. Confirm the email contains only the approved minimal template and private Sheet link.
@@ -68,18 +68,22 @@ The web app accepts only recent requests with a valid HMAC signature. It rejects
 
 ## 5. Production launch
 
-Production must not be deployed until Luke has approved:
+Production must not be deployed until all of the following are complete:
 
-- The complete sensitive-information acknowledgement.
-- The proposed Privacy Policy amendment.
-- The provisional retention wording.
-- The final Google Workspace ownership, sharing and processor setup.
+- The approved explicit-consent and authority logic has passed client-side, Worker and Apps Script tests.
+- The child-specific legitimate interests assessment is complete and approved.
+- The focused DPIA identifies no unmitigated high risk and records owner approval of residual risk.
+- The final Privacy Policy V1.5 wording is approved and published.
+- The approved retention process is operational.
+- The final Google Workspace ownership, sharing and processor setup is confirmed.
+- The fictional production-path smoke test has passed and its test data has been removed.
+- The fixed notification has an approved Gmail routing rule or another monitored delivery arrangement that prevents it being overlooked in Spam.
 
 After approval:
 
 1. Publish the approved Privacy Policy version and update its version, date, change log, policy register and downloadable copies together.
-2. Configure the production Google Workspace destination, Turnstile widget and Worker secrets while both form flags remain `false`.
-3. Use an isolated Cloudflare preview, not the production custom domain, to complete one fictional smoke test against the final production integration. Confirm the stored row and minimal email, then remove the test data.
+2. Confirm the prepared production Google Workspace destination, Turnstile widget and undeployed Worker secrets while both form flags remain `false`.
+3. Review the completed fictional smoke-test evidence and confirm the production Sheet is header-only.
 4. Confirm the policy is published and the form is approved before changing `FORM_PAGE_ENABLED` to `true` in a separate reviewed launch commit.
 5. Confirm the smoke test and every production prerequisite are complete before changing `FORM_SUBMISSIONS_ENABLED` to `true` in that reviewed launch commit.
 6. Run the complete check and a Wrangler dry run.

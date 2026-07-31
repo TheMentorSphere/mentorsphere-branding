@@ -61,7 +61,7 @@
       <div class="intake-live-status sr-only" role="status" aria-live="polite" aria-atomic="true" data-live-status></div>
 
       <form class="intake-form" action="/api/forms/primary-learner-profile" method="post" novalidate data-intake-form>
-        <input type="hidden" name="form_version" value="primary-learner-profile-v1">
+        <input type="hidden" name="form_version" value="primary-learner-profile-v2">
         <div class="form-honeypot" aria-hidden="true">
           <label for="organisation-website">Leave this field blank</label>
           <input id="organisation-website" name="organisation_website" type="text" tabindex="-1" autocomplete="off">
@@ -237,8 +237,23 @@
           </div>
 
           <div class="intake-field-grid">
-            <fieldset class="intake-field intake-field-full" data-field-path="supportProfile.needsStatus" data-required="true" data-required-message="Choose the answer that best describes the learner's current position.">
-              <legend>Does the learner have any diagnosed, suspected or currently assessed needs that may affect their learning or everyday life? <span class="field-marker">Required</span></legend>
+            <fieldset class="intake-field intake-field-full" data-field-path="supportProfile.specialCategoryProvided" data-required="true" data-required-message="Choose whether you want to provide optional health, disability, SEND or neurodiversity information.">
+              <legend>Would you like to provide optional health, disability, SEND or neurodiversity information? <span class="field-marker">Required</span></legend>
+              <p class="field-help" id="special-category-choice-help">Providing this information is optional. You can still submit the form without it.</p>
+              <div class="choice-grid choice-grid-one" aria-describedby="special-category-choice-help special-category-choice-error">
+                <label class="choice-card"><input type="radio" name="special_category_choice" value="No"> <span>No, I will not provide this optional information in the form</span></label>
+                <label class="choice-card"><input type="radio" name="special_category_choice" value="Yes" data-special-category-yes> <span>Yes, I want to provide relevant optional information and complete the separate consent controls</span></label>
+              </div>
+              <p class="field-error" id="special-category-choice-error" data-field-error></p>
+            </fieldset>
+
+            <aside class="intake-privacy-panel intake-field-full" data-special-category-restriction hidden>
+              <h3>Use a separate information-sharing route</h3>
+              <p>This form cannot accept health, disability, SEND, neurodiversity, diagnosis or EHCP information from an education or support professional, other family member or other respondent. Please choose No above and do not include this information in the text boxes. Luke can arrange an appropriate information-sharing route separately where documented authority is in place.</p>
+            </aside>
+
+            <fieldset class="intake-field intake-field-full conditional-field" data-special-category-field data-field-path="supportProfile.needsStatus" data-required="false" hidden>
+              <legend>Does the learner have any diagnosed, suspected or currently assessed needs that may affect their learning or everyday life? <span class="field-optional">Optional</span></legend>
               <div class="choice-grid choice-grid-one" aria-describedby="needs-status-help needs-status-error">
                 <label class="choice-card"><input type="radio" name="needs_status" value="Yes: diagnosed"> <span>Yes: diagnosed</span></label>
                 <label class="choice-card"><input type="radio" name="needs_status" value="Yes: suspected or informally identified"> <span>Yes: suspected or informally identified</span></label>
@@ -249,7 +264,7 @@
               <p class="field-error" id="needs-status-error" data-field-error></p>
             </fieldset>
 
-            <fieldset class="intake-field intake-field-full conditional-field" data-conditional="relevant-areas" data-field-path="supportProfile.relevantAreas" data-required="false" hidden>
+            <fieldset class="intake-field intake-field-full conditional-field" data-conditional="relevant-areas" data-special-category-field data-field-path="supportProfile.relevantAreas" data-required="false" hidden>
               <legend>Which areas are relevant? <span class="field-optional">Optional</span></legend>
               <p class="field-help" id="relevant-areas-help">Choose any that are helpful for planning support. You do not need to provide evidence or reports here.</p>
               <div class="choice-grid choice-grid-two" aria-describedby="relevant-areas-help relevant-areas-error">
@@ -271,35 +286,35 @@
               <p class="field-error" id="relevant-areas-error" data-field-error></p>
             </fieldset>
 
-            <div class="intake-field intake-field-full" data-field-path="supportProfile.supportNeeds">
+            <div class="intake-field intake-field-full" data-authorised-support-detail data-field-path="supportProfile.supportNeeds">
               <label for="support-needs">What would be helpful for me to understand about the learner's support needs? <span class="field-optional">Optional</span></label>
               <textarea id="support-needs" name="support_needs" maxlength="5000" aria-describedby="support-needs-help support-needs-error"></textarea>
-              <p class="field-help" id="support-needs-help">You might mention focus, memory or organisation; communication; processing time; sensory needs; emotional regulation; following instructions; or changes, transitions and time pressure.</p>
+              <p class="field-help" id="support-needs-help">You might mention focus, memory or organisation; communication; processing time; following instructions; or changes, transitions and time pressure. If you chose No above, do not include health, disability, SEND, neurodiversity, diagnosis or EHCP information here.</p>
               <p class="field-error" id="support-needs-error" data-field-error></p>
             </div>
 
-            <div class="intake-field intake-field-full" data-field-path="supportProfile.helpfulStrategies">
+            <div class="intake-field intake-field-full" data-authorised-support-detail data-field-path="supportProfile.helpfulStrategies">
               <label for="helpful-strategies">What strategies, adjustments or approaches have worked well? <span class="field-optional">Optional</span></label>
               <textarea id="helpful-strategies" name="helpful_strategies" maxlength="5000" aria-describedby="helpful-strategies-help helpful-strategies-error"></textarea>
               <p class="field-help" id="helpful-strategies-help">For example: visual support, movement breaks, shorter tasks, step-by-step instructions, extra processing time, gentle encouragement or practical activities.</p>
               <p class="field-error" id="helpful-strategies-error" data-field-error></p>
             </div>
 
-            <div class="intake-field intake-field-full" data-field-path="supportProfile.unhelpfulApproaches">
+            <div class="intake-field intake-field-full" data-authorised-support-detail data-field-path="supportProfile.unhelpfulApproaches">
               <label for="unhelpful-approaches">Have any approaches been unhelpful or made things more difficult? <span class="field-optional">Optional</span></label>
               <textarea id="unhelpful-approaches" name="unhelpful_approaches" maxlength="5000" aria-describedby="unhelpful-approaches-error"></textarea>
               <p class="field-error" id="unhelpful-approaches-error" data-field-error></p>
             </div>
 
-            <div class="intake-field intake-field-full" data-field-path="supportProfile.otherBackground">
+            <div class="intake-field intake-field-full" data-authorised-support-detail data-field-path="supportProfile.otherBackground">
               <label for="other-background">Is there any other relevant educational or personal background you would like me to know? <span class="field-optional">Optional</span></label>
               <textarea id="other-background" name="other_background" maxlength="5000" aria-describedby="other-background-help other-background-error"></textarea>
               <p class="field-help" id="other-background-help">Leave this blank if there is nothing else you would like to add.</p>
               <p class="field-error" id="other-background-error" data-field-error></p>
             </div>
 
-            <fieldset class="intake-field intake-field-full" data-field-path="supportProfile.ehcpStatus" data-required="true" data-required-message="Choose the learner's EHCP status.">
-              <legend>Does the learner have an Education, Health and Care Plan (EHCP)? <span class="field-marker">Required</span></legend>
+            <fieldset class="intake-field intake-field-full conditional-field" data-special-category-field data-field-path="supportProfile.ehcpStatus" data-required="false" hidden>
+              <legend>Does the learner have an Education, Health and Care Plan (EHCP)? <span class="field-optional">Optional</span></legend>
               <div class="choice-grid choice-grid-two" aria-describedby="ehcp-status-error">
                 <label class="choice-card"><input type="radio" name="ehcp_status" value="Yes"> <span>Yes</span></label>
                 <label class="choice-card"><input type="radio" name="ehcp_status" value="No"> <span>No</span></label>
@@ -399,12 +414,20 @@
               <p class="field-error" id="privacy-confirmation-error" data-field-error></p>
             </div>
 
-            <div class="intake-field" data-field-path="confirmations.sensitiveDataAcknowledged" data-required="true" data-required-message="Confirm the optional sensitive-information acknowledgement.">
-              <label class="confirmation-card" for="sensitive-data-confirmation">
-                <input id="sensitive-data-confirmation" name="sensitive_data_confirmation" type="checkbox" value="yes" aria-describedby="sensitive-data-confirmation-error">
-                <span>I understand that some optional answers may include information about health, disability, SEND or neurodiversity. The MentorSphere will use relevant information to understand the learner and personalise support. I will only provide information that is relevant to planning and delivering support. I have read the <a href="../../privacy-policy/" target="_blank" rel="noopener">Privacy Policy, opens in a new tab</a>. This acknowledgement does not affect my data-protection rights. <span class="field-marker">Required</span></span>
+            <div class="intake-field conditional-field" data-special-category-confirmation data-field-path="confirmations.specialCategoryConsent" data-required="false" data-required-message="Give explicit consent or remove the optional health, disability, SEND and neurodiversity information." hidden>
+              <label class="confirmation-card" for="special-category-consent">
+                <input id="special-category-consent" name="special_category_consent" type="checkbox" value="yes" aria-describedby="special-category-consent-error">
+                <span><strong>Optional health, disability, SEND and neurodiversity information</strong><br>I explicitly consent to The MentorSphere using the health, disability, SEND and neurodiversity information I choose to provide in this form to understand the learner and personalise support. Providing this information and giving consent are optional, and I can still submit the form without doing so. I can withdraw my consent at any time by emailing <a href="mailto:luke@thementorsphere.co.uk">luke@thementorsphere.co.uk</a>. Withdrawal will not affect processing that took place before it was withdrawn. <span class="field-marker">Required when providing this information</span></span>
               </label>
-              <p class="field-error" id="sensitive-data-confirmation-error" data-field-error></p>
+              <p class="field-error" id="special-category-consent-error" data-field-error></p>
+            </div>
+
+            <div class="intake-field conditional-field" data-special-category-confirmation data-field-path="confirmations.specialCategoryAuthority" data-required="false" data-required-message="Confirm parental responsibility or documented legal authority, or remove the optional information." hidden>
+              <label class="confirmation-card" for="special-category-authority">
+                <input id="special-category-authority" name="special_category_authority" type="checkbox" value="yes" aria-describedby="special-category-authority-error">
+                <span>I confirm that I have parental responsibility for the learner, or hold documented legal authority to consent to this use of the learner's information on their behalf. I have shared the relevant privacy information with the learner in a way appropriate to their age and understanding, where appropriate. <span class="field-marker">Required when providing this information</span></span>
+              </label>
+              <p class="field-error" id="special-category-authority-error" data-field-error></p>
             </div>
           </div>
 

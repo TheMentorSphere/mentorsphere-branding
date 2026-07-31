@@ -6,6 +6,7 @@ import { validIntakeRequest } from "./fixtures";
 
 interface AppsScriptTestExports {
   SHEET_COLUMNS: string[];
+  hasValidShape_(request: unknown): boolean;
   retentionReviewDate_(receivedAt: string): string;
   rowFor_(request: { issuedAt: string; payload: Record<string, unknown> }, receivedAt: string): string[];
 }
@@ -17,7 +18,7 @@ async function loadAppsScript(): Promise<AppsScriptTestExports> {
   );
   const sandbox: { __testExports?: AppsScriptTestExports } = {};
   vm.runInNewContext(
-    `${source}\nglobalThis.__testExports = { SHEET_COLUMNS, retentionReviewDate_, rowFor_ };`,
+    `${source}\nglobalThis.__testExports = { SHEET_COLUMNS, hasValidShape_, retentionReviewDate_, rowFor_ };`,
     sandbox,
   );
   if (!sandbox.__testExports) throw new Error("Apps Script test exports were not created");
@@ -34,7 +35,7 @@ describe("Apps Script retention schema", () => {
       "Safeguarding or legal hold",
       "Retention notes",
     ]);
-    expect(script.SHEET_COLUMNS).toHaveLength(40);
+    expect(script.SHEET_COLUMNS).toHaveLength(46);
   });
 
   it("initialises a prospective record with a six-month review date", async () => {
@@ -45,8 +46,49 @@ describe("Apps Script retention schema", () => {
       receivedAt,
     ));
 
-    expect(row).toHaveLength(40);
+    expect(row).toHaveLength(46);
     expect(row.slice(-5)).toEqual(["Prospective", "2026-07-31", "2027-01-31", "No", ""]);
+  });
+
+  it("records conditional explicit consent, authority and wording versions", async () => {
+    const script = await loadAppsScript();
+    const payload = validIntakeRequest();
+    const support = payload.supportProfile as Record<string, unknown>;
+    const confirmations = payload.confirmations as Record<string, unknown>;
+    support.specialCategoryProvided = true;
+    support.needsStatus = "Yes: diagnosed";
+    support.relevantAreas = ["ADHD"];
+    support.ehcpStatus = "Yes";
+    confirmations.specialCategoryConsent = true;
+    confirmations.specialCategoryAuthority = true;
+    const receivedAt = "2026-07-31T10:15:30.000Z";
+    const row = Array.from(script.rowFor_({ issuedAt: receivedAt, payload }, receivedAt));
+    const byColumn = Object.fromEntries(script.SHEET_COLUMNS.map((column, index) => [column, row[index]]));
+
+    expect(byColumn["Special-category information provided"]).toBe("Yes");
+    expect(byColumn["Explicit consent"]).toBe("Yes");
+    expect(byColumn["Explicit consent wording version"]).toBe("explicit-consent-2026-07-31");
+    expect(byColumn["Consent recorded at (UTC)"]).toBe(receivedAt);
+    expect(byColumn["Parental responsibility or documented authority"]).toBe("Yes");
+    expect(byColumn["Authority wording version"]).toBe("authority-confirmation-2026-07-31");
+    expect(byColumn["Special-category consent status"]).toBe("Active");
+    expect(byColumn["Consent withdrawn at (UTC)"]).toBe("");
+  });
+
+  it("rejects special-category information from a relationship without launch authority", async () => {
+    const script = await loadAppsScript();
+    const payload = validIntakeRequest();
+    const respondent = payload.respondent as Record<string, unknown>;
+    const support = payload.supportProfile as Record<string, unknown>;
+    const confirmations = payload.confirmations as Record<string, unknown>;
+    support.specialCategoryProvided = true;
+    support.needsStatus = "Yes: diagnosed";
+    confirmations.specialCategoryConsent = true;
+    confirmations.specialCategoryAuthority = true;
+    expect(script.hasValidShape_({ issuedAt: new Date().toISOString(), payload })).toBe(true);
+
+    respondent.relationship = "Education or support professional";
+    expect(script.hasValidShape_({ issuedAt: new Date().toISOString(), payload })).toBe(false);
   });
 
   it("calculates the review date from the received date", async () => {

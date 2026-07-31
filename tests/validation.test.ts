@@ -47,25 +47,83 @@ describe("validateIntakeRequest", () => {
 
   it("accepts optional relevant areas for diagnosed needs", () => {
     const input = validIntakeRequest();
+    section(input, "supportProfile").specialCategoryProvided = true;
     section(input, "supportProfile").needsStatus = "Yes: diagnosed";
     section(input, "supportProfile").relevantAreas = ["ADHD", "Sensory processing"];
+    section(input, "confirmations").specialCategoryConsent = true;
+    section(input, "confirmations").specialCategoryAuthority = true;
     expect(validateIntakeRequest(input).ok).toBe(true);
   });
 
   it("rejects hidden relevant areas when no additional needs are selected", () => {
     const input = validIntakeRequest();
+    section(input, "supportProfile").specialCategoryProvided = true;
+    section(input, "supportProfile").needsStatus = "No known additional needs";
     section(input, "supportProfile").relevantAreas = ["ADHD"];
+    section(input, "confirmations").specialCategoryConsent = true;
+    section(input, "confirmations").specialCategoryAuthority = true;
     const result = validateIntakeRequest(input);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.errors["supportProfile.relevantAreas"]).toBeDefined();
   });
 
-  it("requires all three launch confirmations", () => {
+  it("requires the general launch confirmations", () => {
     const input = validIntakeRequest();
-    section(input, "confirmations").sensitiveDataAcknowledged = false;
+    section(input, "confirmations").privacyAcknowledged = false;
     const result = validateIntakeRequest(input);
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.errors["confirmations.sensitiveDataAcknowledged"]).toBeDefined();
+    if (!result.ok) expect(result.errors["confirmations.privacyAcknowledged"]).toBeDefined();
+  });
+
+  it("requires separate explicit consent and authority when special-category information is provided", () => {
+    const input = validIntakeRequest();
+    section(input, "supportProfile").specialCategoryProvided = true;
+    section(input, "supportProfile").needsStatus = "Yes: diagnosed";
+    const result = validateIntakeRequest(input);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors["confirmations.specialCategoryConsent"]).toBeDefined();
+      expect(result.errors["confirmations.specialCategoryAuthority"]).toBeDefined();
+    }
+  });
+
+  it.each(["Education or support professional", "Other family member", "Other"])(
+    "rejects special-category information from %s",
+    (relationship) => {
+      const input = validIntakeRequest();
+      section(input, "respondent").relationship = relationship;
+      if (relationship === "Other") section(input, "respondent").relationshipOther = "Fictional relationship";
+      section(input, "supportProfile").specialCategoryProvided = true;
+      section(input, "supportProfile").needsStatus = "Yes: diagnosed";
+      section(input, "supportProfile").ehcpStatus = "Yes";
+      section(input, "confirmations").specialCategoryConsent = true;
+      section(input, "confirmations").specialCategoryAuthority = true;
+      const result = validateIntakeRequest(input);
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.errors["supportProfile.specialCategoryProvided"]).toContain("appropriate information-sharing route");
+    },
+  );
+
+  it.each(["Education or support professional", "Other family member", "Other"])(
+    "rejects open support details from a restricted %s relationship",
+    (relationship) => {
+      const input = validIntakeRequest();
+      section(input, "respondent").relationship = relationship;
+      if (relationship === "Other") section(input, "respondent").relationshipOther = "Family advocate";
+      section(input, "supportProfile").supportNeeds = "Ordinary-seeming support detail";
+      const result = validateIntakeRequest(input);
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.errors["supportProfile.specialCategoryProvided"]).toContain("information-sharing route");
+    },
+  );
+
+  it("rejects structured special-category fields when the respondent says none is provided", () => {
+    const input = validIntakeRequest();
+    section(input, "supportProfile").needsStatus = "Yes: suspected or informally identified";
+    section(input, "supportProfile").ehcpStatus = "Yes";
+    const result = validateIntakeRequest(input);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors["supportProfile.specialCategoryProvided"]).toContain("separate consent controls");
   });
 
   it("rejects unknown choices rather than storing them", () => {

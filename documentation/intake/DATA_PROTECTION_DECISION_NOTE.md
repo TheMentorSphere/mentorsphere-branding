@@ -1,6 +1,6 @@
 # Primary learner profile data-protection decision note
 
-Status: recommendation for owner approval. This note is not the final legal-basis decision and must remain internal. Privacy Policy V1.5 must not be published and the form must not be enabled until the owner approves the position below.
+Status: approved by the owner on 31 July 2026, subject to the completed child-specific LIA, focused DPIA and final launch controls. Privacy Policy V1.5 must not be published and the form must not be enabled until the remaining launch gates are complete.
 
 Date reviewed: 31 July 2026
 
@@ -8,7 +8,7 @@ Date reviewed: 31 July 2026
 
 The form collects respondent contact and relationship information, learner identity and educational information, session preferences, and optional information that may reveal health, disability, SEND or neurodiversity. The Worker validates the submission, verifies Turnstile, signs it using HMAC and forwards it to Google Apps Script. Apps Script writes it to a restricted Google Sheet and sends an answer-free notification. No answers are intentionally placed in browser storage, URLs, analytics or Cloudflare logs.
 
-## Recommended Article 6 position
+## Approved Article 6 position
 
 Use a purpose-specific combination rather than one basis for every person and purpose:
 
@@ -17,7 +17,7 @@ Use a purpose-specific combination rather than one basis for every person and pu
 
 Do not use Article 6(1)(b) for a learner's information merely because the respondent may enter a contract. ICO guidance says the contract basis does not apply when the contract is with one person but another person's details are processed, or where steps are taken at a third party's request.
 
-## Recommended Article 9 position
+## Approved Article 9 position
 
 Use **Article 9(2)(a), explicit consent** for optional health, disability, SEND and neurodiversity information used to understand the learner and personalise support.
 
@@ -25,21 +25,19 @@ No other Article 9 condition clearly fits this routine intake purpose on the cur
 
 ## Role of the approved acknowledgement
 
-Keep the already approved acknowledgement as a transparency acknowledgement only. It does not contain an express statement of consent and therefore should not be presented or recorded as explicit consent.
+Use a separate, unticked explicit-consent control that is required only when the respondent chooses to provide special-category information. A respondent must still be able to submit the ordinary intake without providing that information or giving this consent.
 
-Add a separate, unticked explicit-consent control that is required only when the respondent chooses to provide special-category information. A respondent must still be able to submit the ordinary intake without providing that information or giving this consent.
+Approved exact form wording:
 
-Recommended exact form wording:
-
-> **Optional sensitive information**
+> **Optional health, disability, SEND and neurodiversity information**
 >
-> I explicitly consent to The MentorSphere using the health, disability, SEND and neurodiversity information I choose to provide in this form to understand the learner and personalise support. I understand that providing this information is optional and that I can withdraw this consent at any time by emailing luke@thementorsphere.co.uk. Withdrawal will not affect processing that took place before it was withdrawn.
+> I explicitly consent to The MentorSphere using the health, disability, SEND and neurodiversity information I choose to provide in this form to understand the learner and personalise support. Providing this information and giving consent are optional, and I can still submit the form without doing so. I can withdraw my consent at any time by emailing luke@thementorsphere.co.uk. Withdrawal will not affect processing that took place before it was withdrawn.
 
-Where the information concerns someone other than the respondent, add this separate required confirmation beside the explicit-consent control:
+Approved separate authority confirmation:
 
-> I confirm that I am the learner, have parental responsibility for the learner, or have other specific authority to give this consent on the learner's behalf. I confirm that the learner has been given the privacy information in a way appropriate to their age and understanding where practicable.
+> I confirm that I have parental responsibility for the learner, or hold documented legal authority to consent to this use of the learner's information on their behalf. I have shared the relevant privacy information with the learner in a way appropriate to their age and understanding, where appropriate.
 
-For an education or support professional, other family member or other third party, do not accept special-category information through the form unless The MentorSphere can demonstrate that the person has specific authority to indicate consent and that the learner was fully informed. A general professional relationship or the existing authorisation-to-provide-information checkbox is not enough by itself.
+For the initial launch, only Parent and Guardian or carer relationships can choose the special-category route, and they must give the approved authority confirmation. Education or support professionals, other family members and Other respondents cannot submit structured health, disability, SEND, neurodiversity, diagnosis or EHCP information through the form. They are directed to ask Luke for a separate documented-authority information-sharing route. The Worker and Apps Script enforce this restriction independently.
 
 ## Withdrawal implications
 
@@ -61,7 +59,7 @@ If explicit consent is withdrawn:
 - A third party can indicate consent on someone's behalf only where their authority can be demonstrated and the individual was fully informed. This is likely to be difficult for professionals or wider family members without specific evidence.
 - Provide privacy information in clear language appropriate to the learner's age and understanding where practicable.
 
-## Exact Privacy Policy wording to add if approved
+## Exact Privacy Policy wording reflected in V1.5
 
 Add to the learner-intake section:
 
@@ -71,16 +69,15 @@ Add to the learner-intake section:
 >
 > If someone provides special-category information about another person, they must have parental responsibility or other specific authority to give consent on that person's behalf. The MentorSphere may ask for confirmation of that authority. Privacy information should be shared with the learner in a way appropriate to their age and understanding where practicable.
 
-## Practical consequences before launch
+## Implemented consequences and remaining approvals
 
-1. Complete and approve the legitimate interests assessment.
-2. Keep the approved acknowledgement as transparency wording.
-3. Add and record a separate explicit-consent field and wording version.
-4. Make sensitive fields optional and allow submission without explicit consent when they are blank.
-5. Add server-side validation so sensitive information cannot be submitted without explicit consent and authority confirmation.
-6. Define a simple consent-withdrawal process and update the retention procedure.
-7. Do not accept sensitive information from professionals or other third parties without demonstrable authority.
-8. Consider a focused DPIA screening because the form concerns children and may collect health-related information.
+1. The legitimate interests assessment and focused DPIA are complete and identify no unmitigated high risk. Owner residual-risk sign-off remains required.
+2. The separate explicit-consent field, authority confirmation, wording versions, consent date and respondent details are recorded in the 46-column schema.
+3. Sensitive fields are optional and ordinary intake can be submitted without explicit consent when they are blank.
+4. The browser, Worker and Apps Script independently enforce consent, authority and restricted-relationship rules.
+5. The consent-withdrawal and redaction procedure is documented with the retention process.
+6. Professionals, other family members and Other respondents cannot submit special-category information through the initial form.
+7. Privacy Policy V1.5 and both production feature flags remain blocked pending owner approval.
 
 ## Official ICO sources
 

@@ -1,5 +1,6 @@
-const FORM_VERSION = 'primary-learner-profile-v1';
-const ACKNOWLEDGEMENT_VERSION = 'approval-candidate-2026-07-31';
+const FORM_VERSION = 'primary-learner-profile-v2';
+const CONSENT_WORDING_VERSION = 'explicit-consent-2026-07-31';
+const AUTHORITY_WORDING_VERSION = 'authority-confirmation-2026-07-31';
 const MAX_REQUEST_CHARACTERS = 50000;
 const SIGNATURE_WINDOW_MILLISECONDS = 5 * 60 * 1000;
 
@@ -35,8 +36,14 @@ const SHEET_COLUMNS = [
   'Wider MentorSphere support discussion',
   'Authorised confirmation',
   'Privacy acknowledgement',
-  'Sensitive-information acknowledgement',
-  'Acknowledgement wording version',
+  'Special-category information provided',
+  'Explicit consent',
+  'Explicit consent wording version',
+  'Consent recorded at (UTC)',
+  'Parental responsibility or documented authority',
+  'Authority wording version',
+  'Special-category consent status',
+  'Consent withdrawn at (UTC)',
   'Notification status',
   'Notification sent at (UTC)',
   'Record status',
@@ -83,17 +90,37 @@ function isObject_(value) {
 function hasValidShape_(request) {
   if (!isObject_(request) || !isFreshTimestamp_(request.issuedAt) || !isObject_(request.payload)) return false;
   const payload = request.payload;
+  if (!isObject_(payload.respondent) || !isObject_(payload.learner) ||
+    !isObject_(payload.supportProfile) || !isObject_(payload.sessionPreferences) ||
+    !isObject_(payload.confirmations)) return false;
+  const specialCategoryProvided = payload.supportProfile.specialCategoryProvided === true;
+  const relationshipAllowsSpecialCategory =
+    ['Parent', 'Guardian or carer'].indexOf(payload.respondent.relationship) >= 0;
+  const structuredSpecialCategoryIsBlank =
+    payload.supportProfile.needsStatus === '' &&
+    Array.isArray(payload.supportProfile.relevantAreas) && payload.supportProfile.relevantAreas.length === 0 &&
+    payload.supportProfile.ehcpStatus === '';
+  const supportDetailIsBlank =
+    payload.supportProfile.supportNeeds === '' &&
+    payload.supportProfile.helpfulStrategies === '' &&
+    payload.supportProfile.unhelpfulApproaches === '' &&
+    payload.supportProfile.otherBackground === '';
+  const relationshipShapeIsValid = relationshipAllowsSpecialCategory || supportDetailIsBlank;
+  const consentShapeIsValid = specialCategoryProvided
+    ? relationshipAllowsSpecialCategory &&
+      payload.confirmations.specialCategoryConsent === true &&
+      payload.confirmations.specialCategoryAuthority === true
+    : structuredSpecialCategoryIsBlank &&
+      payload.confirmations.specialCategoryConsent === false &&
+      payload.confirmations.specialCategoryAuthority === false;
   return payload.formVersion === FORM_VERSION &&
     typeof payload.submissionId === 'string' &&
     /^[0-9a-f-]{36}$/iu.test(payload.submissionId) &&
-    isObject_(payload.respondent) &&
-    isObject_(payload.learner) &&
-    isObject_(payload.supportProfile) &&
-    isObject_(payload.sessionPreferences) &&
-    isObject_(payload.confirmations) &&
     payload.confirmations.authorised === true &&
     payload.confirmations.privacyAcknowledged === true &&
-    payload.confirmations.sensitiveDataAcknowledged === true;
+    typeof payload.supportProfile.specialCategoryProvided === 'boolean' &&
+    relationshipShapeIsValid &&
+    consentShapeIsValid;
 }
 
 function text_(value) {
@@ -154,8 +181,14 @@ function rowFor_(request, receivedAt) {
     payload.sessionPreferences.widerSupport,
     payload.confirmations.authorised,
     payload.confirmations.privacyAcknowledged,
-    payload.confirmations.sensitiveDataAcknowledged,
-    ACKNOWLEDGEMENT_VERSION,
+    payload.supportProfile.specialCategoryProvided,
+    payload.confirmations.specialCategoryConsent,
+    payload.supportProfile.specialCategoryProvided ? CONSENT_WORDING_VERSION : '',
+    payload.supportProfile.specialCategoryProvided ? receivedAt : '',
+    payload.confirmations.specialCategoryAuthority,
+    payload.supportProfile.specialCategoryProvided ? AUTHORITY_WORDING_VERSION : '',
+    payload.supportProfile.specialCategoryProvided ? 'Active' : 'Not applicable',
+    '',
     'Pending',
     '',
     'Prospective',

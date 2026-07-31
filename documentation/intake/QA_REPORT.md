@@ -2,12 +2,12 @@
 
 Status: release-readiness testing completed with fictional data on 31 July 2026. The production form has not been deployed and production submissions remain disabled.
 
-The isolated staging Worker was returned to `FORM_SUBMISSIONS_ENABLED=false` after testing. The final GitHub Actions result for the current commit is recorded on pull request 19 because it is created after this report is committed.
+The isolated staging Worker was returned to both release flags `false` after testing. The final GitHub Actions result for the current commit is recorded on the dedicated launch pull request after this report is committed.
 
 ## Automated checks
 
 - `pnpm install --frozen-lockfile`: passed.
-- `pnpm run check`: passed. This generated Worker types, typechecked the Worker, ran 22 tests and validated all 29 HTML files.
+- `pnpm run check`: passed before final documentation. This generated Worker types, typechecked the Worker, ran 42 tests and validated all 29 HTML files. The same checks are rerun against the final commit.
 - `pnpm run deploy:dry-run`: passed. Wrangler prepared the Worker and 85 static assets without deploying production.
 - `node scripts/verify-worker-site.mjs [staging URL]`: passed against the deployed staging Worker.
 - Production configuration was inspected after testing: `FORM_SUBMISSIONS_ENABLED` remains `false` and `TURNSTILE_TEST_MODE` remains `false`. The production Turnstile widget was configured later on the dedicated launch branch while both release flags remained `false`.
@@ -25,6 +25,23 @@ The isolated staging Worker was returned to `FORM_SUBMISSIONS_ENABLED=false` aft
 No production form, Google Sheet, Apps Script deployment, Turnstile widget or production secret was changed.
 
 ## End-to-end results
+
+### Final production-integration smoke test
+
+The final production integration was tested through an isolated local Worker preview. The public production Worker was not deployed and both committed production flags remained `false`. The preview used Cloudflare's test Turnstile credentials, fictional respondent and learner information, the authorised versioned production Apps Script web app and the owner-only production Sheet.
+
+- The browser completed all five steps and submitted successfully after Worker validation, Turnstile verification, HMAC forwarding and Apps Script validation.
+- Apps Script wrote one row in the exact 46-column order. The row recorded `primary-learner-profile-v2`, the explicit-consent wording version, the authority wording version, consent timestamp and active consent status.
+- A formula-like value beginning `=SUM(1,1)` had a string user-entered value, a string effective value and the `TEXT` number format. It was not a formula.
+- Repeating the same submission ID through the Worker returned success and left exactly one Sheet row.
+- With the isolated notification-failure flag enabled, the Worker returned success, the row remained stored and `Notification status` recorded `Failed: review Apps Script executions`.
+- With the isolated Apps Script request-failure flag enabled, the browser displayed the retry message and retained the fictional respondent name, learner name and ordinary learning-preference answer on the review screen. No row was written.
+- The minimal notification body contained only a UTC receipt timestamp, the restricted Sheet link and the fixed statement that no answers were included. It contained no learner or respondent answer.
+- Local Worker logs contained method, route, outcome and status only. They contained no fictional email, name, learner detail or answer. Browser inspection likewise found no submitted answer in console output, storage, URLs or analytics.
+- After the final HMAC rotation, a second fictional request through the isolated Worker returned 201 and produced a correctly structured row with `Notification status` set to `Sent`.
+- All fictional production rows were removed immediately after verification. The production Sheet was confirmed to contain one 46-column header row and zero response rows. All fictional notification messages were moved to Gmail Trash.
+
+The self-addressed notifications were delivered to Gmail Spam during testing. This did not expose answers or lose submissions, but the owner must create or approve a Gmail rule that never sends the exact fixed notification to Spam before enabling submissions.
 
 ### Browser, Worker and Sheet
 
@@ -102,8 +119,9 @@ The repository contains no PDF files and no links to PDF files, so there was no 
 
 ## Screenshots
 
-- Desktop: `screenshots/primary-learner-profile-desktop.jpg`, captured from staging at 1440 by 1000 pixels.
-- Mobile: `screenshots/primary-learner-profile-mobile.jpg`, captured from staging at 390 by 844 pixels with no horizontal overflow.
+- Desktop: `screenshots/primary-learner-profile-desktop.jpg`, recaptured from the final launch branch at 1440 by 1000 pixels.
+- Mobile: `screenshots/primary-learner-profile-mobile.jpg`, recaptured from the final launch branch at 390 by 844 pixels with no horizontal overflow.
+- Consent evidence: `evidence/production-smoke-desktop.png`, captured from the final review screen with fictional information and the approved conditional consent and authority controls.
 
 The initial page no longer moves keyboard focus to the first step heading. Focus still moves to the new heading after an intentional step change.
 
@@ -111,12 +129,11 @@ The initial page no longer moves keyboard focus to the first step heading. Focus
 
 Production must remain disabled until all of the following are complete:
 
-- Owner approval of the final acknowledgement and Privacy Policy amendment.
+- Owner sign-off of the completed LIA and DPIA residual risk.
+- Owner approval of the final acknowledgement, separate explicit consent, authority confirmation and Privacy Policy V1.5.
 - Publication of the approved Privacy Policy version.
-- Approval of the retention wording and applicable active-client record arrangements.
-- Final Google Workspace ownership, restricted sharing, processor and notification-routing setup.
-- Production Turnstile widget and secrets.
-- A fictional smoke test against the final production integration while the public production form remains disabled.
+- A Gmail rule or other approved routing control that prevents the fixed notification from being treated as Spam.
+- Explicit approval to enable the page flag, followed separately by explicit approval to enable submissions.
 
 ## Final page release control
 
