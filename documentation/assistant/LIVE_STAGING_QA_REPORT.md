@@ -1,13 +1,13 @@
 # Phase 1 MentorSphere Assistant live staging QA report
 
-**Date:** 30 July 2026  
+**Date:** 31 July 2026
 **Staging URL:** `https://thementorsphere-assistant-staging.luke-f8c.workers.dev`  
 **Branch:** `codex/phase-1-mentor-assistant`  
-**Deployment commit tested:** `67dfcd9ec712a77665f2f44cb2b2beccbe4fcdfb`
+**Deployment commit tested:** `fa45350d0466a64b209d8bbbea81784e04dd650b`
 
-**Cloudflare staging version:** `7bccd397-df49-4c76-962b-c8ee77028e93`
+**Cloudflare staging version:** `0d77cc3c-f2ec-4125-a8b0-2e4b80aaf178`
 
-**Recommendation:** **Responsive navigation fix prepared and validated locally. A new owner-approved staging deployment and final human keyboard and native-zoom checks are required. Keep PR #18 in draft.**
+**Recommendation:** **The responsive CSP fix is live on owner-only staging and the deployed responsive checks pass. Luke can resume final human testing. Native keyboard traversal and native browser zoom remain human checks. Keep PR #18 in draft.**
 
 ## Responsive navigation regression found on 31 July 2026
 
@@ -77,7 +77,61 @@ Assistant control checks passed for opening focus, a deterministic response, sou
 
 The browser-control interface did not advance focus for native Tab or activate a button with Enter, and it did not expose a native browser-zoom command. These limitations were reproduced against otherwise working controls. Reflow-equivalent checks at 640 CSS pixels, representing 200% zoom on a 1280-pixel viewport, and 320 CSS pixels, representing 400% zoom, passed without content extending beyond the viewport. Native Tab traversal and native 200% and 400% browser zoom therefore remain final human checks.
 
-This fix has not been deployed. The deployed staging URL remains on the affected version until Luke separately approves another staging-only deployment.
+### Deployed staging validation
+
+The approved fix commit `fa45350d0466a64b209d8bbbea81784e04dd650b` was deployed only to `thementorsphere-assistant-staging` as Cloudflare version `0d77cc3c-f2ec-4125-a8b0-2e4b80aaf178`.
+
+The staging dry run and deployment both reported:
+
+- `env.ASSETS`;
+- `CHATBOT_ENABLED="true"`;
+- `ENVIRONMENT="staging"`;
+- the Worker name `thementorsphere-assistant-staging`.
+
+The selected staging environment has `workers_dev: true` and `routes: []`. No production custom-domain route, production feature flag or secret was changed.
+
+The deployed configuration checks returned:
+
+| Endpoint | Result |
+|---|---|
+| Staging `/api/assistant/config` | HTTP `200`; `{"enabled":true,"maxMessageLength":600,"maxConversationMessages":7}` |
+| Production `/api/assistant/config` | HTTP `404` |
+
+After normal edge propagation, the staging root and additional HTML paths returned:
+
+```text
+script-src 'self' 'sha256-/x7W7R75k8Roq0WaVRQX9blP4OufE5xbAdzklGxsgpw='
+```
+
+The exact navigation-marker hash was present and `script-src` did not contain `unsafe-inline`.
+
+Responsive checks against the deployed staging URL passed at 960, 881, 880, 870, 768 and 390 CSS pixels:
+
+| Width | Deployed result |
+|---|---|
+| 960 and 881 pixels | Desktop navigation visible; mobile toggle hidden |
+| 880, 870, 768 and 390 pixels | `<html>` included `js`; responsive navigation closed by default; toggle visible; no expanded no-JavaScript fallback |
+
+At 880, 768 and 390 pixels, the menu opened and closed correctly and did not create horizontal overflow. All three submenus expanded to `display: grid` with `aria-expanded="true"` and collapsed to `display: none` with `aria-expanded="false"`.
+
+At 390 by 500 pixels, the open navigation used `overflow-y: auto`, with a 386-pixel client height and a 429-pixel scroll height. This confirms that the menu remains scrollable when it is taller than the viewport.
+
+The deployed dismissal checks passed:
+
+- a second toggle activation closed the menu;
+- Escape closed the menu and restored focus to the navigation toggle;
+- Escape also reset an expanded submenu;
+- clicking outside closed the menu;
+- resizing an open menu from 880 to 881 pixels reset `aria-expanded` and showed the desktop navigation;
+- resizing back to 880 pixels produced a closed responsive menu without stale state.
+
+The assistant launcher remained visible and usable at every tested width. At 390 pixels it opened the assistant panel, focused the textarea, remained within the viewport and returned focus to the launcher when closed.
+
+No browser-console error was recorded after the deployment, including no CSP violation. Every tested width had `js motion-ok motion-ready` on `<html>`, and no tested page width produced horizontal overflow.
+
+The browser-control interface again did not activate focused buttons with native Enter or Space. Native keyboard traversal and native browser zoom therefore remain final human-browser checks.
+
+The repository test suite passed all 88 tests and content validation passed all 28 HTML pages. The staging-only dry run also bundled successfully and confirmed the live `ASSETS` binding. The exact `pnpm check` wrapper includes an unscoped `wrangler types` command, so it was not run in that form under the explicit restriction against Wrangler without `--env staging`. A staging-scoped type-generation attempt omitted the inherited `ASSETS` field from its generated interface and stopped TypeScript at `env.ASSETS`; the deployment dry run independently confirmed that the runtime binding is present.
 
 ## Post-repair staging redeployment and live retest
 
