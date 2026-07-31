@@ -1,5 +1,6 @@
 # Local testing only. Copy to .dev.vars and use Cloudflare's published test keys.
-FORM_SUBMISSIONS_ENABLED=true
+FORM_PAGE_ENABLED=false
+FORM_SUBMISSIONS_ENABLED=false
 TURNSTILE_SITE_KEY=replace-with-a-test-site-key
 TURNSTILE_SECRET_KEY=replace-with-the-matching-test-secret
 TURNSTILE_EXPECTED_HOSTNAMES=localhost,127.0.0.1

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { handleIntakeApi } from "../src/worker";
+import { handleIntakeApi, handleWorkerRequest, type WorkerBindings } from "../src/worker";
 import type { IntakeBindings } from "../src/intake/submission";
 import { validIntakeRequest } from "./fixtures";
 
@@ -7,6 +7,7 @@ const API_URL = "https://www.thementorsphere.co.uk/api/forms/primary-learner-pro
 
 function bindings(overrides: Partial<IntakeBindings> = {}): IntakeBindings {
   return {
+    FORM_PAGE_ENABLED: "true",
     FORM_SUBMISSIONS_ENABLED: "true",
     TURNSTILE_SITE_KEY: "fictional-site-key",
     TURNSTILE_SECRET_KEY: "fictional-turnstile-secret",
@@ -15,6 +16,31 @@ function bindings(overrides: Partial<IntakeBindings> = {}): IntakeBindings {
     INTAKE_APPS_SCRIPT_URL: "https://script.google.test/macros/s/example/exec",
     INTAKE_HMAC_SECRET: "fictional-hmac-secret-with-enough-entropy",
     ...overrides,
+  };
+}
+
+function workerBindings(overrides: Partial<IntakeBindings> = {}): WorkerBindings {
+  return {
+    ...bindings(overrides),
+    ASSETS: {
+      async fetch(input: Request): Promise<Response> {
+        const pathname = new URL(input.url).pathname;
+        if (pathname === "/404.html" || pathname === "/missing/") {
+          return new Response("<h1>Page not found</h1>", {
+            status: pathname === "/404.html" ? 200 : 404,
+            headers: { "Content-Type": "text/html; charset=utf-8", "X-Content-Type-Options": "nosniff" },
+          });
+        }
+        if (pathname === "/forms/primary-learner-profile" || pathname === "/forms/primary-learner-profile/") {
+          return new Response("<h1>Learner Profile: Primary Years</h1>", {
+            status: 200,
+            headers: { "Content-Type": "text/html; charset=utf-8" },
+          });
+        }
+        if (pathname === "/") return new Response("<h1>The MentorSphere</h1>", { status: 200 });
+        return new Response("asset", { status: 200 });
+      },
+    },
   };
 }
 
@@ -166,5 +192,64 @@ describe("primary learner profile Worker", () => {
     const oversized = { ...validIntakeRequest(), padding: "x".repeat(40_000) };
     const response = await handleIntakeApi(request(oversized), bindings());
     expect(response.status).toBe(413);
+  });
+});
+
+describe("primary learner profile page release control", () => {
+  it.each([
+    "/forms/primary-learner-profile",
+    "/forms/primary-learner-profile/",
+    "/forms/primary-learner-profile/nested-test-path",
+  ])("returns the normal 404 response for %s when the page is disabled", async (pathname) => {
+    const env = workerBindings({ FORM_PAGE_ENABLED: "false", FORM_SUBMISSIONS_ENABLED: "false" });
+    const gated = await handleWorkerRequest(new Request(`https://www.thementorsphere.co.uk${pathname}`), env);
+    const normalMissing = await handleWorkerRequest(new Request("https://www.thementorsphere.co.uk/missing/"), env);
+
+    expect(gated.status).toBe(404);
+    expect(await gated.text()).toBe(await normalMissing.text());
+    expect(gated.headers.get("X-Content-Type-Options")).toBe("nosniff");
+  });
+
+  it("loads the form page when the page is enabled", async () => {
+    const response = await handleWorkerRequest(
+      new Request("https://www.thementorsphere.co.uk/forms/primary-learner-profile/"),
+      workerBindings({ FORM_PAGE_ENABLED: "true", FORM_SUBMISSIONS_ENABLED: "false" }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toContain("Learner Profile: Primary Years");
+  });
+
+  it("keeps the API unavailable when submissions are disabled", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const response = await handleIntakeApi(
+      request(validIntakeRequest()),
+      bindings({ FORM_PAGE_ENABLED: "true", FORM_SUBMISSIONS_ENABLED: "false" }),
+    );
+
+    expect(response.status).toBe(503);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("treats page-disabled with submissions-enabled as an invalid disabled configuration", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const invalid = bindings({ FORM_PAGE_ENABLED: "false", FORM_SUBMISSIONS_ENABLED: "true" });
+    const configResponse = await handleIntakeApi(new Request(`${API_URL}/config`), invalid);
+    const submissionResponse = await handleIntakeApi(request(validIntakeRequest()), invalid);
+
+    await expect(configResponse.json()).resolves.toMatchObject({ enabled: false });
+    expect(submissionResponse.status).toBe(503);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("continues to serve existing pages and the custom 404", async () => {
+    const env = workerBindings({ FORM_PAGE_ENABLED: "false", FORM_SUBMISSIONS_ENABLED: "false" });
+    const homepage = await handleWorkerRequest(new Request("https://www.thementorsphere.co.uk/"), env);
+    const missing = await handleWorkerRequest(new Request("https://www.thementorsphere.co.uk/missing/"), env);
+
+    expect(homepage.status).toBe(200);
+    expect(await homepage.text()).toContain("The MentorSphere");
+    expect(missing.status).toBe(404);
+    expect(await missing.text()).toContain("Page not found");
   });
 });

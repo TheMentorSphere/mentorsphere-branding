@@ -48,8 +48,9 @@ The web app accepts only recent requests with a valid HMAC signature. It rejects
    - `INTAKE_HMAC_SECRET`
 
 6. Set `INTAKE_HMAC_SECRET` to the same value as the Apps Script `HMAC_SECRET` property.
-7. Keep `FORM_SUBMISSIONS_ENABLED` set to `false` until all launch approvals and tests are complete.
-8. Do not put real secret values in `.dev.vars.example`, source code, Wrangler variables or documentation.
+7. Keep `FORM_PAGE_ENABLED` and `FORM_SUBMISSIONS_ENABLED` set to `false` until the relevant launch approvals and tests are complete.
+8. Treat `FORM_PAGE_ENABLED=false` with `FORM_SUBMISSIONS_ENABLED=true` as invalid. The Worker keeps the API disabled in that state.
+9. Do not put real secret values in `.dev.vars.example`, source code, Wrangler variables or documentation.
 
 ## 4. Testing
 
@@ -75,9 +76,10 @@ Production must not be deployed until Luke has approved:
 After approval:
 
 1. Publish the approved Privacy Policy version and update its version, date, change log, policy register and downloadable copies together.
-2. Configure the production Google Workspace destination, Turnstile widget and Worker secrets while `FORM_SUBMISSIONS_ENABLED` remains `false`.
+2. Configure the production Google Workspace destination, Turnstile widget and Worker secrets while both form flags remain `false`.
 3. Use an isolated Cloudflare preview, not the production custom domain, to complete one fictional smoke test against the final production integration. Confirm the stored row and minimal email, then remove the test data.
-4. Confirm the smoke test and every production prerequisite are complete before changing `FORM_SUBMISSIONS_ENABLED` to `true` in a separate reviewed launch commit.
-5. Run the complete check and a Wrangler dry run.
-6. Deploy to the approved environment without changing DNS, the custom domain or the deployment source.
-7. Confirm the form remains absent from navigation, the footer and sitemap, and retains both meta and response-header noindex controls.
+4. Confirm the policy is published and the form is approved before changing `FORM_PAGE_ENABLED` to `true` in a separate reviewed launch commit.
+5. Confirm the smoke test and every production prerequisite are complete before changing `FORM_SUBMISSIONS_ENABLED` to `true` in that reviewed launch commit.
+6. Run the complete check and a Wrangler dry run.
+7. Deploy to the approved environment without changing DNS, the custom domain or the deployment source.
+8. Confirm the form remains absent from navigation, the footer and sitemap, and retains both meta and response-header noindex controls.

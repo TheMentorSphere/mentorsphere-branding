@@ -101,8 +101,11 @@ record(headers.includes("frame-src https://challenges.cloudflare.com"), "docs/_h
 record(headers.includes("script-src 'self' https://challenges.cloudflare.com"), "docs/_headers: Turnstile script CSP is missing");
 
 const wrangler = await readFile(path.join(workspace, "wrangler.jsonc"), "utf8");
+record(wrangler.includes('"FORM_PAGE_ENABLED": "false"'), "wrangler.jsonc: production form page must default to disabled");
 record(wrangler.includes('"FORM_SUBMISSIONS_ENABLED": "false"'), "wrangler.jsonc: production submissions must default to disabled");
-record(wrangler.includes('"run_worker_first": ["/api/forms/*"]'), "wrangler.jsonc: form API route is not Worker-first");
+record(wrangler.includes('"/api/forms/*"'), "wrangler.jsonc: form API route is not Worker-first");
+record(wrangler.includes('"/forms/primary-learner-profile"'), "wrangler.jsonc: form page route is not Worker-first");
+record(wrangler.includes('"/forms/primary-learner-profile/*"'), "wrangler.jsonc: nested form routes are not Worker-first");
 record(!/"(?:TURNSTILE_SECRET_KEY|INTAKE_APPS_SCRIPT_URL|INTAKE_HMAC_SECRET)"\s*:/u.test(wrangler), "wrangler.jsonc: a secret value appears to be configured as a variable");
 
 const appsScript = await readFile(

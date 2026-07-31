@@ -59,9 +59,8 @@ results.push({ name: 'trailing slash', path: '/contact', status: slashless.statu
 const form = await fetch(new URL('/forms/primary-learner-profile/', baseUrl), {
   headers: { Accept: 'text/html,application/xhtml+xml' },
 });
-assert.equal(form.status, 200, `intake form returned ${form.status}`);
-assert.equal(form.headers.get('x-robots-tag'), 'noindex, nofollow, noarchive', 'intake noindex header');
-assert.equal(form.headers.get('cache-control'), 'no-store, max-age=0', 'intake cache header');
-results.push({ name: 'intake security headers', path: '/forms/primary-learner-profile/', status: form.status });
+assert.equal(form.status, 404, `disabled intake form returned ${form.status}`);
+assert.ok((await form.text()).includes('Page not found'), 'disabled intake did not use the custom 404 page');
+results.push({ name: 'disabled intake page', path: '/forms/primary-learner-profile/', status: form.status });
 
 console.log(JSON.stringify({ baseUrl: baseUrl.href, results }, null, 2));

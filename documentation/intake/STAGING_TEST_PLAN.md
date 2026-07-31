@@ -13,7 +13,7 @@ Use fictional learner and respondent information only. Never copy a production r
 - Authentication: generate a staging-only HMAC secret. Never reuse the production secret.
 - Email: send the minimal notification to an approved owner-controlled test inbox. The message must contain no form answers.
 
-The committed staging configuration keeps `FORM_SUBMISSIONS_ENABLED=false`. For a supervised test only, copy `.dev.vars.staging.example` to the ignored `.dev.vars.staging`, insert the test deployment URL and staging HMAC secret, and retain `FORM_SUBMISSIONS_ENABLED=true` only in that ignored file.
+The committed staging configuration keeps `FORM_PAGE_ENABLED=false` and `FORM_SUBMISSIONS_ENABLED=false`. For a supervised preview, copy `.dev.vars.staging.example` to the ignored `.dev.vars.staging`, insert the test deployment URL and staging HMAC secret, then set `FORM_PAGE_ENABLED=true`. Set `FORM_SUBMISSIONS_ENABLED=true` only during an authorised fictional submission test.
 
 ## Google Sheet and Apps Script
 
@@ -29,7 +29,7 @@ The force-failure properties are ignored unless `TEST_MODE=true`. They must not 
 
 1. Put the published Turnstile test secret, test Apps Script URL and matching staging HMAC secret in `.dev.vars.staging`.
 2. Run `pnpm run dev:staging` and use the temporary preview URL printed by Wrangler.
-3. Confirm the preview URL has no production custom-domain route and the production `FORM_SUBMISSIONS_ENABLED` value remains `false`.
+3. Confirm the preview URL has no production custom-domain route and both production form flags remain `false`.
 4. Keep Wrangler request and application logging free of bodies, parsed answers and upstream response content.
 
 ## End-to-end evidence sequence
@@ -43,4 +43,4 @@ The force-failure properties are ignored unless `TEST_MODE=true`. They must not 
 7. Search the browser console and Wrangler output for the fictional marker values. Verify answers were not logged.
 8. Run the site-regression checks against the same preview URL and capture desktop and mobile screenshots.
 
-After testing, stop the remote preview, delete test emails and fictional rows when they are no longer needed, and either disable or remove the test Apps Script deployment. Do not move test resources into production.
+After testing, return both staging flags to `false`, stop the remote preview, delete test emails and fictional rows when they are no longer needed, and either disable or remove the test Apps Script deployment. Do not move test resources into production.

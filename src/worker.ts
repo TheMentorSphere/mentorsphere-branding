@@ -3,7 +3,14 @@ import { validateIntakeRequest } from "./intake/validation";
 
 const API_PATH = "/api/forms/primary-learner-profile";
 const CONFIG_PATH = `${API_PATH}/config`;
+const FORM_PATH = "/forms/primary-learner-profile";
 const MAX_REQUEST_BYTES = 32_768;
+
+export interface WorkerBindings extends IntakeBindings {
+  ASSETS: {
+    fetch(request: Request): Promise<Response>;
+  };
+}
 
 function apiHeaders(requestId: string): Headers {
   return new Headers({
@@ -54,8 +61,27 @@ function isJson(request: Request): boolean {
   return request.headers.get("Content-Type")?.toLowerCase().startsWith("application/json") ?? false;
 }
 
-function isEnabled(env: IntakeBindings): boolean {
-  return env.FORM_SUBMISSIONS_ENABLED === "true";
+function isPageEnabled(env: IntakeBindings): boolean {
+  return env.FORM_PAGE_ENABLED === "true";
+}
+
+function areSubmissionsEnabled(env: IntakeBindings): boolean {
+  return isPageEnabled(env) && env.FORM_SUBMISSIONS_ENABLED === "true";
+}
+
+function isFormPath(pathname: string): boolean {
+  return pathname === FORM_PATH || pathname.startsWith(`${FORM_PATH}/`);
+}
+
+async function formNotFound(request: Request, env: WorkerBindings): Promise<Response> {
+  const notFoundUrl = new URL("/404.html", request.url);
+  const assetResponse = await env.ASSETS.fetch(new Request(notFoundUrl, { method: "GET" }));
+  const headers = new Headers(assetResponse.headers);
+  headers.delete("Content-Length");
+  return new Response(request.method === "HEAD" ? null : assetResponse.body, {
+    status: 404,
+    headers,
+  });
 }
 
 export async function handleIntakeApi(request: Request, env: IntakeBindings): Promise<Response> {
@@ -66,7 +92,7 @@ export async function handleIntakeApi(request: Request, env: IntakeBindings): Pr
     const configuredSiteKey = env.TURNSTILE_SITE_KEY !== "CONFIGURE_BEFORE_PRODUCTION_LAUNCH";
     return jsonResponse(
       {
-        enabled: isEnabled(env) && configuredSiteKey,
+        enabled: areSubmissionsEnabled(env) && configuredSiteKey,
         siteKey: configuredSiteKey ? env.TURNSTILE_SITE_KEY : "",
         action: turnstileAction,
       },
@@ -77,7 +103,7 @@ export async function handleIntakeApi(request: Request, env: IntakeBindings): Pr
 
   if (url.pathname !== API_PATH) return jsonResponse({ error: "Not found." }, 404, requestId);
   if (request.method !== "POST") return jsonResponse({ error: "Method not allowed." }, 405, requestId);
-  if (!isEnabled(env)) {
+  if (!areSubmissionsEnabled(env)) {
     return jsonResponse({ error: "This form is not accepting submissions yet." }, 503, requestId);
   }
   if (!isSameOrigin(request) || !isJson(request)) {
@@ -131,10 +157,15 @@ export async function handleIntakeApi(request: Request, env: IntakeBindings): Pr
   }
 }
 
+export async function handleWorkerRequest(request: Request, env: WorkerBindings): Promise<Response> {
+  const url = new URL(request.url);
+  if (url.pathname.startsWith("/api/forms/")) return handleIntakeApi(request, env);
+  if (isFormPath(url.pathname) && !isPageEnabled(env)) return formNotFound(request, env);
+  return env.ASSETS.fetch(request);
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    const url = new URL(request.url);
-    if (url.pathname.startsWith("/api/forms/")) return handleIntakeApi(request, env);
-    return env.ASSETS.fetch(request);
+    return handleWorkerRequest(request, env);
   },
 } satisfies ExportedHandler<Env>;

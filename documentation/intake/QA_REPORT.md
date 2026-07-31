@@ -117,3 +117,16 @@ Production must remain disabled until all of the following are complete:
 - Final Google Workspace ownership, restricted sharing, processor and notification-routing setup.
 - Production Turnstile widget and secrets.
 - A fictional smoke test against the final production integration while the public production form remains disabled.
+
+## Final page release control
+
+Added after the staging evidence above was collected:
+
+- `FORM_PAGE_ENABLED` is separate from `FORM_SUBMISSIONS_ENABLED` and defaults to `false` in production and staging.
+- The Worker runs before static assets for the learner-profile route and its descendants.
+- When the page flag is not exactly `true`, the form path, trailing-slash form path and nested form paths return the normal MentorSphere custom 404 response.
+- Submission enablement requires both flags to be exactly `true`.
+- The invalid state `FORM_PAGE_ENABLED=false` with `FORM_SUBMISSIONS_ENABLED=true` reports the API as disabled and cannot call Turnstile or Apps Script.
+- Automated coverage confirms disabled and preview states, API gating, invalid-state handling, homepage continuity and custom 404 continuity.
+- A local Wrangler runtime confirmed 404 responses with the normal custom page for the slashless, trailing-slash and nested form paths while disabled. With only the page flag enabled, the form returned 200 while the API configuration still reported `enabled:false`.
+- Both flags remain `false` in the committed production and staging configurations.

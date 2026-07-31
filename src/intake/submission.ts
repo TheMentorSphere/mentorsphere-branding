@@ -5,6 +5,7 @@ const TURNSTILE_ACTION = "primary_learner_profile";
 const UPSTREAM_RESPONSE_LIMIT = 16_384;
 
 export interface IntakeBindings {
+  FORM_PAGE_ENABLED: string;
   FORM_SUBMISSIONS_ENABLED: string;
   TURNSTILE_SITE_KEY: string;
   TURNSTILE_SECRET_KEY: string;

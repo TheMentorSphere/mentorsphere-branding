@@ -9,9 +9,14 @@
     "directory": "./docs",
     "not_found_handling": "404-page",
     "html_handling": "auto-trailing-slash",
-    "run_worker_first": ["/api/forms/*"]
+    "run_worker_first": [
+      "/api/forms/*",
+      "/forms/primary-learner-profile",
+      "/forms/primary-learner-profile/*"
+    ]
   },
   "vars": {
+    "FORM_PAGE_ENABLED": "false",
     "FORM_SUBMISSIONS_ENABLED": "false",
     "TURNSTILE_SITE_KEY": "CONFIGURE_BEFORE_PRODUCTION_LAUNCH",
     "TURNSTILE_EXPECTED_HOSTNAMES": "www.thementorsphere.co.uk",
@@ -45,6 +50,7 @@
       "preview_urls": true,
       "routes": [],
       "vars": {
+        "FORM_PAGE_ENABLED": "false",
         "FORM_SUBMISSIONS_ENABLED": "false",
         "TURNSTILE_SITE_KEY": "1x00000000000000000000AA",
         "TURNSTILE_EXPECTED_HOSTNAMES": "example.com",
