@@ -18,7 +18,6 @@ interface TurnstileResult {
   success?: boolean;
   action?: string;
   hostname?: string;
-  metadata?: { result_with_testing_key?: boolean };
 }
 
 function base64Url(bytes: Uint8Array): string {
@@ -87,7 +86,7 @@ export async function verifyTurnstile(
       .filter(Boolean),
   );
   if (env.TURNSTILE_TEST_MODE === "true") {
-    return result.success === true && result.metadata?.result_with_testing_key === true;
+    return result.success === true;
   }
   return (
     result.success === true &&

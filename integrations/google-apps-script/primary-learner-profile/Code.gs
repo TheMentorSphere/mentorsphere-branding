@@ -1,5 +1,5 @@
 const FORM_VERSION = 'primary-learner-profile-v1';
-const ACKNOWLEDGEMENT_VERSION = 'owner-review-draft-2026-07-31';
+const ACKNOWLEDGEMENT_VERSION = 'approval-candidate-2026-07-31';
 const MAX_REQUEST_CHARACTERS = 50000;
 const SIGNATURE_WINDOW_MILLISECONDS = 5 * 60 * 1000;
 
@@ -181,7 +181,14 @@ function appendSubmission_(sheet, row) {
   return targetRow;
 }
 
+function testFlagEnabled_(properties, name) {
+  return properties.getProperty('TEST_MODE') === 'true' && properties.getProperty(name) === 'true';
+}
+
 function sendMinimalNotification_(properties, receivedAt) {
+  if (testFlagEnabled_(properties, 'FORCE_NOTIFICATION_FAILURE')) {
+    throw new Error('Notification failure requested by isolated test configuration');
+  }
   const recipient = properties.getProperty('NOTIFICATION_EMAIL');
   const privateSheetUrl = properties.getProperty('PRIVATE_SHEET_URL');
   if (!recipient || !privateSheetUrl) throw new Error('Missing notification configuration');
@@ -216,6 +223,7 @@ function doPost(event) {
 
     const request = JSON.parse(envelope.body);
     if (!hasValidShape_(request)) return safeError_();
+    if (testFlagEnabled_(properties, 'FORCE_REQUEST_FAILURE')) return safeError_();
 
     const lock = LockService.getScriptLock();
     if (!lock.tryLock(10000)) return safeError_();

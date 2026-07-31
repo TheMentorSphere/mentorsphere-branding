@@ -1,0 +1,6 @@
+# Copy this file to .dev.vars.staging for an isolated remote preview.
+# Never use real learner or respondent information in staging.
+FORM_SUBMISSIONS_ENABLED="true"
+TURNSTILE_SECRET_KEY="1x0000000000000000000000000000000AA"
+INTAKE_APPS_SCRIPT_URL="https://script.google.com/macros/s/TEST_DEPLOYMENT_ID/exec"
+INTAKE_HMAC_SECRET="GENERATE_A_SEPARATE_TEST_ONLY_SECRET"

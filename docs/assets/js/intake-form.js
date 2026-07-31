@@ -190,7 +190,7 @@
     updateProgress();
     clearErrorSummary();
     const heading = form.querySelector(`[data-step="${currentStep}"] h2`);
-    if (heading) heading.focus();
+    if (heading && announce) heading.focus();
     if (announce) liveStatus.textContent = `Step ${currentStep} of 5: ${STEP_NAMES[currentStep - 1]}.`;
   };
 

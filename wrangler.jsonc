@@ -37,5 +37,34 @@
       "pattern": "www.thementorsphere.co.uk",
       "custom_domain": true
     }
-  ]
+  ],
+  "env": {
+    "staging": {
+      "name": "thementorsphere-intake-staging",
+      "workers_dev": true,
+      "preview_urls": true,
+      "routes": [],
+      "vars": {
+        "FORM_SUBMISSIONS_ENABLED": "false",
+        "TURNSTILE_SITE_KEY": "1x00000000000000000000AA",
+        "TURNSTILE_EXPECTED_HOSTNAMES": "example.com",
+        "TURNSTILE_TEST_MODE": "true"
+      },
+      "secrets": {
+        "required": [
+          "TURNSTILE_SECRET_KEY",
+          "INTAKE_APPS_SCRIPT_URL",
+          "INTAKE_HMAC_SECRET"
+        ]
+      },
+      "observability": {
+        "enabled": true,
+        "logs": {
+          "enabled": true,
+          "head_sampling_rate": 1,
+          "invocation_logs": false
+        }
+      }
+    }
+  }
 }

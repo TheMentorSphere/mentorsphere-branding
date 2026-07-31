@@ -10,8 +10,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "validate:content": "node scripts/validate-site.mjs",
+    "qa:worker-site": "node scripts/verify-worker-site.mjs",
     "dev": "wrangler dev --local",
-    "deploy:dry-run": "wrangler deploy --dry-run"
+    "dev:staging": "wrangler dev --remote --env staging",
+    "deploy:dry-run": "wrangler deploy --dry-run --env=\"\""
   },
   "devDependencies": {
     "@types/node": "^24.1.0",

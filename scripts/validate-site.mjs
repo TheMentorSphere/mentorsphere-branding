@@ -70,7 +70,9 @@ record(
   intakeHtml.includes('<meta name="robots" content="noindex,nofollow,noarchive">'),
   "primary learner profile: exact noindex meta directive is missing",
 );
-record(intakeHtml.includes("Owner approval required before launch"), "primary learner profile: owner-review warning is missing");
+record(!intakeHtml.includes("Owner approval required before launch"), "primary learner profile: internal owner-review wording is public");
+record(!intakeHtml.includes("Draft wording for owner review"), "primary learner profile: internal draft wording is public");
+record(!intakeHtml.includes("Article 6 or Article 9 legal basis"), "primary learner profile: internal legal-basis note is public");
 record(intakeHtml.includes("Step 5"), "primary learner profile: review step is missing");
 
 const sitemap = await readFile(path.join(docsRoot, "sitemap.xml"), "utf8");

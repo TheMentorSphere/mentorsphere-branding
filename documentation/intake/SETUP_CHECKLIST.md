@@ -38,8 +38,8 @@ The web app accepts only recent requests with a valid HMAC signature. It rejects
 ## 3. Cloudflare secrets and Turnstile
 
 1. Create a managed Turnstile widget for production, restricted to `www.thementorsphere.co.uk`.
-2. Use Cloudflare's published test keys for local testing. Do not add local hostnames to the production widget.
-3. Keep `TURNSTILE_TEST_MODE` set to `false` in every deployed environment. Set it to `true` only in the ignored local `.dev.vars` file when using Cloudflare's published test keys.
+2. Use Cloudflare's published test keys for local and staging-preview testing. Do not add local or preview hostnames to the production widget.
+3. Keep `TURNSTILE_TEST_MODE` set to `false` in production. The isolated `staging` environment sets it to `true` because it uses only Cloudflare's published test credentials.
 4. Replace the production `TURNSTILE_SITE_KEY` placeholder in `wrangler.jsonc` only when launch approval is given.
 5. Add these Worker secrets interactively for the approved environment:
 
@@ -53,8 +53,8 @@ The web app accepts only recent requests with a valid HMAC signature. It rejects
 
 ## 4. Testing
 
-1. Copy `.dev.vars.example` to the ignored `.dev.vars` file and add fictional local test values.
-2. Run `pnpm install`, `pnpm run check` and `pnpm run dev`.
+1. Follow `STAGING_TEST_PLAN.md` to create the separate fictional Sheet, test Apps Script deployment and ignored `.dev.vars.staging` file.
+2. Run `pnpm install --frozen-lockfile`, `pnpm run check`, `pnpm run deploy:dry-run` and `pnpm run dev:staging`.
 3. Test desktop, tablet and mobile widths, keyboard-only use, visible focus, error summaries and screen-reader structure.
 4. Test required fields, invalid email, conditional needs fields, conditional mobile validation, Back and Continue, answer preservation and review editing.
 5. Test Turnstile success, expiry and failure using Cloudflare's test keys.
@@ -75,9 +75,9 @@ Production must not be deployed until Luke has approved:
 After approval:
 
 1. Publish the approved Privacy Policy version and update its version, date, change log, policy register and downloadable copies together.
-2. Configure the production site key and secrets.
-3. Change `FORM_SUBMISSIONS_ENABLED` to `true` in a reviewed launch commit.
-4. Run the complete check and a Wrangler dry run.
-5. Deploy to the approved environment without changing DNS, the custom domain or the deployment source.
-6. Complete one fictional production smoke test, confirm the stored row and minimal email, then remove the test data.
+2. Configure the production Google Workspace destination, Turnstile widget and Worker secrets while `FORM_SUBMISSIONS_ENABLED` remains `false`.
+3. Use an isolated Cloudflare preview, not the production custom domain, to complete one fictional smoke test against the final production integration. Confirm the stored row and minimal email, then remove the test data.
+4. Confirm the smoke test and every production prerequisite are complete before changing `FORM_SUBMISSIONS_ENABLED` to `true` in a separate reviewed launch commit.
+5. Run the complete check and a Wrangler dry run.
+6. Deploy to the approved environment without changing DNS, the custom domain or the deployment source.
 7. Confirm the form remains absent from navigation, the footer and sitemap, and retains both meta and response-header noindex controls.

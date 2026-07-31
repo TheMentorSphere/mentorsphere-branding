@@ -126,7 +126,7 @@ describe("primary learner profile Worker", () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
       const outbound = new Request(input, init);
       if (outbound.url.includes("challenges.cloudflare.com")) {
-        return Response.json({ success: true, hostname: "example.com", metadata: { result_with_testing_key: true } });
+        return Response.json({ success: true, hostname: "localhost", action: "test" });
       }
       return Response.json({ ok: true, status: "created" });
     });
@@ -140,7 +140,7 @@ describe("primary learner profile Worker", () => {
 
   it("rejects a test-key response when test mode is disabled", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      Response.json({ success: true, hostname: "example.com", metadata: { result_with_testing_key: true } }),
+      Response.json({ success: true, hostname: "localhost", action: "test" }),
     );
     const response = await handleIntakeApi(request(validIntakeRequest()), bindings());
     expect(response.status).toBe(400);

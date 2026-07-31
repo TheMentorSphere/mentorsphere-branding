@@ -46,7 +46,7 @@ Status: implementation draft for owner review before production launch.
 - Readable review of all entered information with Edit section controls.
 - Confirmation that the respondent is authorised to provide the learner's information: required.
 - Privacy Policy acknowledgement: required.
-- Sensitive-information acknowledgement: required draft, explicitly awaiting owner approval.
+- Sensitive-information acknowledgement: required approval candidate. The approval status is recorded only in internal documentation, not shown to visitors.
 - Cloudflare Turnstile security token: required and verified server-side.
 - Honeypot: hidden and expected to remain blank.
 
