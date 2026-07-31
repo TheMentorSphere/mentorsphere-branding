@@ -1,0 +1,8 @@
+# Local testing only. Copy to .dev.vars and use Cloudflare's published test keys.
+FORM_SUBMISSIONS_ENABLED=true
+TURNSTILE_SITE_KEY=replace-with-a-test-site-key
+TURNSTILE_SECRET_KEY=replace-with-the-matching-test-secret
+TURNSTILE_EXPECTED_HOSTNAMES=localhost,127.0.0.1
+TURNSTILE_TEST_MODE=true
+INTAKE_APPS_SCRIPT_URL=https://script.google.com/macros/s/replace-with-test-deployment/exec
+INTAKE_HMAC_SECRET=replace-with-a-long-random-test-secret

@@ -1,0 +1,140 @@
+import { sendToAppsScript, turnstileAction, verifyTurnstile, type IntakeBindings } from "./intake/submission";
+import { validateIntakeRequest } from "./intake/validation";
+
+const API_PATH = "/api/forms/primary-learner-profile";
+const CONFIG_PATH = `${API_PATH}/config`;
+const MAX_REQUEST_BYTES = 32_768;
+
+function apiHeaders(requestId: string): Headers {
+  return new Headers({
+    "Cache-Control": "no-store, max-age=0",
+    "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'",
+    "Content-Type": "application/json; charset=utf-8",
+    "Cross-Origin-Resource-Policy": "same-origin",
+    "Referrer-Policy": "no-referrer",
+    "X-Content-Type-Options": "nosniff",
+    "X-Request-ID": requestId,
+  });
+}
+
+function jsonResponse(body: unknown, status: number, requestId: string): Response {
+  return new Response(JSON.stringify(body), { status, headers: apiHeaders(requestId) });
+}
+
+async function readLimitedJson(request: Request): Promise<unknown> {
+  const declaredLength = Number(request.headers.get("Content-Length") ?? "0");
+  if (declaredLength > MAX_REQUEST_BYTES) throw new RangeError("Request too large");
+  if (!request.body) throw new SyntaxError("Missing body");
+
+  const reader = request.body.getReader();
+  const decoder = new TextDecoder();
+  let size = 0;
+  let text = "";
+  try {
+    while (true) {
+      const result = await reader.read();
+      if (result.done) break;
+      size += result.value.byteLength;
+      if (size > MAX_REQUEST_BYTES) throw new RangeError("Request too large");
+      text += decoder.decode(result.value, { stream: true });
+    }
+    text += decoder.decode();
+  } finally {
+    reader.releaseLock();
+  }
+  return JSON.parse(text) as unknown;
+}
+
+function isSameOrigin(request: Request): boolean {
+  const origin = request.headers.get("Origin");
+  return origin !== null && origin === new URL(request.url).origin;
+}
+
+function isJson(request: Request): boolean {
+  return request.headers.get("Content-Type")?.toLowerCase().startsWith("application/json") ?? false;
+}
+
+function isEnabled(env: IntakeBindings): boolean {
+  return env.FORM_SUBMISSIONS_ENABLED === "true";
+}
+
+export async function handleIntakeApi(request: Request, env: IntakeBindings): Promise<Response> {
+  const requestId = crypto.randomUUID();
+  const url = new URL(request.url);
+
+  if (url.pathname === CONFIG_PATH && request.method === "GET") {
+    const configuredSiteKey = env.TURNSTILE_SITE_KEY !== "CONFIGURE_BEFORE_PRODUCTION_LAUNCH";
+    return jsonResponse(
+      {
+        enabled: isEnabled(env) && configuredSiteKey,
+        siteKey: configuredSiteKey ? env.TURNSTILE_SITE_KEY : "",
+        action: turnstileAction,
+      },
+      200,
+      requestId,
+    );
+  }
+
+  if (url.pathname !== API_PATH) return jsonResponse({ error: "Not found." }, 404, requestId);
+  if (request.method !== "POST") return jsonResponse({ error: "Method not allowed." }, 405, requestId);
+  if (!isEnabled(env)) {
+    return jsonResponse({ error: "This form is not accepting submissions yet." }, 503, requestId);
+  }
+  if (!isSameOrigin(request) || !isJson(request)) {
+    return jsonResponse({ error: "Invalid request." }, 400, requestId);
+  }
+
+  let body: unknown;
+  try {
+    body = await readLimitedJson(request);
+  } catch (error) {
+    if (error instanceof RangeError) return jsonResponse({ error: "The form data is too large." }, 413, requestId);
+    return jsonResponse({ error: "Invalid request." }, 400, requestId);
+  }
+
+  const validation = validateIntakeRequest(body);
+  if (!validation.ok) {
+    return jsonResponse(
+      { error: "Some information is missing or invalid.", fieldErrors: validation.errors },
+      400,
+      requestId,
+    );
+  }
+
+  if (validation.request.honeypot) return jsonResponse({ success: true }, 202, requestId);
+
+  let turnstileValid = false;
+  try {
+    turnstileValid = await verifyTurnstile(
+      validation.request.turnstileToken,
+      validation.request.submission.submissionId,
+      request.headers.get("CF-Connecting-IP") ?? "",
+      env,
+    );
+  } catch {
+    turnstileValid = false;
+  }
+  if (!turnstileValid) {
+    return jsonResponse({ error: "Complete the security check again and retry." }, 400, requestId);
+  }
+
+  try {
+    const accepted = await sendToAppsScript(validation.request.submission, env);
+    if (!accepted) throw new Error("Submission destination rejected the request");
+    return jsonResponse({ success: true }, 201, requestId);
+  } catch {
+    return jsonResponse(
+      { error: "Your form could not be submitted just now. Your answers remain on this page. Please try again." },
+      503,
+      requestId,
+    );
+  }
+}
+
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const url = new URL(request.url);
+    if (url.pathname.startsWith("/api/forms/")) return handleIntakeApi(request, env);
+    return env.ASSETS.fetch(request);
+  },
+} satisfies ExportedHandler<Env>;

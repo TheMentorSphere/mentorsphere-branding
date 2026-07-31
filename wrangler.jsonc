@@ -1,11 +1,36 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
+  "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "thementorsphere",
-  "compatibility_date": "2026-07-26",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-07-29",
+  "compatibility_flags": ["nodejs_compat"],
   "assets": {
+    "binding": "ASSETS",
     "directory": "./docs",
     "not_found_handling": "404-page",
-    "html_handling": "auto-trailing-slash"
+    "html_handling": "auto-trailing-slash",
+    "run_worker_first": ["/api/forms/*"]
+  },
+  "vars": {
+    "FORM_SUBMISSIONS_ENABLED": "false",
+    "TURNSTILE_SITE_KEY": "CONFIGURE_BEFORE_PRODUCTION_LAUNCH",
+    "TURNSTILE_EXPECTED_HOSTNAMES": "www.thementorsphere.co.uk",
+    "TURNSTILE_TEST_MODE": "false"
+  },
+  "secrets": {
+    "required": [
+      "TURNSTILE_SECRET_KEY",
+      "INTAKE_APPS_SCRIPT_URL",
+      "INTAKE_HMAC_SECRET"
+    ]
+  },
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 0.1,
+      "invocation_logs": false
+    }
   },
   "routes": [
     {
