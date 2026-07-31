@@ -91,7 +91,7 @@ The exact separate consent wording is:
 
 The exact learner consent-route question is:
 
-> **Which statement applies to the learner's consent?**
+> **Which statement applies to the learner’s consent?**
 >
 > The learner is not yet able to understand and give informed consent to this use of their information, so I am giving consent as a person with parental responsibility or documented legal authority.
 >
@@ -99,4 +99,4 @@ The exact learner consent-route question is:
 
 The exact authority confirmation is:
 
-> I confirm that I have parental responsibility for the learner, or hold documented legal authority to act on their behalf. I have shared the relevant privacy information with the learner in a way appropriate to their age and understanding. The statement selected above accurately reflects the learner's ability to understand and authorise this consent.
+> I confirm that I have parental responsibility for the learner, or hold documented legal authority to act on their behalf. I have shared the relevant privacy information with the learner in a way appropriate to their age and understanding. The statement selected above accurately reflects the learner’s ability to understand and authorise this consent.

@@ -76,7 +76,7 @@ record(!intakeHtml.includes("Article 6 or Article 9 legal basis"), "primary lear
 record(intakeHtml.includes("Step 5"), "primary learner profile: review step is missing");
 record(intakeHtml.includes("I explicitly consent to The MentorSphere using the health, disability, SEND and neurodiversity information I choose to provide"), "primary learner profile: approved explicit-consent wording is missing");
 record(intakeHtml.includes("I confirm that I have parental responsibility for the learner, or hold documented legal authority to act on their behalf."), "primary learner profile: approved authority wording is missing");
-record(intakeHtml.includes("Which statement applies to the learner's consent?"), "primary learner profile: learner consent route is missing");
+record(intakeHtml.includes("Which statement applies to the learner’s consent?"), "primary learner profile: learner consent route is missing");
 record(intakeHtml.includes("The learner understands how this information will be used and has authorised me to communicate this consent on their behalf."), "primary learner profile: learner-authorised route is missing");
 record(
   ["supportNeeds", "helpfulStrategies", "unhelpfulApproaches", "otherBackground"].every((path) => {

@@ -35,7 +35,7 @@ Approved exact form wording:
 
 Approved separate authority confirmation:
 
-> I confirm that I have parental responsibility for the learner, or hold documented legal authority to act on their behalf. I have shared the relevant privacy information with the learner in a way appropriate to their age and understanding. The statement selected above accurately reflects the learner's ability to understand and authorise this consent.
+> I confirm that I have parental responsibility for the learner, or hold documented legal authority to act on their behalf. I have shared the relevant privacy information with the learner in a way appropriate to their age and understanding. The statement selected above accurately reflects the learner’s ability to understand and authorise this consent.
 
 Approved learner consent routes:
 

@@ -34,7 +34,7 @@ describe("primary learner profile client controls", () => {
     ]);
 
     expect(script).toContain("formVersion: 'primary-learner-profile-v3'");
-    expect(html).toContain("Which statement applies to the learner's consent?");
+    expect(html).toContain("Which statement applies to the learner’s consent?");
     expect(html).toContain("The learner understands how this information will be used and has authorised me to communicate this consent on their behalf.");
   });
 });

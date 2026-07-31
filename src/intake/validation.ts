@@ -404,7 +404,7 @@ export function validateIntakeRequest(input: unknown): ValidationResult {
       errors["confirmations.specialCategoryAuthority"] = "Confirm parental responsibility or documented legal authority, or remove the optional information.";
     }
     if (!learnerConsentRoute) {
-      errors["confirmations.learnerConsentRoute"] = "Choose the statement that applies to the learner's consent.";
+      errors["confirmations.learnerConsentRoute"] = "Choose the statement that applies to the learner’s consent.";
     }
   } else {
     if (confirmations.specialCategoryConsent === true) {
