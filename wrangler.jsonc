@@ -1,16 +1,86 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
+  "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "thementorsphere",
+  "main": "src/worker.ts",
   "compatibility_date": "2026-07-26",
   "assets": {
+    "binding": "ASSETS",
     "directory": "./docs",
     "not_found_handling": "404-page",
-    "html_handling": "auto-trailing-slash"
+    "html_handling": "auto-trailing-slash",
+    "run_worker_first": ["/api/assistant/*"]
+  },
+  "vars": {
+    "CHATBOT_ENABLED": "false",
+    "AI_PROVIDER": "openai",
+    "AI_MODEL": "gpt-5.4-nano-2026-03-17",
+    "ENVIRONMENT": "production"
+  },
+  "ratelimits": [
+    {
+      "name": "ASSISTANT_RATE_LIMITER",
+      "namespace_id": "31001",
+      "simple": {
+        "limit": 12,
+        "period": 60
+      }
+    },
+    {
+      "name": "ASSISTANT_EVENT_RATE_LIMITER",
+      "namespace_id": "31003",
+      "simple": {
+        "limit": 60,
+        "period": 60
+      }
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.05
+    }
   },
   "routes": [
     {
       "pattern": "www.thementorsphere.co.uk",
       "custom_domain": true
     }
-  ]
+  ],
+  "env": {
+    "staging": {
+      "name": "thementorsphere-assistant-staging",
+      "workers_dev": true,
+      "routes": [],
+      "vars": {
+        "CHATBOT_ENABLED": "true",
+        "AI_PROVIDER": "openai",
+        "AI_MODEL": "gpt-5.4-nano-2026-03-17",
+        "ENVIRONMENT": "staging"
+      },
+      "ratelimits": [
+        {
+          "name": "ASSISTANT_RATE_LIMITER",
+          "namespace_id": "31002",
+          "simple": {
+            "limit": 12,
+            "period": 60
+          }
+        },
+        {
+          "name": "ASSISTANT_EVENT_RATE_LIMITER",
+          "namespace_id": "31004",
+          "simple": {
+            "limit": 60,
+            "period": 60
+          }
+        }
+      ]
+    }
+  }
 }

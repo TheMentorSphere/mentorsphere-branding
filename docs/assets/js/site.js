@@ -478,4 +478,35 @@
   } else if (typeof reduceMotionQuery.addListener === 'function') {
     reduceMotionQuery.addListener(handleMotionPreference);
   }
+
+  const loadAssistant = async () => {
+    if (!currentScript) return;
+
+    try {
+      const response = await fetch('/api/assistant/config', {
+        headers: { Accept: 'application/json' },
+        cache: 'no-store',
+      });
+      if (!response.ok) return;
+
+      const config = await response.json();
+      if (!config || config.enabled !== true) return;
+
+      window.MentorSphereAssistantConfig = config;
+
+      const assistantStyles = document.createElement('link');
+      assistantStyles.rel = 'stylesheet';
+      assistantStyles.href = new URL('../css/assistant.css', currentScript.src).href;
+      document.head.append(assistantStyles);
+
+      const assistantScript = document.createElement('script');
+      assistantScript.src = new URL('assistant.js', currentScript.src).href;
+      assistantScript.defer = true;
+      document.body.append(assistantScript);
+    } catch {
+      // The public website remains fully usable when the optional assistant is unavailable.
+    }
+  };
+
+  void loadAssistant();
 })();

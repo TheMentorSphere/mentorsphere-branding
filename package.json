@@ -1,0 +1,26 @@
+{
+  "name": "mentorsphere-website",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "pnpm run typecheck && pnpm run test && pnpm run validate:content",
+    "typecheck": "pnpm run types && tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "validate:content": "node scripts/validate-site.mjs",
+    "dev": "wrangler dev --env staging --local",
+    "dev:disabled": "wrangler dev --local",
+    "types": "wrangler types",
+    "deploy:dry-run": "wrangler deploy --dry-run --env=\"\"",
+    "audit:dependencies": "pnpm audit --prod"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.10.10",
+    "@types/node": "^24.1.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4",
+    "wrangler": "^4.115.0"
+  },
+  "packageManager": "pnpm@11.9.0"
+}
