@@ -11,8 +11,8 @@ Status: implementation draft for owner review before production launch.
 - Surname: required.
 - Relationship to the learner: required, single choice.
 - Relationship details: conditionally required when Other is selected.
-- Preferred contact method: required, single choice.
-- Mobile number: conditionally required for Telephone, Text message or WhatsApp; otherwise optional.
+- Preferred contact methods: required, one or more choices. Values use the fixed order Email, Telephone, Text message, WhatsApp.
+- Mobile number: conditionally required whenever Telephone, Text message or WhatsApp is selected; optional when Email is the only selected method. The requirement updates immediately as selections change.
 - Suitable contact times: optional, multiple choice.
 
 ### Step 2: About the learner
@@ -68,7 +68,7 @@ The integration enforces this order:
 8. Relationship to learner
 9. Relationship details
 10. Mobile number
-11. Preferred contact method
+11. Preferred contact methods
 12. Suitable contact times
 13. Learner first name
 14. Learner surname
@@ -107,7 +107,7 @@ The integration enforces this order:
 47. Safeguarding or legal hold
 48. Retention notes
 
-Multi-choice answers are stored as plain text separated by ` | `. Every destination cell is formatted as text, and values beginning with spreadsheet formula characters are prefixed safely before writing.
+Most multi-choice answers are stored as plain text separated by ` | `. Preferred contact methods use the canonical fixed order and semicolon-separated format `Email; Telephone; Text message; WhatsApp`, including only selected values. Every destination cell is formatted as text, and values beginning with spreadsheet formula characters are prefixed safely before writing.
 
 Columns 32 to 41 record whether special-category information was provided, the conditional explicit consent and authority confirmation, the learner consent route, their wording versions, the consent timestamp, status and any later withdrawal. Respondent identity is recorded in columns 5 to 9 on the same row. Empty special-category submissions record `No`, use `Not applicable` for consent status and leave the conditional route, wording and timestamp cells blank.
 

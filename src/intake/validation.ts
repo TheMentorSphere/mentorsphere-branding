@@ -1,4 +1,4 @@
-export const FORM_VERSION = "primary-learner-profile-v3" as const;
+export const FORM_VERSION = "primary-learner-profile-v4" as const;
 
 export const LEARNER_CONSENT_ROUTES = [
   "The learner is not yet able to understand and give informed consent to this use of their information, so I am giving consent as a person with parental responsibility or documented legal authority.",
@@ -116,7 +116,7 @@ export interface ValidatedIntakeSubmission {
     relationship: Relationship;
     relationshipOther: string;
     mobile: string;
-    preferredContactMethod: ContactMethod;
+    preferredContactMethods: ContactMethod[];
     suitableContactTimes: ContactTime[];
   };
   learner: {
@@ -260,6 +260,7 @@ function choices<const T extends readonly string[]>(
     return [];
   }
   const unique = [...new Set(value)] as T[number][];
+  if (unique.length !== value.length) errors[path] = "Choose each option only once.";
   if (required && unique.length === 0) errors[path] = "Choose at least one option.";
   return unique;
 }
@@ -299,16 +300,23 @@ export function validateIntakeRequest(input: unknown): ValidationResult {
   if (relationship === "Other" && !relationshipOther) {
     errors["respondent.relationshipOther"] = "Describe your relationship to the learner.";
   }
-  const preferredContactMethod = choice(
+  const submittedPreferredContactMethods = choices(
     respondent,
-    "preferredContactMethod",
-    "respondent.preferredContactMethod",
+    "preferredContactMethods",
+    "respondent.preferredContactMethods",
     CONTACT_METHODS,
     errors,
+    true,
   );
+  const preferredContactMethods = CONTACT_METHODS.filter((method) => submittedPreferredContactMethods.includes(method));
+  if (respondent.preferredContactMethods === undefined ||
+    (Array.isArray(respondent.preferredContactMethods) && respondent.preferredContactMethods.length === 0)) {
+    errors["respondent.preferredContactMethods"] = "Choose at least one contact method.";
+  }
   const mobile = optionalText(respondent, "mobile", "respondent.mobile", 40, errors);
-  if (PHONE_CONTACT_METHODS.has(preferredContactMethod) && !mobile) {
-    errors["respondent.mobile"] = `Enter a mobile number so Luke can contact you by ${preferredContactMethod.toLowerCase()}.`;
+  const selectedPhoneMethods = preferredContactMethods.filter((method) => PHONE_CONTACT_METHODS.has(method));
+  if (selectedPhoneMethods.length > 0 && !mobile) {
+    errors["respondent.mobile"] = `Enter a mobile number because you selected ${selectedPhoneMethods.join(", ")}.`;
   }
   const suitableContactTimes = choices(
     respondent,
@@ -435,7 +443,7 @@ export function validateIntakeRequest(input: unknown): ValidationResult {
           relationship,
           relationshipOther,
           mobile,
-          preferredContactMethod,
+          preferredContactMethods,
           suitableContactTimes,
         },
         learner: {

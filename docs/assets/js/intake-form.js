@@ -9,6 +9,7 @@
   const API_ENDPOINT = '/api/forms/primary-learner-profile';
   const CONFIG_ENDPOINT = `${API_ENDPOINT}/config`;
   const STEP_NAMES = ['About you', 'About the learner', 'Learning and support profile', 'Initial session preferences', 'Review and submit'];
+  const CONTACT_METHODS = ['Email', 'Telephone', 'Text message', 'WhatsApp'];
   const PHONE_CONTACT_METHODS = new Set(['Telephone', 'Text message', 'WhatsApp']);
   const SPECIAL_CATEGORY_RELATIONSHIPS = new Set(['Parent', 'Guardian or carer']);
   const NEEDS_AREAS_VISIBLE = new Set([
@@ -56,6 +57,10 @@
   };
 
   const multipleValues = (name) => Array.from(form.querySelectorAll(`[name="${name}"]:checked`), (control) => control.value);
+  const canonicalContactMethods = () => {
+    const selected = new Set(multipleValues('preferred_contact_methods'));
+    return CONTACT_METHODS.filter((method) => selected.has(method));
+  };
 
   const errorElement = (wrapper) => wrapper ? wrapper.querySelector('[data-field-error]') : null;
 
@@ -267,18 +272,18 @@
   };
 
   const updateMobileRequirement = () => {
-    const method = singleValue('preferred_contact_method');
-    const required = PHONE_CONTACT_METHODS.has(method);
+    const selectedPhoneMethods = canonicalContactMethods().filter((method) => PHONE_CONTACT_METHODS.has(method));
+    const required = selectedPhoneMethods.length > 0;
     const wrapper = fieldWrapper('respondent.mobile');
     mobileInput.required = required;
-    mobileMarker.textContent = required ? `Required for ${method}` : 'Optional';
+    mobileMarker.textContent = required ? 'Required for selected contact methods' : 'Optional';
     mobileMarker.className = required ? 'field-marker' : 'field-optional';
     if (wrapper) {
       wrapper.dataset.requiredMessage = required
-        ? `Enter a mobile number so Luke can contact you by ${method}.`
+        ? `Enter a mobile number because you selected ${selectedPhoneMethods.join(', ')}.`
         : 'Enter a valid mobile number.';
     }
-    if (mobileInput.value.trim()) clearFieldError(wrapper);
+    if (!required || mobileInput.value.trim()) clearFieldError(wrapper);
   };
 
   const displayValue = (value) => {
@@ -301,7 +306,7 @@
         ['Name', `${singleValue('respondent_first_name')} ${singleValue('respondent_surname')}`.trim()],
         ['Relationship', singleValue('relationship')],
         ['Relationship details', singleValue('relationship_other')],
-        ['Preferred contact method', singleValue('preferred_contact_method')],
+        ['Preferred contact methods', canonicalContactMethods().join('; ')],
         ['Mobile number', singleValue('respondent_mobile')],
         ['Suitable contact times', multipleValues('suitable_contact_times')],
       ],
@@ -375,7 +380,7 @@
   }
 
   const intakePayload = () => ({
-    formVersion: 'primary-learner-profile-v3',
+    formVersion: 'primary-learner-profile-v4',
     submissionId,
     honeypot: singleValue('organisation_website'),
     turnstileToken,
@@ -386,7 +391,7 @@
       relationship: singleValue('relationship'),
       relationshipOther: singleValue('relationship_other'),
       mobile: singleValue('respondent_mobile'),
-      preferredContactMethod: singleValue('preferred_contact_method'),
+      preferredContactMethods: canonicalContactMethods(),
       suitableContactTimes: multipleValues('suitable_contact_times'),
     },
     learner: {
@@ -527,7 +532,7 @@
       updateRelationshipOther();
       updateSpecialCategoryControls();
     }
-    if (event.target.name === 'preferred_contact_method') updateMobileRequirement();
+    if (event.target.name === 'preferred_contact_methods') updateMobileRequirement();
     if (event.target.name === 'learner_year_group') updateYearGroupOther();
     if (event.target.name === 'learner_subjects') updateSubjectOther();
     if (event.target.name === 'needs_status') updateRelevantAreas();
@@ -562,7 +567,7 @@
       });
       const result = await response.json().catch(() => ({}));
       if (response.ok && result.success === true) {
-        showSubmitStatus('Thank you. The learner profile has been submitted. Luke will review it and follow up using your preferred contact method.', 'success');
+        showSubmitStatus('Thank you. The learner profile has been submitted. Luke will review it and follow up using your preferred contact methods.', 'success');
         form.querySelectorAll('input, select, textarea, button').forEach((control) => {
           control.disabled = true;
         });

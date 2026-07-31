@@ -105,7 +105,7 @@ record(
   "intake-form.js: persistent browser storage found",
 );
 record(!/\bconsole\s*\./u.test(intakeScript), "intake-form.js: browser console logging found");
-record(intakeScript.includes("primary-learner-profile-v3"), "intake-form.js: current form version is missing");
+record(intakeScript.includes("primary-learner-profile-v4"), "intake-form.js: current form version is missing");
 record(intakeScript.includes("learnerConsentRoute: singleValue('learner_consent_route')"), "intake-form.js: learner consent route is not included in the payload");
 
 const headers = await readFile(path.join(docsRoot, "_headers"), "utf8");

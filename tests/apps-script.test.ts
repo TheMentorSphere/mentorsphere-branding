@@ -31,6 +31,40 @@ async function loadAppsScript(): Promise<AppsScriptTestExports> {
 }
 
 describe("Apps Script retention schema", () => {
+  it("retains 48 columns and uses the plural contact-method header", async () => {
+    const script = await loadAppsScript();
+    expect(script.SHEET_COLUMNS).toHaveLength(48);
+    expect(script.SHEET_COLUMNS[10]).toBe("Preferred contact methods");
+  });
+
+  it("stores contact methods in canonical semicolon-separated order", async () => {
+    const script = await loadAppsScript();
+    const payload = validIntakeRequest();
+    (payload.respondent as Record<string, unknown>).preferredContactMethods = ["WhatsApp", "Email", "Telephone"];
+    (payload.respondent as Record<string, unknown>).mobile = "07123 456 789";
+    const row = Array.from(script.rowFor_({ issuedAt: new Date().toISOString(), payload }, "2026-07-31T10:15:30.000Z"));
+    expect(row[10]).toBe("Email; Telephone; WhatsApp");
+    expect(row).toHaveLength(48);
+  });
+
+  it.each([
+    { preferredContactMethods: [] },
+    { preferredContactMethods: ["Carrier pigeon"] },
+    { preferredContactMethods: ["Email", "Email"] },
+  ])("rejects an invalid contact-method array: $preferredContactMethods", async ({ preferredContactMethods }) => {
+    const script = await loadAppsScript();
+    const payload = validIntakeRequest();
+    (payload.respondent as Record<string, unknown>).preferredContactMethods = preferredContactMethods;
+    expect(script.hasValidShape_({ issuedAt: new Date().toISOString(), payload })).toBe(false);
+  });
+
+  it("rejects phone-based contact without a mobile number", async () => {
+    const script = await loadAppsScript();
+    const payload = validIntakeRequest();
+    (payload.respondent as Record<string, unknown>).preferredContactMethods = ["Email", "WhatsApp"];
+    expect(script.hasValidShape_({ issuedAt: new Date().toISOString(), payload })).toBe(false);
+  });
+
   it("appends the five administrative retention columns in the enforced order", async () => {
     const script = await loadAppsScript();
     expect(Array.from(script.SHEET_COLUMNS).slice(-5)).toEqual([

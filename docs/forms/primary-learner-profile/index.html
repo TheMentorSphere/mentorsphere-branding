@@ -12,8 +12,8 @@
   <link rel="icon" href="../../assets/images/main-logo.svg" sizes="any" type="image/svg+xml">
   <link rel="apple-touch-icon" href="../../assets/images/main-logo.svg">
   <link rel="stylesheet" href="../../assets/css/styles.css?v=20260731">
-  <link rel="stylesheet" href="../../assets/css/intake-forms.css?v=20260731">
-  <script src="../../assets/js/intake-form.js?v=20260731" defer></script>
+  <link rel="stylesheet" href="../../assets/css/intake-forms.css?v=20260731v4">
+  <script src="../../assets/js/intake-form.js?v=20260731v4" defer></script>
 </head>
 <body class="page-intake-form">
   <a class="skip-link" href="#main-content">Skip to form</a>
@@ -34,6 +34,7 @@
   <main id="main-content" class="intake-main">
     <div class="intake-shell">
       <section class="intake-introduction" aria-labelledby="intake-title">
+        <span class="intake-intro-motif" aria-hidden="true"></span>
         <p class="eyebrow">Learner profile</p>
         <h1 id="intake-title">Learner Profile: Primary Years</h1>
         <div class="intake-intro-copy">
@@ -41,6 +42,23 @@
           <p>The form usually takes 5 to 10 minutes, and brief answers are welcome. If you need another format, please <a href="../../contact/">contact Luke</a>.</p>
           <p>Only include information that is relevant to planning and delivering support.</p>
         </div>
+        <section class="intake-subjects-supported" aria-labelledby="subjects-supported-title">
+          <h2 id="subjects-supported-title">Subjects supported</h2>
+          <div class="intake-subject-logo-strip">
+            <div class="intake-subject-logo">
+              <img src="../../assets/images/english-logo.svg" width="560" height="560" alt="The English Mentor geometric book logo">
+              <span>English</span>
+            </div>
+            <div class="intake-subject-logo">
+              <img src="../../assets/images/maths-logo.svg" width="560" height="560" alt="The Maths Mentor geometric cube logo">
+              <span>Maths</span>
+            </div>
+            <div class="intake-subject-logo">
+              <img src="../../assets/images/science-logo.svg" width="560" height="560" alt="The Science Mentor geometric laboratory flask logo">
+              <span>Science</span>
+            </div>
+          </div>
+        </section>
       </section>
 
       <div class="intake-progress" aria-label="Form progress">
@@ -61,7 +79,7 @@
       <div class="intake-live-status sr-only" role="status" aria-live="polite" aria-atomic="true" data-live-status></div>
 
       <form class="intake-form" action="/api/forms/primary-learner-profile" method="post" novalidate data-intake-form>
-        <input type="hidden" name="form_version" value="primary-learner-profile-v3">
+        <input type="hidden" name="form_version" value="primary-learner-profile-v4">
         <div class="form-honeypot" aria-hidden="true">
           <label for="organisation-website">Leave this field blank</label>
           <input id="organisation-website" name="organisation_website" type="text" tabindex="-1" autocomplete="off">
@@ -118,13 +136,14 @@
               <p class="field-error" id="relationship-other-error" data-field-error></p>
             </div>
 
-            <fieldset class="intake-field intake-field-full" data-field-path="respondent.preferredContactMethod" data-required="true" data-required-message="Choose a preferred contact method.">
-              <legend>Preferred contact method <span class="field-marker">Required</span></legend>
-              <div class="choice-grid choice-grid-four" aria-describedby="preferred-contact-error">
-                <label class="choice-card"><input type="radio" name="preferred_contact_method" value="Email"> <span>Email</span></label>
-                <label class="choice-card"><input type="radio" name="preferred_contact_method" value="Telephone"> <span>Telephone</span></label>
-                <label class="choice-card"><input type="radio" name="preferred_contact_method" value="Text message"> <span>Text message</span></label>
-                <label class="choice-card"><input type="radio" name="preferred_contact_method" value="WhatsApp"> <span>WhatsApp</span></label>
+            <fieldset class="intake-field intake-field-full" data-field-path="respondent.preferredContactMethods" data-required="true" data-required-message="Choose at least one preferred contact method.">
+              <legend>Preferred contact methods <span class="field-marker">Required</span></legend>
+              <p class="field-help" id="preferred-contact-help">Choose one or more ways Luke may contact you.</p>
+              <div class="choice-grid choice-grid-four" aria-describedby="preferred-contact-help preferred-contact-error">
+                <label class="choice-card choice-card-icon"><input type="checkbox" name="preferred_contact_methods" value="Email"> <svg class="choice-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m4 7 8 6 8-6"></path></svg><span>Email</span></label>
+                <label class="choice-card choice-card-icon"><input type="checkbox" name="preferred_contact_methods" value="Telephone"> <svg class="choice-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M7 3h3l1.5 5-2 1.5a15 15 0 0 0 5 5L16 12.5l5 1.5v3a4 4 0 0 1-4 4C9.3 20.2 3.8 14.7 3 7a4 4 0 0 1 4-4Z"></path></svg><span>Telephone</span></label>
+                <label class="choice-card choice-card-icon"><input type="checkbox" name="preferred_contact_methods" value="Text message"> <svg class="choice-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4V5Z"></path><path d="M8 9h8M8 12h5"></path></svg><span>Text message</span></label>
+                <label class="choice-card choice-card-icon"><input type="checkbox" name="preferred_contact_methods" value="WhatsApp"> <svg class="choice-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 1 7.7 13.7L21 21l-4.5-1.2A9 9 0 1 1 12 3Z"></path><path d="M9 8.5c.8 3.2 2.3 4.7 5.5 5.5"></path></svg><span>WhatsApp</span></label>
               </div>
               <p class="field-error" id="preferred-contact-error" data-field-error></p>
             </fieldset>
@@ -132,7 +151,7 @@
             <div class="intake-field intake-field-full" data-field-path="respondent.mobile" data-required-message="Enter a mobile number for the contact method you selected.">
               <label for="respondent-mobile">Mobile number <span class="field-optional" data-mobile-marker>Optional</span></label>
               <input id="respondent-mobile" name="respondent_mobile" type="tel" autocomplete="tel" inputmode="tel" maxlength="40" aria-describedby="respondent-mobile-help respondent-mobile-error">
-              <p class="field-help" id="respondent-mobile-help">A number is required if you choose Telephone, Text message or WhatsApp.</p>
+              <p class="field-help" id="respondent-mobile-help">A number is required if you choose Telephone, Text message or WhatsApp. It remains optional when Email is your only choice.</p>
               <p class="field-error" id="respondent-mobile-error" data-field-error></p>
             </div>
 
@@ -140,12 +159,12 @@
               <legend>Suitable contact times <span class="field-optional">Optional</span></legend>
               <p class="field-help" id="contact-times-help">Choose any times that usually work. This does not create a booking.</p>
               <div class="choice-grid choice-grid-three" aria-describedby="contact-times-help contact-times-error">
-                <label class="choice-card"><input type="checkbox" name="suitable_contact_times" value="Weekday morning"> <span>Weekday morning</span></label>
-                <label class="choice-card"><input type="checkbox" name="suitable_contact_times" value="Weekday afternoon"> <span>Weekday afternoon</span></label>
-                <label class="choice-card"><input type="checkbox" name="suitable_contact_times" value="Weekday evening"> <span>Weekday evening</span></label>
-                <label class="choice-card"><input type="checkbox" name="suitable_contact_times" value="Weekend morning"> <span>Weekend morning</span></label>
-                <label class="choice-card"><input type="checkbox" name="suitable_contact_times" value="Weekend afternoon"> <span>Weekend afternoon</span></label>
-                <label class="choice-card"><input type="checkbox" name="suitable_contact_times" value="Weekend evening"> <span>Weekend evening</span></label>
+                <label class="choice-card choice-card-icon"><input type="checkbox" name="suitable_contact_times" value="Weekday morning"> <svg class="choice-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg><span>Weekday morning</span></label>
+                <label class="choice-card choice-card-icon"><input type="checkbox" name="suitable_contact_times" value="Weekday afternoon"> <svg class="choice-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg><span>Weekday afternoon</span></label>
+                <label class="choice-card choice-card-icon"><input type="checkbox" name="suitable_contact_times" value="Weekday evening"> <svg class="choice-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg><span>Weekday evening</span></label>
+                <label class="choice-card choice-card-icon"><input type="checkbox" name="suitable_contact_times" value="Weekend morning"> <svg class="choice-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M7 3v4M17 3v4M3 10h18"></path></svg><span>Weekend morning</span></label>
+                <label class="choice-card choice-card-icon"><input type="checkbox" name="suitable_contact_times" value="Weekend afternoon"> <svg class="choice-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M7 3v4M17 3v4M3 10h18"></path></svg><span>Weekend afternoon</span></label>
+                <label class="choice-card choice-card-icon"><input type="checkbox" name="suitable_contact_times" value="Weekend evening"> <svg class="choice-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M7 3v4M17 3v4M3 10h18"></path></svg><span>Weekend evening</span></label>
               </div>
               <p class="field-error" id="contact-times-error" data-field-error></p>
             </fieldset>
@@ -208,9 +227,9 @@
             <fieldset class="intake-field intake-field-full" data-field-path="learner.subjects" data-required="true" data-required-message="Choose at least one subject requiring support.">
               <legend>Subjects requiring support <span class="field-marker">Required</span></legend>
               <div class="choice-grid choice-grid-four" aria-describedby="learner-subjects-error">
-                <label class="choice-card"><input type="checkbox" name="learner_subjects" value="English"> <span>English</span></label>
-                <label class="choice-card"><input type="checkbox" name="learner_subjects" value="Maths"> <span>Maths</span></label>
-                <label class="choice-card"><input type="checkbox" name="learner_subjects" value="Science"> <span>Science</span></label>
+                <label class="choice-card choice-card-icon"><input type="checkbox" name="learner_subjects" value="English"> <svg class="choice-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v17H7.5A3.5 3.5 0 0 0 4 22V5.5ZM20 5.5A3.5 3.5 0 0 0 16.5 2H13v17h3.5A3.5 3.5 0 0 1 20 22V5.5Z"></path></svg><span>English</span></label>
+                <label class="choice-card choice-card-icon"><input type="checkbox" name="learner_subjects" value="Maths"> <svg class="choice-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="M7 7h10M8 12h2M14 12h2M8 16h2M14 16h2"></path></svg><span>Maths</span></label>
+                <label class="choice-card choice-card-icon"><input type="checkbox" name="learner_subjects" value="Science"> <svg class="choice-icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"></path><path d="M8 15h8"></path></svg><span>Science</span></label>
                 <label class="choice-card"><input type="checkbox" name="learner_subjects" value="Other"> <span>Other</span></label>
               </div>
               <p class="field-error" id="learner-subjects-error" data-field-error></p>

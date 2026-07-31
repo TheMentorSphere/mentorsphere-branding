@@ -13,7 +13,7 @@ export function validIntakeRequest(): Record<string, unknown> {
       relationship: "Parent",
       relationshipOther: "",
       mobile: "",
-      preferredContactMethod: "Email",
+      preferredContactMethods: ["Email"],
       suitableContactTimes: ["Weekday evening"],
     },
     learner: {
