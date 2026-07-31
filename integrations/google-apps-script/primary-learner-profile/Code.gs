@@ -1,6 +1,11 @@
-const FORM_VERSION = 'primary-learner-profile-v2';
+const FORM_VERSION = 'primary-learner-profile-v3';
 const CONSENT_WORDING_VERSION = 'explicit-consent-2026-07-31';
 const AUTHORITY_WORDING_VERSION = 'authority-confirmation-2026-07-31';
+const LEARNER_CONSENT_ROUTE_WORDING_VERSION = 'learner-consent-route-2026-07-31';
+const LEARNER_CONSENT_ROUTES = [
+  'The learner is not yet able to understand and give informed consent to this use of their information, so I am giving consent as a person with parental responsibility or documented legal authority.',
+  'The learner understands how this information will be used and has authorised me to communicate this consent on their behalf.',
+];
 const MAX_REQUEST_CHARACTERS = 50000;
 const SIGNATURE_WINDOW_MILLISECONDS = 5 * 60 * 1000;
 
@@ -42,6 +47,8 @@ const SHEET_COLUMNS = [
   'Consent recorded at (UTC)',
   'Parental responsibility or documented authority',
   'Authority wording version',
+  'Learner consent route',
+  'Learner consent route wording version',
   'Special-category consent status',
   'Consent withdrawn at (UTC)',
   'Notification status',
@@ -106,13 +113,18 @@ function hasValidShape_(request) {
     payload.supportProfile.unhelpfulApproaches === '' &&
     payload.supportProfile.otherBackground === '';
   const relationshipShapeIsValid = relationshipAllowsSpecialCategory || supportDetailIsBlank;
+  const learnerConsentRouteIsValid =
+    LEARNER_CONSENT_ROUTES.indexOf(payload.confirmations.learnerConsentRoute) >= 0;
   const consentShapeIsValid = specialCategoryProvided
     ? relationshipAllowsSpecialCategory &&
       payload.confirmations.specialCategoryConsent === true &&
-      payload.confirmations.specialCategoryAuthority === true
+      payload.confirmations.specialCategoryAuthority === true &&
+      learnerConsentRouteIsValid
     : structuredSpecialCategoryIsBlank &&
+      supportDetailIsBlank &&
       payload.confirmations.specialCategoryConsent === false &&
-      payload.confirmations.specialCategoryAuthority === false;
+      payload.confirmations.specialCategoryAuthority === false &&
+      payload.confirmations.learnerConsentRoute === '';
   return payload.formVersion === FORM_VERSION &&
     typeof payload.submissionId === 'string' &&
     /^[0-9a-f-]{36}$/iu.test(payload.submissionId) &&
@@ -187,6 +199,8 @@ function rowFor_(request, receivedAt) {
     payload.supportProfile.specialCategoryProvided ? receivedAt : '',
     payload.confirmations.specialCategoryAuthority,
     payload.supportProfile.specialCategoryProvided ? AUTHORITY_WORDING_VERSION : '',
+    payload.supportProfile.specialCategoryProvided ? payload.confirmations.learnerConsentRoute : '',
+    payload.supportProfile.specialCategoryProvided ? LEARNER_CONSENT_ROUTE_WORDING_VERSION : '',
     payload.supportProfile.specialCategoryProvided ? 'Active' : 'Not applicable',
     '',
     'Pending',

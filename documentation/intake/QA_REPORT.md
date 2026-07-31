@@ -7,7 +7,7 @@ The isolated staging Worker was returned to both release flags `false` after tes
 ## Automated checks
 
 - `pnpm install --frozen-lockfile`: passed.
-- `pnpm run check`: passed before final documentation. This generated Worker types, typechecked the Worker, ran 42 tests and validated all 29 HTML files. The same checks are rerun against the final commit.
+- `pnpm run check`: passed before final documentation. This generated Worker types, typechecked the Worker, ran 63 tests across four test files and validated all 29 HTML files. The same checks are rerun against the final commit.
 - `pnpm run deploy:dry-run`: passed. Wrangler prepared the Worker and 85 static assets without deploying production.
 - `node scripts/verify-worker-site.mjs [staging URL]`: passed against the deployed staging Worker.
 - Production configuration was inspected after testing: `FORM_SUBMISSIONS_ENABLED` remains `false` and `TURNSTILE_TEST_MODE` remains `false`. The production Turnstile widget was configured later on the dedicated launch branch while both release flags remained `false`.
@@ -22,7 +22,7 @@ The isolated staging Worker was returned to both release flags `false` after tes
 - Test controls: `TEST_MODE=true` in the isolated Apps Script project enabled controlled request and notification failures. Both force-failure properties were reset to `false` after testing.
 - Disabled at rest: the staging Worker was redeployed from the committed configuration after the test, and its configuration endpoint returned `enabled:false`.
 
-No production form, Google Sheet, Apps Script deployment, Turnstile widget or production secret was changed.
+No production website Worker or form flag was deployed or changed. The authorised production Apps Script integration, owner-only Sheet schema and Gmail routing rule were updated under the controlled launch process described below.
 
 ## End-to-end results
 
@@ -31,7 +31,7 @@ No production form, Google Sheet, Apps Script deployment, Turnstile widget or pr
 The final production integration was tested through an isolated local Worker preview. The public production Worker was not deployed and both committed production flags remained `false`. The preview used Cloudflare's test Turnstile credentials, fictional respondent and learner information, the authorised versioned production Apps Script web app and the owner-only production Sheet.
 
 - The browser completed all five steps and submitted successfully after Worker validation, Turnstile verification, HMAC forwarding and Apps Script validation.
-- Apps Script wrote one row in the exact 46-column order. The row recorded `primary-learner-profile-v2`, the explicit-consent wording version, the authority wording version, consent timestamp and active consent status.
+- Apps Script wrote one row in the exact 48-column order. The row recorded `primary-learner-profile-v3`, the explicit-consent wording version, selected learner consent route, learner-route wording version, authority wording version, consent timestamp and active consent status.
 - A formula-like value beginning `=SUM(1,1)` had a string user-entered value, a string effective value and the `TEXT` number format. It was not a formula.
 - Repeating the same submission ID through the Worker returned success and left exactly one Sheet row.
 - With the isolated notification-failure flag enabled, the Worker returned success, the row remained stored and `Notification status` recorded `Failed: review Apps Script executions`.
@@ -39,9 +39,19 @@ The final production integration was tested through an isolated local Worker pre
 - The minimal notification body contained only a UTC receipt timestamp, the restricted Sheet link and the fixed statement that no answers were included. It contained no learner or respondent answer.
 - Local Worker logs contained method, route, outcome and status only. They contained no fictional email, name, learner detail or answer. Browser inspection likewise found no submitted answer in console output, storage, URLs or analytics.
 - After the final HMAC rotation, a second fictional request through the isolated Worker returned 201 and produced a correctly structured row with `Notification status` set to `Sent`.
-- All fictional production rows were removed immediately after verification. The production Sheet was confirmed to contain one 46-column header row and zero response rows. All fictional notification messages were moved to Gmail Trash.
+- All fictional production rows were removed immediately after verification. The production Sheet was confirmed to contain one 48-column header row and zero response rows. All fictional notification messages were moved to Gmail Trash.
 
-The self-addressed notifications were delivered to Gmail Spam during testing. This did not expose answers or lose submissions, but the owner must create or approve a Gmail rule that never sends the exact fixed notification to Spam before enabling submissions.
+The final narrow Gmail rule matches sender `luke@thementorsphere.co.uk`, recipient `luke@thementorsphere.co.uk` and subject `New learner profile received`. It applies `Never send it to Spam`, the `Learner profile notifications` label and `Always mark it as important`. The final fictional notification arrived in Inbox, had the label and Important status, was not in Spam and contained no submitted answer.
+
+### Final consent-route and free-text closure test
+
+- Before Yes was chosen, all four narrative fields were absent from the accessible browser view.
+- Choosing Yes revealed `supportNeeds`, `helpfulStrategies`, `unhelpfulApproaches` and `otherBackground`.
+- After fictional values, explicit consent, authority and the learner-authorised route were selected, returning to step 3 and choosing No cleared all four narratives, both checkboxes and the learner consent route. The four narrative containers were hidden again.
+- A crafted Worker request with `specialCategoryProvided=false` and a narrative support value returned 400 with the conditional-consent error and did not reach Apps Script or create a Sheet row.
+- Worker automated tests reject each of the four crafted narrative fields on No, accept both exact learner consent routes, and reject missing, altered or out-of-context routes.
+- Apps Script automated tests independently reject each narrative bypass and missing or crafted routes, and accept both exact routes.
+- No keyword scanning is used. The control is based on explicit field state and allowlisted route values.
 
 ### Browser, Worker and Sheet
 
@@ -87,7 +97,7 @@ Two successful fictional submissions produced two messages with this exact conte
 >
 > This notification intentionally contains no learner or respondent answers.
 
-The full message bodies contained no fictional learner name, respondent name, email address, mobile number, subject, need, strategy, session preference or formula-like answer. The test messages were delivered but classified as Spam because the staging script sent from and to the same Workspace account. Production launch testing must confirm acceptable notification routing or add an appropriate Workspace rule.
+The full message bodies contained no fictional learner name, respondent name, email address, mobile number, subject, need, strategy, session preference or formula-like answer. The final production-integration message passed the exact Inbox, label, Important and not-Spam checks after the narrow routing rule was created.
 
 ### Logging and browser storage
 
@@ -119,9 +129,9 @@ The repository contains no PDF files and no links to PDF files, so there was no 
 
 ## Screenshots
 
-- Desktop: `screenshots/primary-learner-profile-desktop.jpg`, recaptured from the final launch branch at 1440 by 1000 pixels.
-- Mobile: `screenshots/primary-learner-profile-mobile.jpg`, recaptured from the final launch branch at 390 by 844 pixels with no horizontal overflow.
-- Consent evidence: `evidence/production-smoke-desktop.png`, captured from the final review screen with fictional information and the approved conditional consent and authority controls.
+- Desktop: `screenshots/primary-learner-profile-desktop.jpg`, recaptured from the final launch branch using the desktop viewport override.
+- Mobile: `screenshots/primary-learner-profile-mobile.jpg`, recaptured as a full-page image using the 390 by 844 responsive viewport override, with no horizontal overflow.
+- Consent evidence: `evidence/production-smoke-desktop.png`, recaptured from the final review screen with fictional information and the approved explicit consent, learner consent route and authority controls.
 
 The initial page no longer moves keyboard focus to the first step heading. Focus still moves to the new heading after an intentional step change.
 
@@ -132,7 +142,6 @@ Production must remain disabled until all of the following are complete:
 - Owner sign-off of the completed LIA and DPIA residual risk.
 - Owner approval of the final acknowledgement, separate explicit consent, authority confirmation and Privacy Policy V1.5.
 - Publication of the approved Privacy Policy version.
-- A Gmail rule or other approved routing control that prevents the fixed notification from being treated as Spam.
 - Explicit approval to enable the page flag, followed separately by explicit approval to enable submissions.
 
 ## Final page release control

@@ -250,11 +250,6 @@
       liveStatus.textContent = 'Optional health, disability, SEND, neurodiversity, diagnosis and EHCP fields were cleared. Ask Luke to arrange a separate information-sharing route.';
     }
 
-    form.querySelectorAll('[data-authorised-support-detail]').forEach((field) => {
-      field.hidden = !relationshipAllowed;
-      if (!relationshipAllowed) clearContainerControls(field);
-    });
-
     const provided = relationshipAllowed && singleValue('special_category_choice') === 'Yes';
     form.querySelectorAll('[data-special-category-field]').forEach((field) => {
       if (field.dataset.conditional === 'relevant-areas') return;
@@ -380,7 +375,7 @@
   }
 
   const intakePayload = () => ({
-    formVersion: 'primary-learner-profile-v2',
+    formVersion: 'primary-learner-profile-v3',
     submissionId,
     honeypot: singleValue('organisation_website'),
     turnstileToken,
@@ -423,6 +418,7 @@
       privacyAcknowledged: Boolean(namedControl('privacy_confirmation')?.checked),
       specialCategoryConsent: Boolean(namedControl('special_category_consent')?.checked),
       specialCategoryAuthority: Boolean(namedControl('special_category_authority')?.checked),
+      learnerConsentRoute: singleValue('learner_consent_route'),
     },
   });
 

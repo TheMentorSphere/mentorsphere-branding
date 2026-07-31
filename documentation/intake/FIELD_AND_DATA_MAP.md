@@ -30,12 +30,12 @@ Status: implementation draft for owner review before production launch.
 - Whether optional health, disability, SEND or neurodiversity information will be provided: required, single choice.
 - Diagnosed, suspected or assessed needs status: optional and displayed only when the respondent chooses the special-category route.
 - Relevant areas: optional, multiple choice, displayed only when the respondent chooses the special-category route and a relevant needs status.
-- Helpful support-needs information: optional long text.
-- Helpful strategies, adjustments or approaches: optional long text.
-- Unhelpful approaches: optional long text.
-- Other relevant educational or personal background: optional long text.
+- Helpful support-needs information: optional long text, displayed and accepted only when the respondent chooses the special-category route.
+- Helpful strategies, adjustments or approaches: optional long text, displayed and accepted only when the respondent chooses the special-category route.
+- Unhelpful approaches: optional long text, displayed and accepted only when the respondent chooses the special-category route.
+- Other relevant educational or personal background: optional long text, displayed and accepted only when the respondent chooses the special-category route.
 - EHCP status: optional and displayed only when the respondent chooses the special-category route.
-- For the initial launch, the special-category route is available only where the selected relationship is Parent or Guardian or carer. Education or support professionals, other family members and Other respondents are directed to ask Luke for a separate information-sharing route. Structured needs, diagnosis and EHCP fields are rejected server-side if that restriction is bypassed.
+- For the initial launch, the special-category route is available only where the selected relationship is Parent or Guardian or carer. Education or support professionals, other family members and Other respondents are directed to ask Luke for a separate information-sharing route. Structured and narrative special-category fields are rejected server-side if either the relationship restriction or the respondent's No choice is bypassed.
 
 ### Step 4: Initial session preferences
 
@@ -49,6 +49,7 @@ Status: implementation draft for owner review before production launch.
 - Confirmation that the respondent is authorised to provide the learner's information: required.
 - Privacy Policy acknowledgement: required.
 - Explicit consent for optional health, disability, SEND and neurodiversity information: separate, unticked by default and required only when the special-category route is selected.
+- Learner consent route: required single choice when the special-category route is selected. It records either that the learner cannot yet give informed consent and the authorised adult is consenting, or that the learner understands and has authorised the respondent to communicate consent.
 - Confirmation of parental responsibility or documented legal authority: separate, unticked by default and required only when the special-category route is selected.
 - Cloudflare Turnstile security token: required and verified server-side.
 - Honeypot: hidden and expected to remain blank.
@@ -94,21 +95,23 @@ The integration enforces this order:
 35. Consent recorded at (UTC)
 36. Parental responsibility or documented authority
 37. Authority wording version
-38. Special-category consent status
-39. Consent withdrawn at (UTC)
-40. Notification status
-41. Notification sent at (UTC)
-42. Record status
-43. Last meaningful contact date
-44. Retention review date
-45. Safeguarding or legal hold
-46. Retention notes
+38. Learner consent route
+39. Learner consent route wording version
+40. Special-category consent status
+41. Consent withdrawn at (UTC)
+42. Notification status
+43. Notification sent at (UTC)
+44. Record status
+45. Last meaningful contact date
+46. Retention review date
+47. Safeguarding or legal hold
+48. Retention notes
 
 Multi-choice answers are stored as plain text separated by ` | `. Every destination cell is formatted as text, and values beginning with spreadsheet formula characters are prefixed safely before writing.
 
-Columns 32 to 39 record whether special-category information was provided, the conditional explicit consent and authority confirmation, their wording versions, the consent timestamp and any later withdrawal. Respondent identity is recorded in columns 5 to 9 on the same row. Empty special-category submissions record `No`, use `Not applicable` for consent status and leave the conditional wording and timestamp cells blank.
+Columns 32 to 41 record whether special-category information was provided, the conditional explicit consent and authority confirmation, the learner consent route, their wording versions, the consent timestamp, status and any later withdrawal. Respondent identity is recorded in columns 5 to 9 on the same row. Empty special-category submissions record `No`, use `Not applicable` for consent status and leave the conditional route, wording and timestamp cells blank.
 
-Columns 42 to 46 are owner-managed administrative fields and are not respondent-facing questions. A new row starts with `Prospective`, the received date as its initial last meaningful contact date, a review date six months later, and `No` for the safeguarding or legal hold. The owner updates these fields as the relationship changes.
+Columns 44 to 48 are owner-managed administrative fields and are not respondent-facing questions. A new row starts with `Prospective`, the received date as its initial last meaningful contact date, a review date six months later, and `No` for the safeguarding or legal hold. The owner updates these fields as the relationship changes.
 
 ## Monthly retention review
 
@@ -126,6 +129,14 @@ At least monthly:
 4. If meaningful contact has occurred, update `Last meaningful contact date` and set `Retention review date` to six months later.
 5. If a service relationship begins, change `Record status` to `Active client` and manage the intake under the applicable client-record arrangements.
 6. Set `Safeguarding or legal hold` to `Yes` only where applicable and add a minimal administrative explanation in `Retention notes`. Do not automatically delete held or active-client records.
+
+If optional health, disability, SEND or neurodiversity information is received without the required consent:
+
+1. Do not use it to personalise support.
+2. Remove or irreversibly redact it as soon as reasonably possible.
+3. Where useful and proportionate, contact the respondent without repeating the information and offer the correct consent or information-sharing route.
+4. Keep only the minimum administrative record needed to evidence the removal or redaction and any follow-up.
+5. Handle safeguarding information separately where required by the Safeguarding Policy or a legal obligation.
 
 ## Minimal notification email template
 

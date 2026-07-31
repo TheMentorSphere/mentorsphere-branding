@@ -35,7 +35,13 @@ Approved exact form wording:
 
 Approved separate authority confirmation:
 
-> I confirm that I have parental responsibility for the learner, or hold documented legal authority to consent to this use of the learner's information on their behalf. I have shared the relevant privacy information with the learner in a way appropriate to their age and understanding, where appropriate.
+> I confirm that I have parental responsibility for the learner, or hold documented legal authority to act on their behalf. I have shared the relevant privacy information with the learner in a way appropriate to their age and understanding. The statement selected above accurately reflects the learner's ability to understand and authorise this consent.
+
+Approved learner consent routes:
+
+> The learner is not yet able to understand and give informed consent to this use of their information, so I am giving consent as a person with parental responsibility or documented legal authority.
+
+> The learner understands how this information will be used and has authorised me to communicate this consent on their behalf.
 
 For the initial launch, only Parent and Guardian or carer relationships can choose the special-category route, and they must give the approved authority confirmation. Education or support professionals, other family members and Other respondents cannot submit structured health, disability, SEND, neurodiversity, diagnosis or EHCP information through the form. They are directed to ask Luke for a separate documented-authority information-sharing route. The Worker and Apps Script enforce this restriction independently.
 
@@ -72,7 +78,7 @@ Add to the learner-intake section:
 ## Implemented consequences and remaining approvals
 
 1. The legitimate interests assessment and focused DPIA are complete and identify no unmitigated high risk. Owner residual-risk sign-off remains required.
-2. The separate explicit-consent field, authority confirmation, wording versions, consent date and respondent details are recorded in the 46-column schema.
+2. The separate explicit-consent field, learner consent route, authority confirmation, wording versions, consent date and respondent details are recorded in the 48-column schema.
 3. Sensitive fields are optional and ordinary intake can be submitted without explicit consent when they are blank.
 4. The browser, Worker and Apps Script independently enforce consent, authority and restricted-relationship rules.
 5. The consent-withdrawal and redaction procedure is documented with the retention process.

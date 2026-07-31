@@ -23,8 +23,8 @@ The direct, unlisted website form collects:
 - respondent identity, contact details, relationship and communication preferences;
 - learner identity, date of birth, education stage and subjects;
 - ordinary educational background, strategies and session preferences;
-- optional structured needs, diagnosis, neurodiversity and EHCP information where the special-category route is chosen;
-- general authority, privacy acknowledgement, conditional explicit consent and conditional authority confirmation; and
+- optional structured and narrative needs, diagnosis, neurodiversity, EHCP, support and background information where the special-category route is chosen;
+- general authority, privacy acknowledgement, conditional explicit consent, a conditional learner consent route and conditional authority confirmation; and
 - operational metadata including submission ID, processing timestamps, notification status and retention controls.
 
 The form does not request identity documents, full medical records, financial information, passwords, biometric data, location tracking or recordings. It does not conduct profiling, behavioural advertising, automated eligibility decisions or automated safeguarding decisions.
@@ -57,12 +57,12 @@ No data is collected for unrelated marketing or sold.
 
 1. The respondent enters information in the browser. Answers remain in page memory and are not written to URLs, cookies, local storage or session storage.
 2. The browser obtains a Turnstile token and sends the JSON request to the same-origin Cloudflare Worker.
-3. The Worker applies page and submission flags, origin and content-type checks, a body-size limit, honeypot handling, field allowlists and conditional consent and authority validation.
+3. The Worker applies page and submission flags, origin and content-type checks, a body-size limit, honeypot handling, field allowlists and conditional consent, learner consent route and authority validation. It rejects every structured or narrative special-category field when the respondent chose No.
 4. The Worker sends the Turnstile token, submission ID and connection information needed for verification to Cloudflare Turnstile. Learner answers are not included in the Turnstile verification request.
 5. After validation, the Worker signs a short-lived request with HMAC and forwards it to Google Apps Script.
 6. Apps Script independently checks the HMAC, timestamp, form shape, special-category relationship rule and duplicate submission ID.
 7. Apps Script writes one text-formatted row to an owner-only Google Sheet.
-8. Apps Script sends a minimal notification to the monitored business inbox. It contains a receipt timestamp and restricted Sheet link, but no respondent or learner answers.
+8. Apps Script sends a minimal notification to the monitored business inbox. It contains a receipt timestamp and restricted Sheet link, but no respondent or learner answers. A narrow Gmail rule matches the exact sender, recipient and subject, keeps it out of Spam, applies the `Learner profile notifications` label and marks it important.
 9. Luke reviews the private row, updates record and retention status, and removes records when no longer required.
 
 On a Worker, Turnstile or Apps Script failure, the page displays a generic retry message and does not clear the answers. No answer values are intentionally logged.
@@ -88,11 +88,13 @@ Production Drive sharing is owner-only. Link sharing is disabled. No third party
 
 Article 9(2)(a), explicit consent, applies to optional health, disability, SEND and neurodiversity information.
 
-The form has a required Yes or No choice before the structured special-category fields. Choosing No leaves those fields hidden and cleared, does not require consent and still permits submission. Choosing Yes reveals separate, unticked explicit-consent and authority controls.
+The form has a required Yes or No choice before the special-category fields. Choosing No leaves all structured and narrative support fields hidden and cleared, does not require consent and still permits submission. Choosing Yes reveals separate, unticked explicit-consent and authority controls and a required single-choice learner consent route.
 
 At initial launch, the special-category route is available only where the relationship is Parent or Guardian or carer and the respondent confirms parental responsibility or documented legal authority. Education or support professionals, other family members and Other respondents are told not to provide health, disability, SEND, neurodiversity, diagnosis or EHCP information and are directed to a separate documented-authority workflow. The Worker and Apps Script reject attempts to bypass this rule.
 
-Consent is recorded with respondent details, received date, exact wording version, authority wording version and status.
+The learner consent route records either that the learner cannot yet understand and give informed consent and the authorised adult is consenting, or that the learner understands the use and authorised the respondent to communicate consent. The exact selected route and its wording version are recorded with respondent details, received date, explicit-consent wording version, authority wording version and consent status. Missing, altered and out-of-context routes are rejected by the browser, Worker and Apps Script.
+
+Luke must take the learner's wishes and competence seriously throughout. The selected route supports the initial decision but does not replace contextual review. If a learner appears able to understand and objects, shows distress or gives information inconsistent with the selected route, Luke must pause use of the optional information and review consent and authority before personalising support from it.
 
 ## 6. Consent withdrawal
 
@@ -116,7 +118,7 @@ Withdrawal does not automatically end ordinary support and carries no penalty.
 - Fixed choices are used where possible to reduce open-ended collection.
 - Special-category collection is optional and segregated.
 - The restricted relationship rule prevents routine third-party special-category submission.
-- Free-text fields are optional, length-limited and accompanied by relevance warnings.
+- Narrative support fields are optional, length-limited and available only within the special-category route. Choosing No clears them in the browser, while the Worker and Apps Script reject crafted values without using keyword scanning.
 - The form requests no evidence, reports or documents.
 - A direct-contact and alternative-format route remains available.
 - Suitability is reviewed by a person and is not determined automatically.
@@ -135,6 +137,12 @@ The ordinary information and optional special-category route are proportionate t
 - A saved monthly filter identifies prospective records due for review and not on hold.
 - Consent status and withdrawal date support removal and redaction after withdrawal.
 
+### Accidental special-category information without consent
+
+If optional health, disability, SEND or neurodiversity information is provided without the required consent, The MentorSphere will not use it for personalisation and will remove or redact it as soon as reasonably possible, unless it must be handled separately for a safeguarding or legal purpose.
+
+Operationally, Luke must not use the information; must remove or irreversibly redact it promptly; may contact the respondent without repeating it to offer the correct consent or information-sharing route; must retain only the minimum administrative record needed to evidence the action; and must handle any safeguarding concern separately under the Safeguarding Policy or applicable legal obligation.
+
 ## 9. Security and breach considerations
 
 Security measures include:
@@ -148,6 +156,7 @@ Security measures include:
 - formula-injection protection and text-formatted Sheet cells;
 - owner-only Drive sharing;
 - answer-free notifications;
+- an exact sender, recipient and subject Gmail routing rule that keeps the fixed notification in the monitored Inbox, labels it and marks it important;
 - no sensitive browser storage, analytics, URL parameters or intentional answer logging;
 - generic client and API errors;
 - secret rotation and non-repository secret storage; and
@@ -176,16 +185,17 @@ Any residual high risk requires consultation with the ICO before processing star
 
 | Risk | Initial score | Measures | Residual score |
 | --- | ---: | --- | ---: |
-| Child is unaware of or does not understand the processing | 12, significant | Adult authority confirmation, age-appropriate privacy sharing, plain language, learner involvement where appropriate | 8, medium |
-| Special-category information submitted without valid explicit consent | 15, high | Optional Yes or No route, separate unticked consent, wording and timestamp record, Worker and Apps Script checks | 6, medium |
-| Professional or other third party submits special-category information without authority | 15, high | Restricted relationships, hidden and cleared structured fields, clear separate-route wording, independent server rejection | 6, medium |
-| Excessive special-category detail entered in free text | 12, significant | Optional fields, explicit relevance warnings, no document upload, length limits, contextual owner review and deletion | 8, medium |
+| Child is unaware of, does not understand or objects to the processing | 12, significant | Versioned learner consent route, adult authority confirmation, age-appropriate privacy sharing, contextual competence review and learner involvement | 8, medium |
+| Special-category information submitted without valid explicit consent | 15, high | Optional Yes or No route, all narrative and structured fields hidden and cleared on No, separate unticked consent, versioned learner route, Worker and Apps Script rejection, prompt redaction procedure | 6, medium |
+| Professional or other third party submits special-category information without authority | 15, high | Restricted relationships, all special-category fields hidden and cleared, clear separate-route wording, independent server rejection | 6, medium |
+| Excessive special-category detail entered in free text | 12, significant | Optional route-only fields, relevance warnings, no document upload, length limits, contextual owner review and deletion | 8, medium |
 | Inaccurate third-party information affects suitability or planning | 9, medium | No automated decisions, introductory discussion, correction rights and contextual review | 4, low |
 | Unauthorised access to the Sheet | 15, high | Owner-only sharing, business account, restricted folder, account security, HMAC and access review | 6, medium |
 | Secret or endpoint compromise permits forged rows | 15, high | High-entropy HMAC, rotation, short freshness window, duplicate protection, no secret in repository | 4, low |
 | Formula-like input executes in the spreadsheet | 12, significant | Text number format and prefix protection for formula-leading characters | 2, low |
 | Duplicate retry creates multiple learner records or emails | 9, medium | Stable submission ID, Script Lock and duplicate lookup before append | 2, low |
 | Notification discloses answers | 12, significant | Fixed minimal template with no submitted fields, tested against monitored inbox | 2, low |
+| Notification is overlooked in Spam | 9, medium | Exact sender, recipient and subject filter; Never Spam; monitored label; mark important; fictional delivery check | 2, low |
 | Submission failure causes loss or misleading success | 9, medium | Fail-closed upstream result, generic retry response and browser answer preservation | 3, low |
 | Answers appear in browser, Worker or diagnostic logs | 15, high | No console logging, no browser storage, invocation logging disabled, no answer values in application errors | 4, low |
 | Data retained longer than necessary | 12, significant | Automatic review date, monthly filter, record status, hold flag and documented deletion process | 4, low |
@@ -203,14 +213,15 @@ No residual score is high. The remaining medium risks are inherent to authorised
 | --- | --- |
 | Implement approved conditional consent and authority logic | Completed and tested |
 | Enforce restricted relationships in Worker and Apps Script | Completed and tested in the browser, Worker and Apps Script validation layers |
-| Record wording versions, timestamp, status and withdrawal date | Completed in the 46-column production schema and verified by fictional smoke test |
+| Record consent route, wording versions, timestamp, status and withdrawal date | Completed in the 48-column production schema and verified by fictional smoke test |
 | Complete child-specific LIA | Completed |
 | Prepare final Privacy Policy V1.5 wording | Completed in the launch branch, not published |
 | Confirm owner-only Google Workspace access | Completed |
 | Rotate HMAC and deploy authorised Apps Script version | Completed using the MentorSphere business account |
 | Store all production Worker secrets without deploying production | Completed in undeployed Worker versions |
-| Pass fictional production-path smoke test and remove test data | Completed on 31 July 2026; the Sheet was returned to header-only state and test emails were moved to Trash |
+| Pass fictional production-path smoke test and remove test data | Completed on 31 July 2026; repeat required against the final 48-column schema before approval |
 | Confirm no answer logging | Completed through browser inspection and answer-free local Worker request logs |
+| Route the fixed notification to the monitored Inbox | Completed with an exact sender, recipient and subject Gmail rule; fictional delivery passed Inbox, label, Important, not-Spam and answer-free checks |
 | Publish approved Privacy Policy V1.5 | Blocked until final owner approval |
 | Enable form page and submissions | Blocked until final owner approval |
 
@@ -220,10 +231,10 @@ The processing is necessary and proportionate for the limited intake purpose aft
 
 Owner sign-off:
 
-- Outcome: pending final owner approval with the launch pull request.
+- Owner decision: pending.
 - Residual risks accepted: pending.
-- Signed by: Luke Turner.
-- Date: pending.
+- Signature: pending.
+- Approval date: pending.
 
 ## Official sources
 

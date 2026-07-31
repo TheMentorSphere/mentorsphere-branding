@@ -51,9 +51,11 @@ Add after the service list:
 >
 > Some optional answers may include health, disability, SEND or neurodiversity information. The Article 9 condition for using that information to understand the learner and personalise support is explicit consent under Article 9(2)(a). Providing the information and giving consent are optional, and an ordinary intake can be submitted without doing so. Respondents should provide only relevant information.
 >
+> If optional health, disability, SEND or neurodiversity information is provided without the required consent, The MentorSphere will not use it for personalisation and will remove or redact it as soon as reasonably possible, unless it must be handled separately for a safeguarding or legal purpose.
+>
 > Consent can be withdrawn at any time by emailing luke@thementorsphere.co.uk. Withdrawal does not affect processing that took place before it was withdrawn. After withdrawal, The MentorSphere will stop using and remove or irreversibly redact the special-category information unless another Article 9 condition applies to a separate purpose that was explained to the individual. Ordinary information may still be retained where a separate lawful basis and the retention arrangements apply. A minimal record of the withdrawal may be retained where necessary to honour it.
 >
-> For the initial form, a person providing optional special-category information about a learner must confirm that they have parental responsibility or documented legal authority to consent to that use on the learner's behalf. Education or support professionals, other family members and other respondents cannot provide health, disability, SEND, neurodiversity, diagnosis or EHCP information through this form. Luke can arrange a separate information-sharing route where appropriate authority has been documented. Relevant privacy information should be shared with the learner in a way appropriate to their age and understanding, where appropriate.
+> For the initial form, a person providing optional special-category information about a learner must confirm that they have parental responsibility or documented legal authority to act on the learner's behalf. They must also select whether the learner is not yet able to understand and give informed consent, so the authorised adult is giving consent, or whether the learner understands how the information will be used and has authorised the respondent to communicate consent on their behalf. The learner's wishes and ability to understand will be considered in context. Education or support professionals, other family members and other respondents cannot provide health, disability, SEND, neurodiversity, diagnosis or EHCP information through this form. Luke can arrange a separate information-sharing route where appropriate authority has been documented. Relevant privacy information must be shared with the learner in a way appropriate to their age and understanding.
 >
 > Submissions are processed through The MentorSphere's Cloudflare-hosted website service. Cloudflare Turnstile protects the form against automated or abusive submissions. After server-side validation, the response is transferred through an HMAC-authenticated connection to a private Google Workspace spreadsheet. Answers are not placed in URLs or browser storage and are not intentionally written to Cloudflare or browser logs.
 >
@@ -87,6 +89,14 @@ The exact separate consent wording is:
 >
 > I explicitly consent to The MentorSphere using the health, disability, SEND and neurodiversity information I choose to provide in this form to understand the learner and personalise support. Providing this information and giving consent are optional, and I can still submit the form without doing so. I can withdraw my consent at any time by emailing luke@thementorsphere.co.uk. Withdrawal will not affect processing that took place before it was withdrawn.
 
+The exact learner consent-route question is:
+
+> **Which statement applies to the learner's consent?**
+>
+> The learner is not yet able to understand and give informed consent to this use of their information, so I am giving consent as a person with parental responsibility or documented legal authority.
+>
+> The learner understands how this information will be used and has authorised me to communicate this consent on their behalf.
+
 The exact authority confirmation is:
 
-> I confirm that I have parental responsibility for the learner, or hold documented legal authority to consent to this use of the learner's information on their behalf. I have shared the relevant privacy information with the learner in a way appropriate to their age and understanding, where appropriate.
+> I confirm that I have parental responsibility for the learner, or hold documented legal authority to act on their behalf. I have shared the relevant privacy information with the learner in a way appropriate to their age and understanding. The statement selected above accurately reflects the learner's ability to understand and authorise this consent.

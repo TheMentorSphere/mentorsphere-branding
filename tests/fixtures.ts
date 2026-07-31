@@ -29,8 +29,8 @@ export function validIntakeRequest(): Record<string, unknown> {
       specialCategoryProvided: false,
       needsStatus: "",
       relevantAreas: [],
-      supportNeeds: "Short fictional test answer.",
-      helpfulStrategies: "Short tasks and clear instructions.",
+      supportNeeds: "",
+      helpfulStrategies: "",
       unhelpfulApproaches: "",
       otherBackground: "",
       ehcpStatus: "",
@@ -45,6 +45,7 @@ export function validIntakeRequest(): Record<string, unknown> {
       privacyAcknowledged: true,
       specialCategoryConsent: false,
       specialCategoryAuthority: false,
+      learnerConsentRoute: "",
     },
   };
 }

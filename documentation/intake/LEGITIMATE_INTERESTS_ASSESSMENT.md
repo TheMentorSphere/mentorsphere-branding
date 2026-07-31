@@ -43,7 +43,7 @@ The ordinary information is limited to what is reasonably needed for the initial
 | Ordinary strategies, preferences and approaches | Plan a proportionate introductory discussion | Collecting these later would require repetition and could delay a useful response |
 | Session preferences | Understand practical expectations without creating a booking | These could be collected later, but early optional or single-choice collection reduces unnecessary exchanges |
 
-Optional special-category information is segregated behind an explicit Yes or No choice and separate consent. A respondent can submit without it. Structured diagnosis, needs and EHCP questions are hidden and cleared when the special-category route is not chosen.
+Optional special-category information is segregated behind an explicit Yes or No choice and separate consent. A respondent can submit without it. Structured and narrative support fields are hidden and cleared when the special-category route is not chosen. The Worker and Apps Script reject those fields if a crafted request contradicts the No choice.
 
 The form discourages complete records, identity documents, passwords and bank details. Field lengths, fixed choices and server-side validation constrain collection. There is no advertising, tracking profile or automated decision.
 
@@ -77,10 +77,11 @@ The processing does not determine access through an automated score, make statut
 
 - Children's interests receive particular weight in every review and service decision.
 - The special-category route is limited at launch to a respondent selecting Parent or Guardian or carer and confirming parental responsibility or documented legal authority.
+- The respondent must select a versioned learner consent route stating either that the learner cannot yet understand and give informed consent, or that the learner understands and has authorised the respondent to communicate consent.
 - Education or support professionals, other family members and Other respondents cannot submit structured needs, diagnosis or EHCP information through this form. The Worker and Apps Script reject crafted attempts independently.
-- Privacy information must be shared with the learner in a way appropriate to their age and understanding where appropriate.
+- Privacy information must be shared with the learner in a way appropriate to their age and understanding.
 - The form uses plain language, optional fields, a direct-contact alternative and no manipulative design.
-- Luke must consider the learner's views, competence and involvement where appropriate to age and circumstances.
+- Luke must consider the learner's wishes, competence and involvement in context. An authorised adult's decision is not treated as permission to disregard a capable learner's objection, distress or later withdrawal of cooperation. Luke must pause and review the appropriate route where the learner's wishes conflict with the respondent's account.
 - Objection, correction, erasure and restriction requests are handled subject to applicable legal and safeguarding exceptions.
 
 ### Operational and technical safeguards
@@ -93,6 +94,7 @@ The processing does not determine access through an automated score, make statut
 - Formula-like values are stored as text.
 - The Sheet is in an owner-only restricted Google Workspace folder.
 - Notifications contain no learner or respondent answers.
+- The fixed notification is routed by exact sender, recipient and subject to the monitored Inbox, labelled `Learner profile notifications`, marked important and excluded from Spam.
 - Answers are excluded from browser storage, URLs, analytics and intentional application logs.
 - Prospective records have an operational six-month review date, monthly filter and deletion process.
 - Test, duplicate and unnecessary records are removed promptly.
@@ -102,7 +104,7 @@ The processing does not determine access through an automated score, make statut
 
 | Risk to the learner | Initial concern | Safeguard | Residual assessment |
 | --- | --- | --- | --- |
-| Ordinary information supplied without the learner's awareness | Significant for an older or capable child | Authority confirmation, age-appropriate privacy information, learner involvement where appropriate | Medium |
+| Ordinary information supplied without the learner's awareness or contrary to their wishes | Significant for an older or capable child | Versioned learner consent route, authority confirmation, age-appropriate privacy information, contextual competence review and learner involvement | Medium |
 | Excessive or irrelevant information | Significant because free text is available | Optional fields, prompts to provide only relevant information, length limits and alternative route | Low to medium |
 | Inaccurate third-party information affects service planning | Moderate | No automated decisions, contextual review, correction rights and introductory discussion | Low |
 | Information used beyond the stated purpose | Moderate | Purpose limitation, no marketing or profiling, documented review triggers | Low |
@@ -130,10 +132,10 @@ Review at least annually and sooner if:
 
 Owner sign-off:
 
-- Decision: pending final owner approval with the launch pull request.
+- Owner decision: pending.
 - Residual risks accepted: pending.
-- Signed by: Luke Turner.
-- Date: pending.
+- Signature: pending.
+- Approval date: pending.
 
 ## Official sources
 

@@ -34,7 +34,7 @@ The force-failure properties are ignored unless `TEST_MODE=true`. They must not 
 
 ## End-to-end evidence sequence
 
-1. Submit one complete fictional profile in the browser and verify a single 35-column row in the private Sheet.
+1. Submit one complete fictional profile in the browser and verify a single 48-column row in the private Sheet, including the selected learner consent route and its wording version.
 2. Include a formula-like optional value such as `=FICTIONAL_TEST_VALUE`. Verify it is stored as text and is not a formula.
 3. Verify the notification subject and body against the approved template and search it for every fictional name, email, telephone number and answer.
 4. Replay the same submission ID and verify the response is treated as a duplicate with no additional row.

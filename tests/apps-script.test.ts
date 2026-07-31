@@ -4,6 +4,11 @@ import vm from "node:vm";
 import { describe, expect, it } from "vitest";
 import { validIntakeRequest } from "./fixtures";
 
+const LEARNER_CANNOT_CONSENT =
+  "The learner is not yet able to understand and give informed consent to this use of their information, so I am giving consent as a person with parental responsibility or documented legal authority.";
+const LEARNER_AUTHORISED =
+  "The learner understands how this information will be used and has authorised me to communicate this consent on their behalf.";
+
 interface AppsScriptTestExports {
   SHEET_COLUMNS: string[];
   hasValidShape_(request: unknown): boolean;
@@ -35,7 +40,7 @@ describe("Apps Script retention schema", () => {
       "Safeguarding or legal hold",
       "Retention notes",
     ]);
-    expect(script.SHEET_COLUMNS).toHaveLength(46);
+    expect(script.SHEET_COLUMNS).toHaveLength(48);
   });
 
   it("initialises a prospective record with a six-month review date", async () => {
@@ -46,7 +51,7 @@ describe("Apps Script retention schema", () => {
       receivedAt,
     ));
 
-    expect(row).toHaveLength(46);
+    expect(row).toHaveLength(48);
     expect(row.slice(-5)).toEqual(["Prospective", "2026-07-31", "2027-01-31", "No", ""]);
   });
 
@@ -61,6 +66,7 @@ describe("Apps Script retention schema", () => {
     support.ehcpStatus = "Yes";
     confirmations.specialCategoryConsent = true;
     confirmations.specialCategoryAuthority = true;
+    confirmations.learnerConsentRoute = LEARNER_AUTHORISED;
     const receivedAt = "2026-07-31T10:15:30.000Z";
     const row = Array.from(script.rowFor_({ issuedAt: receivedAt, payload }, receivedAt));
     const byColumn = Object.fromEntries(script.SHEET_COLUMNS.map((column, index) => [column, row[index]]));
@@ -71,6 +77,8 @@ describe("Apps Script retention schema", () => {
     expect(byColumn["Consent recorded at (UTC)"]).toBe(receivedAt);
     expect(byColumn["Parental responsibility or documented authority"]).toBe("Yes");
     expect(byColumn["Authority wording version"]).toBe("authority-confirmation-2026-07-31");
+    expect(byColumn["Learner consent route"]).toBe(LEARNER_AUTHORISED);
+    expect(byColumn["Learner consent route wording version"]).toBe("learner-consent-route-2026-07-31");
     expect(byColumn["Special-category consent status"]).toBe("Active");
     expect(byColumn["Consent withdrawn at (UTC)"]).toBe("");
   });
@@ -85,11 +93,52 @@ describe("Apps Script retention schema", () => {
     support.needsStatus = "Yes: diagnosed";
     confirmations.specialCategoryConsent = true;
     confirmations.specialCategoryAuthority = true;
+    confirmations.learnerConsentRoute = LEARNER_CANNOT_CONSENT;
     expect(script.hasValidShape_({ issuedAt: new Date().toISOString(), payload })).toBe(true);
 
     respondent.relationship = "Education or support professional";
     expect(script.hasValidShape_({ issuedAt: new Date().toISOString(), payload })).toBe(false);
   });
+
+  it.each([LEARNER_CANNOT_CONSENT, LEARNER_AUTHORISED])(
+    "accepts the permitted learner consent route: %s",
+    async (learnerConsentRoute) => {
+      const script = await loadAppsScript();
+      const payload = validIntakeRequest();
+      const support = payload.supportProfile as Record<string, unknown>;
+      const confirmations = payload.confirmations as Record<string, unknown>;
+      support.specialCategoryProvided = true;
+      support.supportNeeds = "Fictional support detail";
+      confirmations.specialCategoryConsent = true;
+      confirmations.specialCategoryAuthority = true;
+      confirmations.learnerConsentRoute = learnerConsentRoute;
+      expect(script.hasValidShape_({ issuedAt: new Date().toISOString(), payload })).toBe(true);
+    },
+  );
+
+  it("rejects missing or crafted learner consent routes", async () => {
+    const script = await loadAppsScript();
+    const payload = validIntakeRequest();
+    const support = payload.supportProfile as Record<string, unknown>;
+    const confirmations = payload.confirmations as Record<string, unknown>;
+    support.specialCategoryProvided = true;
+    confirmations.specialCategoryConsent = true;
+    confirmations.specialCategoryAuthority = true;
+
+    expect(script.hasValidShape_({ issuedAt: new Date().toISOString(), payload })).toBe(false);
+    confirmations.learnerConsentRoute = "A crafted route";
+    expect(script.hasValidShape_({ issuedAt: new Date().toISOString(), payload })).toBe(false);
+  });
+
+  it.each(["supportNeeds", "helpfulStrategies", "unhelpfulApproaches", "otherBackground"])(
+    "rejects crafted %s text when special-category information is declined",
+    async (field) => {
+      const script = await loadAppsScript();
+      const payload = validIntakeRequest();
+      (payload.supportProfile as Record<string, unknown>)[field] = "Fictional crafted detail";
+      expect(script.hasValidShape_({ issuedAt: new Date().toISOString(), payload })).toBe(false);
+    },
+  );
 
   it("calculates the review date from the received date", async () => {
     const script = await loadAppsScript();
