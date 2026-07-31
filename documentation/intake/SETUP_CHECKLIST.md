@@ -9,11 +9,13 @@ No learner or respondent data, credentials or deployment URLs belong in this rep
 1. In the approved Google Workspace account, create a dedicated spreadsheet in a restricted Drive folder.
 2. Name the response tab `Primary learner profiles`, or record a different agreed tab name for the Script Property.
 3. Remove link sharing. Give access only to Luke and any specifically authorised person who needs the information.
-4. Leave the tab empty. The integration creates and verifies the exact header row on its first authenticated submission.
+4. Leave the tab empty. The integration creates and verifies the exact 40-column header row on its first authenticated submission.
 5. Record the spreadsheet ID and its private URL for the Script Properties below.
 6. Confirm account security, authorised users, Google Workspace contractual settings, data location and international-transfer arrangements before launch.
 
 The exact column order is recorded in `FIELD_AND_DATA_MAP.md` and enforced by `Code.gs`. If the header row is later changed, submissions fail closed rather than writing into the wrong columns.
+
+After the headers exist, create a saved filter view named `Retention review due` for prospective records whose review date is on or before today and whose safeguarding or legal hold is not `Yes`. Follow the monthly review procedure in `FIELD_AND_DATA_MAP.md`. The five retention columns are administrative and must never be added to the respondent-facing form.
 
 ## 2. Apps Script deployment
 
@@ -37,10 +39,10 @@ The web app accepts only recent requests with a valid HMAC signature. It rejects
 
 ## 3. Cloudflare secrets and Turnstile
 
-1. Create a managed Turnstile widget for production, restricted to `www.thementorsphere.co.uk`.
+1. Create a managed Turnstile widget for production, restricted to `www.thementorsphere.co.uk` and the apex hostname used by the site's existing redirect path.
 2. Use Cloudflare's published test keys for local and staging-preview testing. Do not add local or preview hostnames to the production widget.
 3. Keep `TURNSTILE_TEST_MODE` set to `false` in production. The isolated `staging` environment sets it to `true` because it uses only Cloudflare's published test credentials.
-4. Replace the production `TURNSTILE_SITE_KEY` placeholder in `wrangler.jsonc` only when launch approval is given.
+4. Confirm the production `TURNSTILE_SITE_KEY` in `wrangler.jsonc` matches the restricted production widget. The widget is configured before launch while both release flags remain `false`.
 5. Add these Worker secrets interactively for the approved environment:
 
    - `TURNSTILE_SECRET_KEY`

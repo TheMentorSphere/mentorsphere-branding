@@ -39,6 +39,11 @@ const SHEET_COLUMNS = [
   'Acknowledgement wording version',
   'Notification status',
   'Notification sent at (UTC)',
+  'Record status',
+  'Last meaningful contact date',
+  'Retention review date',
+  'Safeguarding or legal hold',
+  'Retention notes',
 ];
 
 function jsonOutput_(value) {
@@ -100,6 +105,21 @@ function text_(value) {
   return /^[=+\-@]/u.test(text) ? `'${text}` : text;
 }
 
+function retentionReviewDate_(receivedAt) {
+  const receivedDate = new Date(receivedAt);
+  if (!Number.isFinite(receivedDate.getTime())) throw new Error('Invalid received date');
+  const originalDay = receivedDate.getUTCDate();
+  receivedDate.setUTCDate(1);
+  receivedDate.setUTCMonth(receivedDate.getUTCMonth() + 6);
+  const lastDayOfTargetMonth = new Date(Date.UTC(
+    receivedDate.getUTCFullYear(),
+    receivedDate.getUTCMonth() + 1,
+    0,
+  )).getUTCDate();
+  receivedDate.setUTCDate(Math.min(originalDay, lastDayOfTargetMonth));
+  return receivedDate.toISOString().slice(0, 10);
+}
+
 function rowFor_(request, receivedAt) {
   const payload = request.payload;
   return [
@@ -137,6 +157,11 @@ function rowFor_(request, receivedAt) {
     payload.confirmations.sensitiveDataAcknowledged,
     ACKNOWLEDGEMENT_VERSION,
     'Pending',
+    '',
+    'Prospective',
+    receivedAt.slice(0, 10),
+    retentionReviewDate_(receivedAt),
+    'No',
     '',
   ].map(text_);
 }

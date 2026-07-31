@@ -10,7 +10,7 @@ The isolated staging Worker was returned to `FORM_SUBMISSIONS_ENABLED=false` aft
 - `pnpm run check`: passed. This generated Worker types, typechecked the Worker, ran 22 tests and validated all 29 HTML files.
 - `pnpm run deploy:dry-run`: passed. Wrangler prepared the Worker and 85 static assets without deploying production.
 - `node scripts/verify-worker-site.mjs [staging URL]`: passed against the deployed staging Worker.
-- Production configuration was inspected after testing: `FORM_SUBMISSIONS_ENABLED` remains `false`, the production Turnstile site key remains an explicit launch placeholder and `TURNSTILE_TEST_MODE` remains `false`.
+- Production configuration was inspected after testing: `FORM_SUBMISSIONS_ENABLED` remains `false` and `TURNSTILE_TEST_MODE` remains `false`. The production Turnstile widget was configured later on the dedicated launch branch while both release flags remained `false`.
 
 ## Isolated staging setup
 

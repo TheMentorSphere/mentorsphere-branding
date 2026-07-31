@@ -89,8 +89,32 @@ The integration enforces this order:
 33. Acknowledgement wording version
 34. Notification status
 35. Notification sent at (UTC)
+36. Record status
+37. Last meaningful contact date
+38. Retention review date
+39. Safeguarding or legal hold
+40. Retention notes
 
 Multi-choice answers are stored as plain text separated by ` | `. Every destination cell is formatted as text, and values beginning with spreadsheet formula characters are prefixed safely before writing.
+
+Columns 36 to 40 are owner-managed administrative fields and are not respondent-facing questions. A new row starts with `Prospective`, the received date as its initial last meaningful contact date, a review date six months later, and `No` for the safeguarding or legal hold. The owner updates these fields as the relationship changes.
+
+## Monthly retention review
+
+Use a saved filter view named `Retention review due` with these conditions:
+
+- `Record status` is `Prospective`.
+- `Retention review date` is on or before today.
+- `Safeguarding or legal hold` is not `Yes`.
+
+At least monthly:
+
+1. Open the saved filter view and review each due record.
+2. Confirm that no service relationship has begun and that there is no safeguarding or legal reason to retain it.
+3. Delete records that have reached the approved retention point and are no longer needed.
+4. If meaningful contact has occurred, update `Last meaningful contact date` and set `Retention review date` to six months later.
+5. If a service relationship begins, change `Record status` to `Active client` and manage the intake under the applicable client-record arrangements.
+6. Set `Safeguarding or legal hold` to `Yes` only where applicable and add a minimal administrative explanation in `Retention notes`. Do not automatically delete held or active-client records.
 
 ## Minimal notification email template
 
