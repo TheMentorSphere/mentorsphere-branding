@@ -4,6 +4,10 @@ import type { IntakeBindings } from "../src/intake/submission";
 import { validIntakeRequest } from "./fixtures";
 
 const API_URL = "https://www.thementorsphere.co.uk/api/forms/primary-learner-profile";
+const LEARNER_CANNOT_CONSENT =
+  "The learner is not yet able to understand and give informed consent to this use of their information, so I am giving consent as a person with parental responsibility or documented legal authority.";
+const LEARNER_AUTHORISED =
+  "The learner understands how this information will be used and has authorised me to communicate this consent on their behalf.";
 
 function bindings(overrides: Partial<IntakeBindings> = {}): IntakeBindings {
   return {
@@ -105,6 +109,38 @@ describe("primary learner profile Worker", () => {
     expect(result.fieldErrors?.["respondent.email"]).toBe("Enter a valid email address.");
     expect(fetchSpy).not.toHaveBeenCalled();
   });
+
+  it("rejects a crafted narrative answer when special-category information is declined", async () => {
+    const body = validIntakeRequest();
+    (body.supportProfile as Record<string, unknown>).supportNeeds = "Crafted fictional detail";
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const response = await handleIntakeApi(request(body), bindings());
+    const result = await response.json() as { fieldErrors?: Record<string, string> };
+
+    expect(response.status).toBe(400);
+    expect(result.fieldErrors?.["supportProfile.specialCategoryProvided"]).toContain("complete the separate consent controls");
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it.each([LEARNER_CANNOT_CONSENT, LEARNER_AUTHORISED])(
+    "forwards the permitted learner consent route",
+    async (learnerConsentRoute) => {
+      const body = validIntakeRequest();
+      (body.supportProfile as Record<string, unknown>).specialCategoryProvided = true;
+      (body.confirmations as Record<string, unknown>).specialCategoryConsent = true;
+      (body.confirmations as Record<string, unknown>).specialCategoryAuthority = true;
+      (body.confirmations as Record<string, unknown>).learnerConsentRoute = learnerConsentRoute;
+      const fetchSpy = mockSuccessfulUpstreams();
+
+      const response = await handleIntakeApi(request(body), bindings());
+
+      expect(response.status).toBe(201);
+      const appsCall = fetchSpy.mock.calls.find(([input, init]) => new Request(input, init).url.includes("script.google.test"));
+      if (!appsCall) throw new Error("Expected an Apps Script request");
+      const envelope = await new Request(appsCall[0], appsCall[1]).json() as { body: string };
+      expect(JSON.parse(envelope.body)).toMatchObject({ payload: { confirmations: { learnerConsentRoute } } });
+    },
+  );
 
   it("silently accepts a filled honeypot without forwarding the response", async () => {
     const body = validIntakeRequest();

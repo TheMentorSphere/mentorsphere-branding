@@ -1,4 +1,9 @@
-export const FORM_VERSION = "primary-learner-profile-v1" as const;
+export const FORM_VERSION = "primary-learner-profile-v3" as const;
+
+export const LEARNER_CONSENT_ROUTES = [
+  "The learner is not yet able to understand and give informed consent to this use of their information, so I am giving consent as a person with parental responsibility or documented legal authority.",
+  "The learner understands how this information will be used and has authorised me to communicate this consent on their behalf.",
+] as const;
 
 export const RELATIONSHIPS = [
   "Parent",
@@ -99,6 +104,7 @@ type EhcpStatus = (typeof EHCP_STATUSES)[number];
 type SessionLength = (typeof SESSION_LENGTHS)[number];
 type SessionFrequency = (typeof SESSION_FREQUENCIES)[number];
 type WiderSupport = (typeof WIDER_SUPPORT_OPTIONS)[number];
+type LearnerConsentRoute = (typeof LEARNER_CONSENT_ROUTES)[number];
 
 export interface ValidatedIntakeSubmission {
   formVersion: typeof FORM_VERSION;
@@ -123,13 +129,14 @@ export interface ValidatedIntakeSubmission {
     subjectOther: string;
   };
   supportProfile: {
-    needsStatus: NeedsStatus;
+    specialCategoryProvided: boolean;
+    needsStatus: NeedsStatus | "";
     relevantAreas: RelevantArea[];
     supportNeeds: string;
     helpfulStrategies: string;
     unhelpfulApproaches: string;
     otherBackground: string;
-    ehcpStatus: EhcpStatus;
+    ehcpStatus: EhcpStatus | "";
   };
   sessionPreferences: {
     sessionLength: SessionLength;
@@ -139,7 +146,9 @@ export interface ValidatedIntakeSubmission {
   confirmations: {
     authorised: true;
     privacyAcknowledged: true;
-    sensitiveDataAcknowledged: true;
+    specialCategoryConsent: boolean;
+    specialCategoryAuthority: boolean;
+    learnerConsentRoute: LearnerConsentRoute | "";
   };
 }
 
@@ -157,6 +166,7 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const PHONE_CONTACT_METHODS = new Set<ContactMethod>(["Telephone", "Text message", "WhatsApp"]);
+const SPECIAL_CATEGORY_RELATIONSHIPS = new Set<Relationship>(["Parent", "Guardian or carer"]);
 const NEEDS_AREAS_VISIBLE = new Set<NeedsStatus>([
   "Yes: diagnosed",
   "Yes: suspected or informally identified",
@@ -320,7 +330,16 @@ export function validateIntakeRequest(input: unknown): ValidationResult {
   const subjectOther = optionalText(learner, "subjectOther", "learner.subjectOther", 160, errors);
   if (subjects.includes("Other") && !subjectOther) errors["learner.subjectOther"] = "Describe the other subject requiring support.";
 
-  const needsStatus = choice(support, "needsStatus", "supportProfile.needsStatus", NEEDS_STATUSES, errors);
+  const specialCategoryProvided = support.specialCategoryProvided;
+  if (typeof specialCategoryProvided !== "boolean") {
+    errors["supportProfile.specialCategoryProvided"] = "Choose whether you want to provide optional health, disability, SEND or neurodiversity information.";
+  }
+  const providesSpecialCategoryInformation = specialCategoryProvided === true;
+  if (providesSpecialCategoryInformation && !SPECIAL_CATEGORY_RELATIONSHIPS.has(relationship)) {
+    errors["supportProfile.specialCategoryProvided"] = "This form cannot accept health, disability, SEND, neurodiversity, diagnosis or EHCP information from this relationship. Ask Luke to arrange an appropriate information-sharing route.";
+  }
+
+  const needsStatus = optionalChoice(support, "needsStatus", "supportProfile.needsStatus", NEEDS_STATUSES, errors);
   const relevantAreas = choices(
     support,
     "relevantAreas",
@@ -329,14 +348,28 @@ export function validateIntakeRequest(input: unknown): ValidationResult {
     errors,
     false,
   );
-  if (!NEEDS_AREAS_VISIBLE.has(needsStatus) && relevantAreas.length > 0) {
+  if ((!needsStatus || !NEEDS_AREAS_VISIBLE.has(needsStatus)) && relevantAreas.length > 0) {
     errors["supportProfile.relevantAreas"] = "Remove areas that are not relevant to the selected answer.";
   }
   const supportNeeds = optionalText(support, "supportNeeds", "supportProfile.supportNeeds", 5_000, errors);
   const helpfulStrategies = optionalText(support, "helpfulStrategies", "supportProfile.helpfulStrategies", 5_000, errors);
   const unhelpfulApproaches = optionalText(support, "unhelpfulApproaches", "supportProfile.unhelpfulApproaches", 5_000, errors);
   const otherBackground = optionalText(support, "otherBackground", "supportProfile.otherBackground", 5_000, errors);
-  const ehcpStatus = choice(support, "ehcpStatus", "supportProfile.ehcpStatus", EHCP_STATUSES, errors);
+  const ehcpStatus = optionalChoice(support, "ehcpStatus", "supportProfile.ehcpStatus", EHCP_STATUSES, errors);
+  const hasSpecialCategoryDetail = Boolean(
+    needsStatus ||
+    relevantAreas.length > 0 ||
+    supportNeeds ||
+    helpfulStrategies ||
+    unhelpfulApproaches ||
+    otherBackground ||
+    ehcpStatus,
+  );
+  if (!SPECIAL_CATEGORY_RELATIONSHIPS.has(relationship) && hasSpecialCategoryDetail) {
+    errors["supportProfile.specialCategoryProvided"] = "This relationship cannot submit health, disability, SEND, neurodiversity, diagnosis, EHCP or related support information through this form. Ask Luke to arrange an appropriate information-sharing route.";
+  } else if (!providesSpecialCategoryInformation && hasSpecialCategoryDetail) {
+    errors["supportProfile.specialCategoryProvided"] = "Choose Yes and complete the separate consent controls before providing optional health, disability, SEND, neurodiversity, diagnosis, EHCP or related support information.";
+  }
 
   const sessionLength = choice(sessions, "sessionLength", "sessionPreferences.sessionLength", SESSION_LENGTHS, errors);
   const sessionFrequency = choice(
@@ -354,10 +387,35 @@ export function validateIntakeRequest(input: unknown): ValidationResult {
     errors,
   );
 
+  const learnerConsentRoute = optionalChoice(
+    confirmations,
+    "learnerConsentRoute",
+    "confirmations.learnerConsentRoute",
+    LEARNER_CONSENT_ROUTES,
+    errors,
+  );
   if (confirmations.authorised !== true) errors["confirmations.authorised"] = "Confirm that you are authorised to provide this information.";
   if (confirmations.privacyAcknowledged !== true) errors["confirmations.privacyAcknowledged"] = "Confirm that you have read the privacy information.";
-  if (confirmations.sensitiveDataAcknowledged !== true) {
-    errors["confirmations.sensitiveDataAcknowledged"] = "Confirm the optional sensitive-information acknowledgement.";
+  if (providesSpecialCategoryInformation) {
+    if (confirmations.specialCategoryConsent !== true) {
+      errors["confirmations.specialCategoryConsent"] = "Give explicit consent or remove the optional health, disability, SEND and neurodiversity information.";
+    }
+    if (confirmations.specialCategoryAuthority !== true) {
+      errors["confirmations.specialCategoryAuthority"] = "Confirm parental responsibility or documented legal authority, or remove the optional information.";
+    }
+    if (!learnerConsentRoute) {
+      errors["confirmations.learnerConsentRoute"] = "Choose the statement that applies to the learner’s consent.";
+    }
+  } else {
+    if (confirmations.specialCategoryConsent === true) {
+      errors["confirmations.specialCategoryConsent"] = "Remove consent when no optional special-category information is being provided.";
+    }
+    if (confirmations.specialCategoryAuthority === true) {
+      errors["confirmations.specialCategoryAuthority"] = "Remove the authority confirmation when no optional special-category information is being provided.";
+    }
+    if (learnerConsentRoute) {
+      errors["confirmations.learnerConsentRoute"] = "Remove the learner consent statement when no optional special-category information is being provided.";
+    }
   }
 
   if (Object.keys(errors).length > 0) return { ok: false, errors };
@@ -390,6 +448,7 @@ export function validateIntakeRequest(input: unknown): ValidationResult {
           subjectOther,
         },
         supportProfile: {
+          specialCategoryProvided: providesSpecialCategoryInformation,
           needsStatus,
           relevantAreas,
           supportNeeds,
@@ -402,7 +461,9 @@ export function validateIntakeRequest(input: unknown): ValidationResult {
         confirmations: {
           authorised: true,
           privacyAcknowledged: true,
-          sensitiveDataAcknowledged: true,
+          specialCategoryConsent: providesSpecialCategoryInformation,
+          specialCategoryAuthority: providesSpecialCategoryInformation,
+          learnerConsentRoute,
         },
       },
     },

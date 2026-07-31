@@ -10,6 +10,7 @@
   const CONFIG_ENDPOINT = `${API_ENDPOINT}/config`;
   const STEP_NAMES = ['About you', 'About the learner', 'Learning and support profile', 'Initial session preferences', 'Review and submit'];
   const PHONE_CONTACT_METHODS = new Set(['Telephone', 'Text message', 'WhatsApp']);
+  const SPECIAL_CATEGORY_RELATIONSHIPS = new Set(['Parent', 'Guardian or carer']);
   const NEEDS_AREAS_VISIBLE = new Set([
     'Yes: diagnosed',
     'Yes: suspected or informally identified',
@@ -32,6 +33,8 @@
   const mobileInput = form.querySelector('#respondent-mobile');
   const mobileMarker = form.querySelector('[data-mobile-marker]');
   const dateOfBirth = form.querySelector('#learner-date-of-birth');
+  const specialCategoryYes = form.querySelector('[data-special-category-yes]');
+  const specialCategoryRestriction = form.querySelector('[data-special-category-restriction]');
 
   let currentStep = 1;
   let submissionId = crypto.randomUUID();
@@ -94,6 +97,10 @@
     if (isHidden(wrapper)) return '';
 
     const path = wrapper.dataset.fieldPath || '';
+    if (path === 'supportProfile.specialCategoryProvided' && singleValue('special_category_choice') === 'Yes' &&
+      !SPECIAL_CATEGORY_RELATIONSHIPS.has(singleValue('relationship'))) {
+      return 'This form cannot accept health, disability, SEND, neurodiversity, diagnosis or EHCP information from this relationship. Ask Luke to arrange an appropriate information-sharing route.';
+    }
     if (path === 'turnstileToken') {
       if (!turnstileToken) return wrapper.dataset.requiredMessage || 'Complete the security check.';
       return '';
@@ -215,11 +222,48 @@
   const updateYearGroupOther = () => setConditionalField('year-group-other', singleValue('learner_year_group') === 'Other', true);
   const updateSubjectOther = () => setConditionalField('subject-other', multipleValues('learner_subjects').includes('Other'), true);
   const updateRelevantAreas = () => {
-    const visible = NEEDS_AREAS_VISIBLE.has(singleValue('needs_status'));
+    const visible = singleValue('special_category_choice') === 'Yes' &&
+      SPECIAL_CATEGORY_RELATIONSHIPS.has(singleValue('relationship')) &&
+      NEEDS_AREAS_VISIBLE.has(singleValue('needs_status'));
     const field = form.querySelector('[data-conditional="relevant-areas"]');
     const wasVisible = field && !field.hidden;
     setConditionalField('relevant-areas', visible, false, true);
     if (wasVisible && !visible) liveStatus.textContent = 'The optional relevant-areas choices were cleared because they no longer apply.';
+  };
+
+  const clearContainerControls = (container) => {
+    container.querySelectorAll('input, select, textarea').forEach((element) => {
+      if (element.type === 'checkbox' || element.type === 'radio') element.checked = false;
+      else element.value = '';
+    });
+    clearFieldError(container);
+  };
+
+  const updateSpecialCategoryControls = () => {
+    const relationship = singleValue('relationship');
+    const relationshipAllowed = SPECIAL_CATEGORY_RELATIONSHIPS.has(relationship);
+    if (specialCategoryYes) specialCategoryYes.disabled = !relationshipAllowed;
+    if (specialCategoryRestriction) specialCategoryRestriction.hidden = relationshipAllowed || !relationship;
+
+    if (!relationshipAllowed && singleValue('special_category_choice') === 'Yes' && specialCategoryYes) {
+      specialCategoryYes.checked = false;
+      liveStatus.textContent = 'Optional health, disability, SEND, neurodiversity, diagnosis and EHCP fields were cleared. Ask Luke to arrange a separate information-sharing route.';
+    }
+
+    const provided = relationshipAllowed && singleValue('special_category_choice') === 'Yes';
+    form.querySelectorAll('[data-special-category-field]').forEach((field) => {
+      if (field.dataset.conditional === 'relevant-areas') return;
+      field.hidden = !provided;
+      if (!provided) clearContainerControls(field);
+    });
+    form.querySelectorAll('[data-special-category-confirmation]').forEach((field) => {
+      field.hidden = !provided;
+      field.dataset.required = provided ? 'true' : 'false';
+      const input = field.querySelector('input');
+      if (input) input.required = provided;
+      if (!provided) clearContainerControls(field);
+    });
+    updateRelevantAreas();
   };
 
   const updateMobileRequirement = () => {
@@ -278,6 +322,7 @@
       title: 'Learning and support profile',
       step: 3,
       rows: [
+        ['Optional health, disability, SEND or neurodiversity information', singleValue('special_category_choice')],
         ['Needs status', singleValue('needs_status')],
         ['Relevant areas', multipleValues('relevant_areas')],
         ['Helpful support information', singleValue('support_needs')],
@@ -330,7 +375,7 @@
   }
 
   const intakePayload = () => ({
-    formVersion: 'primary-learner-profile-v1',
+    formVersion: 'primary-learner-profile-v3',
     submissionId,
     honeypot: singleValue('organisation_website'),
     turnstileToken,
@@ -354,6 +399,7 @@
       subjectOther: singleValue('subject_other'),
     },
     supportProfile: {
+      specialCategoryProvided: singleValue('special_category_choice') === 'Yes',
       needsStatus: singleValue('needs_status'),
       relevantAreas: multipleValues('relevant_areas'),
       supportNeeds: singleValue('support_needs'),
@@ -370,7 +416,9 @@
     confirmations: {
       authorised: Boolean(namedControl('authorised_confirmation')?.checked),
       privacyAcknowledged: Boolean(namedControl('privacy_confirmation')?.checked),
-      sensitiveDataAcknowledged: Boolean(namedControl('sensitive_data_confirmation')?.checked),
+      specialCategoryConsent: Boolean(namedControl('special_category_consent')?.checked),
+      specialCategoryAuthority: Boolean(namedControl('special_category_authority')?.checked),
+      learnerConsentRoute: singleValue('learner_consent_route'),
     },
   });
 
@@ -475,11 +523,15 @@
   form.addEventListener('change', (event) => {
     const wrapper = event.target.closest('[data-field-path]');
     if (wrapper) clearFieldError(wrapper);
-    if (event.target.name === 'relationship') updateRelationshipOther();
+    if (event.target.name === 'relationship') {
+      updateRelationshipOther();
+      updateSpecialCategoryControls();
+    }
     if (event.target.name === 'preferred_contact_method') updateMobileRequirement();
     if (event.target.name === 'learner_year_group') updateYearGroupOther();
     if (event.target.name === 'learner_subjects') updateSubjectOther();
     if (event.target.name === 'needs_status') updateRelevantAreas();
+    if (event.target.name === 'special_category_choice') updateSpecialCategoryControls();
   });
 
   form.querySelectorAll('[data-continue]').forEach((button) => {
@@ -539,7 +591,7 @@
   updateMobileRequirement();
   updateYearGroupOther();
   updateSubjectOther();
-  updateRelevantAreas();
+  updateSpecialCategoryControls();
   goToStep(1, false);
   void loadTurnstile();
 })();

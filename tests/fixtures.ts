@@ -26,13 +26,14 @@ export function validIntakeRequest(): Record<string, unknown> {
       subjectOther: "",
     },
     supportProfile: {
-      needsStatus: "No known additional needs",
+      specialCategoryProvided: false,
+      needsStatus: "",
       relevantAreas: [],
-      supportNeeds: "Short fictional test answer.",
-      helpfulStrategies: "Short tasks and clear instructions.",
+      supportNeeds: "",
+      helpfulStrategies: "",
       unhelpfulApproaches: "",
       otherBackground: "",
-      ehcpStatus: "No",
+      ehcpStatus: "",
     },
     sessionPreferences: {
       sessionLength: "Not sure: happy to discuss",
@@ -42,7 +43,9 @@ export function validIntakeRequest(): Record<string, unknown> {
     confirmations: {
       authorised: true,
       privacyAcknowledged: true,
-      sensitiveDataAcknowledged: true,
+      specialCategoryConsent: false,
+      specialCategoryAuthority: false,
+      learnerConsentRoute: "",
     },
   };
 }
