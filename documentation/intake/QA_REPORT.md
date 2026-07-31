@@ -39,7 +39,7 @@ The final production integration was tested through an isolated local Worker pre
 - The minimal notification body contained only a UTC receipt timestamp, the restricted Sheet link and the fixed statement that no answers were included. It contained no learner or respondent answer.
 - Local Worker logs contained method, route, outcome and status only. They contained no fictional email, name, learner detail or answer. Browser inspection likewise found no submitted answer in console output, storage, URLs or analytics.
 - After the final HMAC rotation, a second fictional request through the isolated Worker returned 201 and produced a correctly structured row with `Notification status` set to `Sent`.
-- All fictional production rows were removed immediately after verification. The production Sheet was confirmed to contain one 48-column header row and zero response rows. All fictional notification messages were moved to Gmail Trash.
+- All fictional production rows were removed immediately after verification. The production Sheet was confirmed to contain one 48-column header row and zero response rows. All fictional notification messages were removed from Inbox and moved to Gmail Trash.
 
 The final narrow Gmail rule matches sender `luke@thementorsphere.co.uk`, recipient `luke@thementorsphere.co.uk` and subject `New learner profile received`. It applies `Never send it to Spam`, the `Learner profile notifications` label and `Always mark it as important`. The final fictional notification arrived in Inbox, had the label and Important status, was not in Spam and contained no submitted answer.
 

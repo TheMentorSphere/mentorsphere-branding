@@ -219,7 +219,7 @@ No residual score is high. The remaining medium risks are inherent to authorised
 | Confirm owner-only Google Workspace access | Completed |
 | Rotate HMAC and deploy authorised Apps Script version | Completed using the MentorSphere business account |
 | Store all production Worker secrets without deploying production | Completed in undeployed Worker versions |
-| Pass fictional production-path smoke test and remove test data | Completed on 31 July 2026; repeat required against the final 48-column schema before approval |
+| Pass fictional production-path smoke test and remove test data | Completed on 31 July 2026 against the final 48-column schema. The production Sheet was returned to one header row and zero response rows, and fictional notification emails were removed from Inbox. |
 | Confirm no answer logging | Completed through browser inspection and answer-free local Worker request logs |
 | Route the fixed notification to the monitored Inbox | Completed with an exact sender, recipient and subject Gmail rule; fictional delivery passed Inbox, label, Important, not-Spam and answer-free checks |
 | Publish approved Privacy Policy V1.5 | Blocked until final owner approval |
@@ -231,10 +231,10 @@ The processing is necessary and proportionate for the limited intake purpose aft
 
 Owner sign-off:
 
-- Owner decision: pending.
-- Residual risks accepted: pending.
-- Signature: pending.
-- Approval date: pending.
+- Owner decision: Approved for the limited primary learner intake purpose described in this assessment, subject to all documented safeguards, restrictions and review triggers remaining in operation.
+- Residual risks accepted: Yes. I accept the documented low and medium residual risks. This acceptance does not apply if the purpose, fields, recipients, processors, authority rules, retention arrangements or technical safeguards materially change.
+- Signature: Luke Turner
+- Approval date: 31 July 2026
 
 ## Official sources
 

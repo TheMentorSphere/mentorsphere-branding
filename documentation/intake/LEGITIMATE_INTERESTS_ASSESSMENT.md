@@ -132,10 +132,10 @@ Review at least annually and sooner if:
 
 Owner sign-off:
 
-- Owner decision: pending.
-- Residual risks accepted: pending.
-- Signature: pending.
-- Approval date: pending.
+- Owner decision: Approved for the limited primary learner intake purpose described in this assessment, subject to all documented safeguards, restrictions and review triggers remaining in operation.
+- Residual risks accepted: Yes. I accept the documented low and medium residual risks. This acceptance does not apply if the purpose, fields, recipients, processors, authority rules, retention arrangements or technical safeguards materially change.
+- Signature: Luke Turner
+- Approval date: 31 July 2026
 
 ## Official sources
 
