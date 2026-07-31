@@ -16,7 +16,7 @@
     ]
   },
   "vars": {
-    "FORM_PAGE_ENABLED": "false",
+    "FORM_PAGE_ENABLED": "true",
     "FORM_SUBMISSIONS_ENABLED": "false",
     "TURNSTILE_SITE_KEY": "0x4AAAAAAEC-gRgenEKQMHhe",
     "TURNSTILE_EXPECTED_HOSTNAMES": "www.thementorsphere.co.uk",
