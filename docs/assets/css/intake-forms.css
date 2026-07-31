@@ -1,7 +1,9 @@
 .page-intake-form {
+  min-width: 0;
   background:
-    radial-gradient(circle at 8% 8%, rgba(63, 169, 206, 0.12), transparent 24rem),
-    radial-gradient(circle at 92% 18%, rgba(229, 174, 41, 0.12), transparent 20rem),
+    radial-gradient(circle at 8% 8%, rgba(63, 169, 206, 0.15), transparent 24rem),
+    radial-gradient(circle at 92% 18%, rgba(229, 174, 41, 0.15), transparent 20rem),
+    linear-gradient(180deg, rgba(249, 247, 244, 0.3), rgba(63, 169, 206, 0.04)),
     var(--off-white);
 }
 .intake-site-header {
@@ -36,11 +38,27 @@
 }
 
 .intake-introduction {
+  position: relative;
+  overflow: hidden;
   padding: clamp(1.5rem, 4vw, 2.75rem);
   border: 1px solid rgba(0, 95, 141, 0.16);
+  border-top: 0.38rem solid var(--deep-blue);
   border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.95);
   box-shadow: var(--shadow-md);
+}
+
+.intake-intro-motif {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(15rem, 32vw);
+  height: 10rem;
+  background:
+    linear-gradient(135deg, transparent 50%, rgba(63, 169, 206, 0.14) 50%) 0 0 / 5rem 5rem,
+    linear-gradient(45deg, transparent 50%, rgba(229, 174, 41, 0.14) 50%) 2.5rem 2.5rem / 5rem 5rem;
+  clip-path: polygon(34% 0, 100% 0, 100% 100%, 74% 72%, 48% 88%, 20% 52%);
+  pointer-events: none;
 }
 
 .intake-introduction h1 {
@@ -57,6 +75,44 @@
 
 .intake-intro-copy p:last-child {
   margin-bottom: 0;
+}
+
+.intake-subjects-supported {
+  position: relative;
+  padding-top: 1.25rem;
+  margin-top: 1.5rem;
+  border-top: 1px solid rgba(0, 95, 141, 0.16);
+}
+
+.intake-subjects-supported h2 {
+  margin-bottom: 0.85rem;
+  color: var(--deep-blue-ink);
+  font-size: 1.05rem;
+}
+
+.intake-subject-logo-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.intake-subject-logo {
+  min-width: 8.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(0, 95, 141, 0.16);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--deep-blue-ink);
+  font-weight: 800;
+}
+
+.intake-subject-logo img {
+  width: 2.35rem;
+  height: 2.35rem;
+  object-fit: contain;
 }
 
 .intake-progress {
@@ -132,8 +188,8 @@
 }
 
 .intake-progress-list span {
-  width: 1.9rem;
-  height: 1.9rem;
+  width: 2.15rem;
+  height: 2.15rem;
   display: grid;
   place-items: center;
   border: 2px solid var(--line-strong);
@@ -146,8 +202,16 @@
 .intake-progress-list .is-complete span,
 .intake-progress-list .is-current span {
   border-color: var(--deep-blue);
-  background: var(--deep-blue);
   color: #fff;
+}
+
+.intake-progress-list .is-complete span {
+  background: var(--sky-blue);
+}
+
+.intake-progress-list .is-current span {
+  background: var(--deep-blue);
+  box-shadow: 0 0 0 0.22rem rgba(229, 174, 41, 0.45);
 }
 
 .intake-progress-list .is-current {
@@ -160,11 +224,27 @@
 }
 
 .intake-step {
+  position: relative;
+  overflow: hidden;
   padding: clamp(1.4rem, 4vw, 2.5rem);
   border: 1px solid rgba(0, 95, 141, 0.16);
   border-radius: var(--radius-lg);
   background: #fff;
   box-shadow: var(--shadow-md);
+}
+
+.intake-step::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 0.38rem;
+  background: linear-gradient(90deg, var(--deep-blue) 0 38%, var(--sky-blue) 38% 62%, var(--sunny-yellow) 62% 78%, var(--bright-orange) 78% 100%);
+  content: "";
+}
+
+.intake-step-heading .eyebrow {
+  display: inline-block;
+  padding-left: 0.75rem;
+  border-left: 0.3rem solid var(--bright-orange);
 }
 
 .js .intake-step[hidden],
@@ -198,7 +278,7 @@
   min-width: 0;
   display: grid;
   align-content: start;
-  gap: 0.45rem;
+  gap: 0.6rem;
   padding: 0;
   border: 0;
   margin: 0;
@@ -211,20 +291,20 @@
 .intake-field label:not(.choice-card, .confirmation-card),
 .intake-field legend {
   color: var(--deep-blue-ink);
-  font-size: 1rem;
+  font-size: clamp(1.1rem, 1.5vw, 1.125rem);
   font-weight: 800;
   line-height: 1.45;
 }
 
 .intake-field legend {
   width: 100%;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.45rem;
 }
 
 .field-marker,
 .field-optional {
   display: inline-block;
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   font-weight: 800;
 }
 
@@ -251,6 +331,16 @@
   color: var(--charcoal);
 }
 
+.intake-field input[type="text"],
+.intake-field input[type="email"],
+.intake-field input[type="tel"],
+.intake-field input[type="date"],
+.intake-field select,
+.intake-field textarea {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
 .intake-field textarea {
   min-height: 8.5rem;
   resize: vertical;
@@ -267,7 +357,8 @@
 .field-help,
 .field-error {
   margin: 0;
-  font-size: 0.86rem;
+  font-size: clamp(0.95rem, 1.3vw, 1rem);
+  line-height: 1.5;
 }
 
 .field-help {
@@ -324,7 +415,23 @@
   background: var(--off-white);
   color: var(--charcoal);
   cursor: pointer;
+  font-size: 1rem;
   line-height: 1.4;
+}
+
+.choice-card-icon {
+  grid-template-columns: 1.35rem 1.6rem minmax(0, 1fr);
+  align-items: center;
+}
+
+.choice-icon {
+  width: 1.55rem;
+  height: 1.55rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
 }
 
 .choice-card:hover,
@@ -336,8 +443,11 @@
 .choice-card:has(input:checked),
 .confirmation-card:has(input:checked) {
   border-color: var(--deep-blue);
-  background: var(--sky-blue-soft);
-  box-shadow: inset 0.25rem 0 0 var(--deep-blue);
+  border-width: 2px;
+  background: linear-gradient(135deg, var(--sky-blue-soft), rgba(229, 174, 41, 0.12));
+  box-shadow: inset 0.3rem 0 0 var(--deep-blue), 0 0 0 0.1rem rgba(0, 95, 141, 0.08);
+  color: var(--deep-blue-ink);
+  font-weight: 800;
 }
 
 .choice-card input,
@@ -535,6 +645,10 @@
 }
 
 @media (max-width: 48rem) {
+  .intake-intro-motif {
+    display: none;
+  }
+
   .intake-header-inner {
     min-height: 4.8rem;
   }
@@ -594,6 +708,28 @@
     align-items: flex-start;
   }
 
+  .intake-subject-logo-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.45rem;
+  }
+
+  .intake-subject-logo {
+    min-width: 0;
+    display: grid;
+    justify-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.25rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.88rem;
+    text-align: center;
+  }
+
+  .intake-subject-logo img {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
   .intake-actions,
   .intake-actions-end {
     display: grid;
@@ -602,6 +738,38 @@
 
   .intake-actions .button {
     width: 100%;
+  }
+}
+
+@media (forced-colors: active) {
+  .intake-intro-motif {
+    display: none;
+  }
+
+  .intake-introduction,
+  .intake-step,
+  .intake-progress,
+  .choice-card,
+  .confirmation-card,
+  .intake-subject-logo {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .choice-card:has(input:checked),
+  .confirmation-card:has(input:checked) {
+    border: 3px solid Highlight;
+    box-shadow: inset 0.35rem 0 0 Highlight;
+  }
+
+  .choice-icon {
+    color: CanvasText;
+  }
+
+  .intake-progress-list .is-current span {
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
   }
 }
 

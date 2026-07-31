@@ -1,8 +1,37 @@
 # Primary learner profile QA report
 
-Status: release-readiness testing completed with fictional data on 31 July 2026. The production form has not been deployed and production submissions remain disabled.
+Status: release-readiness testing completed with fictional data on 31 July 2026. The Primary Learner Profile page is available as a direct-link live preview, and production submissions remain disabled.
 
-The isolated staging Worker was returned to both release flags `false` after testing. The final GitHub Actions result for the current commit is recorded on the dedicated launch pull request after this report is committed.
+The isolated staging Worker was returned to both release flags `false` after testing. The final GitHub Actions result for each reviewed change is recorded on its pull request.
+
+## V4 visual and usability amendment review
+
+The `primary-learner-profile-v4` review branch changes preferred contact methods from one radio choice to one or more checkbox choices. The browser sends `respondent.preferredContactMethods` as an array. Worker validation requires a non-empty allowlisted array, rejects duplicates, restores the fixed order Email, Telephone, Text message, WhatsApp, and requires a mobile number whenever any telephone-based method is selected. The local Apps Script source independently applies the same allowlist, duplicate and mobile checks.
+
+Column 11 remains the existing contact-method column, renamed `Preferred contact methods`. Selected methods are stored in this exact canonical format, including only selected values:
+
+> Email; Telephone; Text message; WhatsApp
+
+The schema remains exactly 48 columns. No production Sheet header, production Sheet row or deployed Apps Script version was changed during this review. A later controlled integration deployment must rename the existing column 11 header and deploy the compatible v4 Apps Script together before submissions can be enabled.
+
+The form introduction now uses the unchanged local `english-logo.svg`, `maths-logo.svg` and `science-logo.svg` assets. Restrained inline line icons are used for contact methods, contact times and subject choices. Every inline icon has `aria-hidden="true"` and `focusable="false"`; the three subject logos retain meaningful alternative text. Typography now uses 1.1rem to 1.125rem question labels, 0.95rem to 1rem help text with 1.5 line height, at least 1rem choice and input text, and 0.85rem required or optional markers.
+
+Automated review completed with 80 tests across four files, 29 validated HTML files and an 85-asset Worker dry run. Coverage includes one and four contact methods, empty, malformed, unknown and duplicate arrays, every telephone-based mobile condition, canonical review and Sheet ordering, the v4 form version, 48-column schema, disabled API ordering, hidden decorative icons and the responsive accessibility rules.
+
+Visual review used fictional details only. The following checks passed:
+
+- desktop at 1440 by 1000 CSS pixels;
+- tablet at 768 by 1024 CSS pixels;
+- mobile at 390 by 844 CSS pixels;
+- narrow layout at 320 by 800 CSS pixels, with document scroll width equal to client width and no horizontal scrolling;
+- an approximate 200 per cent reflow check using a 720 CSS-pixel viewport for a 1440-pixel desktop reference, with no clipped text and no horizontal scrolling;
+- selected contact methods persisted after editing Step 1 and returning to the review page;
+- the mobile requirement changed immediately from required to optional when WhatsApp was removed and Email remained, then returned to required when WhatsApp was selected again;
+- visible controls follow DOM order with no positive `tabindex`, practical interactive targets measured at least 48 pixels high, and a focused checkbox responded to the Space key;
+- selected controls retain a checkbox or radio indicator, stronger border and inset marker, so colour is not the only state cue;
+- `prefers-reduced-motion` and `forced-colors` styles are present, and no decorative animation was added.
+
+The in-app review browser did not expose active Windows forced-colours or reduced-motion emulation. The dedicated CSS rules, colour-independent state markers and absence of decorative motion were verified; a native Windows High Contrast smoke test remains advisable before the later controlled deployment.
 
 ## Automated checks
 
@@ -31,7 +60,7 @@ No production website Worker or form flag was deployed or changed. The authorise
 The final production integration was tested through an isolated local Worker preview. The public production Worker was not deployed and both committed production flags remained `false`. The preview used Cloudflare's test Turnstile credentials, fictional respondent and learner information, the authorised versioned production Apps Script web app and the owner-only production Sheet.
 
 - The browser completed all five steps and submitted successfully after Worker validation, Turnstile verification, HMAC forwarding and Apps Script validation.
-- Apps Script wrote one row in the exact 48-column order. The row recorded `primary-learner-profile-v3`, the explicit-consent wording version, selected learner consent route, learner-route wording version, authority wording version, consent timestamp and active consent status.
+- The completed v3 production-integration smoke test wrote one row in the exact 48-column order. The row recorded `primary-learner-profile-v3`, the explicit-consent wording version, selected learner consent route, learner-route wording version, authority wording version, consent timestamp and active consent status. The new v4 branch has not been deployed to that integration during this amendment review.
 - A formula-like value beginning `=SUM(1,1)` had a string user-entered value, a string effective value and the `TEXT` number format. It was not a formula.
 - Repeating the same submission ID through the Worker returned success and left exactly one Sheet row.
 - With the isolated notification-failure flag enabled, the Worker returned success, the row remained stored and `Notification status` recorded `Failed: review Apps Script executions`.

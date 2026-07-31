@@ -21,7 +21,7 @@ describe("validateIntakeRequest", () => {
 
   it.each(["Telephone", "Text message", "WhatsApp"])("requires a mobile number for %s", (method) => {
     const input = validIntakeRequest();
-    section(input, "respondent").preferredContactMethod = method;
+    section(input, "respondent").preferredContactMethods = [method];
     const result = validateIntakeRequest(input);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.errors["respondent.mobile"]).toContain("Enter a mobile number");
@@ -29,9 +29,69 @@ describe("validateIntakeRequest", () => {
 
   it("accepts a mobile number for a phone-based contact method", () => {
     const input = validIntakeRequest();
-    section(input, "respondent").preferredContactMethod = "WhatsApp";
+    section(input, "respondent").preferredContactMethods = ["WhatsApp"];
     section(input, "respondent").mobile = "07123 456 789";
     expect(validateIntakeRequest(input).ok).toBe(true);
+  });
+
+  it("accepts all four contact methods and returns them in canonical order", () => {
+    const input = validIntakeRequest();
+    section(input, "respondent").preferredContactMethods = ["WhatsApp", "Text message", "Telephone", "Email"];
+    section(input, "respondent").mobile = "07123 456 789";
+    const result = validateIntakeRequest(input);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.request.submission.respondent.preferredContactMethods).toEqual([
+        "Email",
+        "Telephone",
+        "Text message",
+        "WhatsApp",
+      ]);
+    }
+  });
+
+  it("requires at least one contact method", () => {
+    const input = validIntakeRequest();
+    section(input, "respondent").preferredContactMethods = [];
+    const result = validateIntakeRequest(input);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors["respondent.preferredContactMethods"]).toContain("at least one contact method");
+  });
+
+  it("requires a mobile number when Email and WhatsApp are selected together", () => {
+    const input = validIntakeRequest();
+    section(input, "respondent").preferredContactMethods = ["Email", "WhatsApp"];
+    const result = validateIntakeRequest(input);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors["respondent.mobile"]).toContain("WhatsApp");
+  });
+
+  it.each([
+    "Email",
+    { method: "Email" },
+    ["Email", 42],
+  ])("rejects a crafted contact-method collection: %j", (preferredContactMethods) => {
+    const input = validIntakeRequest();
+    section(input, "respondent").preferredContactMethods = preferredContactMethods;
+    const result = validateIntakeRequest(input);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors["respondent.preferredContactMethods"]).toBeDefined();
+  });
+
+  it("rejects unknown contact methods", () => {
+    const input = validIntakeRequest();
+    section(input, "respondent").preferredContactMethods = ["Email", "Carrier pigeon"];
+    const result = validateIntakeRequest(input);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors["respondent.preferredContactMethods"]).toContain("available options");
+  });
+
+  it("rejects duplicate contact methods", () => {
+    const input = validIntakeRequest();
+    section(input, "respondent").preferredContactMethods = ["Email", "Email"];
+    const result = validateIntakeRequest(input);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors["respondent.preferredContactMethods"]).toContain("only once");
   });
 
   it("rejects an invalid email address", () => {

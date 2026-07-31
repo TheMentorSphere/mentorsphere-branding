@@ -1,4 +1,6 @@
-const FORM_VERSION = 'primary-learner-profile-v3';
+const FORM_VERSION = 'primary-learner-profile-v4';
+const CONTACT_METHODS = ['Email', 'Telephone', 'Text message', 'WhatsApp'];
+const PHONE_CONTACT_METHODS = ['Telephone', 'Text message', 'WhatsApp'];
 const CONSENT_WORDING_VERSION = 'explicit-consent-2026-07-31';
 const AUTHORITY_WORDING_VERSION = 'authority-confirmation-2026-07-31';
 const LEARNER_CONSENT_ROUTE_WORDING_VERSION = 'learner-consent-route-2026-07-31';
@@ -20,7 +22,7 @@ const SHEET_COLUMNS = [
   'Relationship to learner',
   'Relationship details',
   'Mobile number',
-  'Preferred contact method',
+  'Preferred contact methods',
   'Suitable contact times',
   'Learner first name',
   'Learner surname',
@@ -112,6 +114,15 @@ function hasValidShape_(request) {
     payload.supportProfile.helpfulStrategies === '' &&
     payload.supportProfile.unhelpfulApproaches === '' &&
     payload.supportProfile.otherBackground === '';
+  const preferredContactMethods = payload.respondent.preferredContactMethods;
+  const contactMethodsAreValid = Array.isArray(preferredContactMethods) &&
+    preferredContactMethods.length > 0 &&
+    preferredContactMethods.every((method) => CONTACT_METHODS.indexOf(method) >= 0) &&
+    new Set(preferredContactMethods).size === preferredContactMethods.length;
+  const mobileIsRequired = contactMethodsAreValid &&
+    preferredContactMethods.some((method) => PHONE_CONTACT_METHODS.indexOf(method) >= 0);
+  const mobileShapeIsValid = !mobileIsRequired ||
+    (typeof payload.respondent.mobile === 'string' && payload.respondent.mobile.trim() !== '');
   const relationshipShapeIsValid = relationshipAllowsSpecialCategory || supportDetailIsBlank;
   const learnerConsentRouteIsValid =
     LEARNER_CONSENT_ROUTES.indexOf(payload.confirmations.learnerConsentRoute) >= 0;
@@ -131,6 +142,8 @@ function hasValidShape_(request) {
     payload.confirmations.authorised === true &&
     payload.confirmations.privacyAcknowledged === true &&
     typeof payload.supportProfile.specialCategoryProvided === 'boolean' &&
+    contactMethodsAreValid &&
+    mobileShapeIsValid &&
     relationshipShapeIsValid &&
     consentShapeIsValid;
 }
@@ -142,6 +155,10 @@ function text_(value) {
   if (value === null || value === undefined) return '';
   const text = String(value).trim();
   return /^[=+\-@]/u.test(text) ? `'${text}` : text;
+}
+
+function canonicalContactMethods_(values) {
+  return CONTACT_METHODS.filter((method) => values.indexOf(method) >= 0).join('; ');
 }
 
 function retentionReviewDate_(receivedAt) {
@@ -172,7 +189,7 @@ function rowFor_(request, receivedAt) {
     payload.respondent.relationship,
     payload.respondent.relationshipOther,
     payload.respondent.mobile,
-    payload.respondent.preferredContactMethod,
+    canonicalContactMethods_(payload.respondent.preferredContactMethods),
     payload.respondent.suitableContactTimes,
     payload.learner.firstName,
     payload.learner.surname,

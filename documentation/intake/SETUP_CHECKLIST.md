@@ -1,6 +1,6 @@
 # Primary learner profile setup checklist
 
-Status: controlled launch preparation. The owner approved the Article 6 split, Article 9 explicit-consent approach, exact consent and authority wording and retention wording on 31 July 2026. The LIA and DPIA have been updated for the learner consent route and free-text controls. Production launch remains blocked pending final smoke-test evidence, owner residual-risk sign-off, approval and publication of Privacy Policy V1.5 and explicit release approval.
+Status: controlled launch preparation. Privacy Policy V1.5 is published and the Primary Learner Profile is available for direct-link preview. Production submissions remain disabled pending explicit release approval and the controlled v4 integration steps recorded below.
 
 No learner or respondent data, credentials or deployment URLs belong in this repository.
 
@@ -10,8 +10,9 @@ No learner or respondent data, credentials or deployment URLs belong in this rep
 2. Name the response tab `Primary learner profiles`, or record a different agreed tab name for the Script Property.
 3. Remove link sharing. Give access only to Luke and any specifically authorised person who needs the information.
 4. Leave the tab empty. The integration creates and verifies the exact 48-column header row on its first authenticated submission.
-5. Record the spreadsheet ID and its private URL for the Script Properties below.
-6. Confirm account security, authorised users, Google Workspace contractual settings, data location and international-transfer arrangements before launch.
+5. Before a controlled v4 integration deployment, rename existing column 11 from `Preferred contact method` to `Preferred contact methods`. Do not add or move a column. Deploy the compatible v4 Apps Script in the same controlled change so the schema remains 48 columns.
+6. Record the spreadsheet ID and its private URL for the Script Properties below.
+7. Confirm account security, authorised users, Google Workspace contractual settings, data location and international-transfer arrangements before launch.
 
 The exact column order is recorded in `FIELD_AND_DATA_MAP.md` and enforced by `Code.gs`. If the header row is later changed, submissions fail closed rather than writing into the wrong columns.
 
