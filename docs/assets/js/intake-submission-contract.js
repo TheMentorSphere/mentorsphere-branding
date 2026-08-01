@@ -1,8 +1,15 @@
 export const SUBMISSION_TIMEOUT_MS = 30_000;
+export const TURNSTILE_TOKEN_MAX_AGE_MS = 4 * 60 * 1_000;
 
 const JSON_CONTENT_TYPE = /^application\/(?:[a-z0-9.!#$&^_-]+\+)?json(?:\s*;|$)/iu;
 const UUID_V4_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const DIAGNOSTIC_REQUEST_HEADER = 'X-MentorSphere-Request-ID';
+
+export function turnstileTokenIsStale(token, issuedAt, now = Date.now()) {
+  if (!token || !Number.isFinite(issuedAt)) return true;
+  const age = now - issuedAt;
+  return age < 0 || age >= TURNSTILE_TOKEN_MAX_AGE_MS;
+}
 
 export function classifySubmissionResponse(responseOk, contentType, payload, requestId = '', errorCode = '') {
   if (!responseOk) return { kind: 'failure', reason: 'http', requestId, errorCode };

@@ -4,6 +4,8 @@ import {
   requestReferenceText,
   requestSubmission,
   submissionUiState,
+  TURNSTILE_TOKEN_MAX_AGE_MS,
+  turnstileTokenIsStale,
 } from '../docs/assets/js/intake-submission-contract.js';
 
 const endpoint = 'https://www.thementorsphere.co.uk/api/forms/primary-learner-profile';
@@ -13,6 +15,24 @@ afterEach(() => {
 });
 
 describe('browser submission contract', () => {
+  it('requires a fresh Turnstile token before submission', () => {
+    const issuedAt = 1_000_000;
+
+    expect(turnstileTokenIsStale('', issuedAt, issuedAt)).toBe(true);
+    expect(turnstileTokenIsStale('fictional-token', null, issuedAt)).toBe(true);
+    expect(turnstileTokenIsStale('fictional-token', issuedAt, issuedAt - 1)).toBe(true);
+    expect(turnstileTokenIsStale(
+      'fictional-token',
+      issuedAt,
+      issuedAt + TURNSTILE_TOKEN_MAX_AGE_MS - 1,
+    )).toBe(false);
+    expect(turnstileTokenIsStale(
+      'fictional-token',
+      issuedAt,
+      issuedAt + TURNSTILE_TOKEN_MAX_AGE_MS,
+    )).toBe(true);
+  });
+
   it('shows success only for a complete created-and-stored response', () => {
     expect(classifySubmissionResponse(true, 'application/json; charset=utf-8', {
       success: true,
