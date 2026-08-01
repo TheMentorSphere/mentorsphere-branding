@@ -5,12 +5,17 @@ import { describe, expect, it } from "vitest";
 import { validIntakeRequest } from "./fixtures";
 
 const LEARNER_CANNOT_CONSENT =
-  "The learner is not yet able to understand and give informed consent to this use of their information, so I am giving consent as a person with parental responsibility or documented legal authority.";
+  "The learner is not currently able to understand and give informed consent to this use of their information, so I am giving consent as a person with parental responsibility or documented legal authority.";
 const LEARNER_AUTHORISED =
   "The learner understands how this information will be used and has authorised me to communicate this consent on their behalf.";
 
 interface AppsScriptTestExports {
+  FORM_VERSION: string;
+  CONSENT_WORDING_VERSION: string;
+  AUTHORITY_WORDING_VERSION: string;
+  LEARNER_CONSENT_ROUTE_WORDING_VERSION: string;
   SHEET_COLUMNS: string[];
+  classifyDuplicate_(sheet: unknown, submissionId: string, cache: unknown): { status: string; rowNumber: number };
   hasValidShape_(request: unknown): boolean;
   retentionReviewDate_(receivedAt: string): string;
   rowFor_(request: { issuedAt: string; payload: Record<string, unknown> }, receivedAt: string): string[];
@@ -23,7 +28,7 @@ async function loadAppsScript(): Promise<AppsScriptTestExports> {
   );
   const sandbox: { __testExports?: AppsScriptTestExports } = {};
   vm.runInNewContext(
-    `${source}\nglobalThis.__testExports = { SHEET_COLUMNS, hasValidShape_, retentionReviewDate_, rowFor_ };`,
+    `${source}\nglobalThis.__testExports = { FORM_VERSION, CONSENT_WORDING_VERSION, AUTHORITY_WORDING_VERSION, LEARNER_CONSENT_ROUTE_WORDING_VERSION, SHEET_COLUMNS, classifyDuplicate_, hasValidShape_, retentionReviewDate_, rowFor_ };`,
     sandbox,
   );
   if (!sandbox.__testExports) throw new Error("Apps Script test exports were not created");
@@ -31,6 +36,21 @@ async function loadAppsScript(): Promise<AppsScriptTestExports> {
 }
 
 describe("Apps Script retention schema", () => {
+  it("accepts only the V5 form contract", async () => {
+    const script = await loadAppsScript();
+    expect(script.FORM_VERSION).toBe("primary-learner-profile-v5");
+    const v4 = validIntakeRequest();
+    v4.formVersion = "primary-learner-profile-v4";
+    expect(script.hasValidShape_({ issuedAt: new Date().toISOString(), payload: v4 })).toBe(false);
+  });
+
+  it("requires the same version 4 UUID submission ID shape as the Worker", async () => {
+    const script = await loadAppsScript();
+    const payload = validIntakeRequest();
+    payload.submissionId = "------------------------------------";
+    expect(script.hasValidShape_({ issuedAt: new Date().toISOString(), payload })).toBe(false);
+  });
+
   it("retains 48 columns and uses the plural contact-method header", async () => {
     const script = await loadAppsScript();
     expect(script.SHEET_COLUMNS).toHaveLength(48);
@@ -107,12 +127,12 @@ describe("Apps Script retention schema", () => {
 
     expect(byColumn["Special-category information provided"]).toBe("Yes");
     expect(byColumn["Explicit consent"]).toBe("Yes");
-    expect(byColumn["Explicit consent wording version"]).toBe("explicit-consent-2026-07-31");
+    expect(byColumn["Explicit consent wording version"]).toBe("explicit-consent-v5-2026-08-01");
     expect(byColumn["Consent recorded at (UTC)"]).toBe(receivedAt);
     expect(byColumn["Parental responsibility or documented authority"]).toBe("Yes");
-    expect(byColumn["Authority wording version"]).toBe("authority-confirmation-2026-07-31");
+    expect(byColumn["Authority wording version"]).toBe("special-category-authority-v5-2026-08-01");
     expect(byColumn["Learner consent route"]).toBe(LEARNER_AUTHORISED);
-    expect(byColumn["Learner consent route wording version"]).toBe("learner-consent-route-2026-07-31");
+    expect(byColumn["Learner consent route wording version"]).toBe("learner-consent-route-v5-2026-08-01");
     expect(byColumn["Special-category consent status"]).toBe("Active");
     expect(byColumn["Consent withdrawn at (UTC)"]).toBe("");
   });
@@ -132,6 +152,54 @@ describe("Apps Script retention schema", () => {
 
     respondent.relationship = "Education or support professional";
     expect(script.hasValidShape_({ issuedAt: new Date().toISOString(), payload })).toBe(false);
+  });
+
+  it("stores formula-like text as literal text", async () => {
+    const script = await loadAppsScript();
+    const payload = validIntakeRequest();
+    const support = payload.supportProfile as Record<string, unknown>;
+    const confirmations = payload.confirmations as Record<string, unknown>;
+    support.specialCategoryProvided = true;
+    support.supportNeeds = "=FICTIONAL_TEST_VALUE";
+    confirmations.specialCategoryConsent = true;
+    confirmations.specialCategoryAuthority = true;
+    confirmations.learnerConsentRoute = LEARNER_AUTHORISED;
+    const row = Array.from(script.rowFor_({ issuedAt: new Date().toISOString(), payload }, "2026-08-01T10:15:30.000Z"));
+    expect(row[21]).toBe("'=FICTIONAL_TEST_VALUE");
+  });
+
+  it("requires a fresh signed-envelope timestamp shape", async () => {
+    const script = await loadAppsScript();
+    const payload = validIntakeRequest();
+    expect(script.hasValidShape_({ issuedAt: new Date().toISOString(), payload })).toBe(true);
+    expect(script.hasValidShape_({ issuedAt: "2020-01-01T00:00:00.000Z", payload })).toBe(false);
+  });
+
+  it("keeps notification contents minimal and verifies storage before created success", async () => {
+    const source = await readFile(
+      path.join(process.cwd(), "integrations", "google-apps-script", "primary-learner-profile", "Code.gs"),
+      "utf8",
+    );
+    const notificationFunction = source.slice(
+      source.indexOf("function sendMinimalNotification_"),
+      source.indexOf("function doPost"),
+    );
+    expect(notificationFunction).toContain("A new learner profile was received at");
+    expect(notificationFunction).toContain("This notification intentionally contains no learner or respondent answers.");
+    expect(notificationFunction).not.toMatch(/payload\.(?:respondent|learner|supportProfile|sessionPreferences)/u);
+    expect(source).toContain("SpreadsheetApp.flush()");
+    expect(source).toContain("verifyStoredRow_(sheet, rowNumber, request.payload.submissionId)");
+    expect(source).toContain("{ success: true, stored: true, status: 'created', notificationSent }");
+  });
+
+  it("classifies a cached duplicate without a durable row as an error", async () => {
+    const script = await loadAppsScript();
+    const sheet = { getLastRow: () => 1 };
+    const cache = { get: () => "stored" };
+    expect(script.classifyDuplicate_(sheet, "123e4567-e89b-42d3-a456-426614174000", cache)).toEqual({
+      status: "duplicate_without_record",
+      rowNumber: 0,
+    });
   });
 
   it.each([LEARNER_CANNOT_CONSENT, LEARNER_AUTHORISED])(

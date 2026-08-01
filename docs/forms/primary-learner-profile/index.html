@@ -12,8 +12,8 @@
   <link rel="icon" href="../../assets/images/main-logo.svg" sizes="any" type="image/svg+xml">
   <link rel="apple-touch-icon" href="../../assets/images/main-logo.svg">
   <link rel="stylesheet" href="../../assets/css/styles.css?v=20260731">
-  <link rel="stylesheet" href="../../assets/css/intake-forms.css?v=20260731v4">
-  <script src="../../assets/js/intake-form.js?v=20260731v4" defer></script>
+  <link rel="stylesheet" href="../../assets/css/intake-forms.css?v=20260801v5">
+  <script type="module" src="../../assets/js/intake-form.js?v=20260801v5"></script>
 </head>
 <body class="page-intake-form">
   <a class="skip-link" href="#main-content">Skip to form</a>
@@ -67,19 +67,19 @@
           <p class="intake-progress-name" data-progress-name>About you</p>
         </div>
         <progress value="1" max="5" data-progress>Step 1 of 5</progress>
-        <ol class="intake-progress-list" aria-hidden="true">
-          <li data-progress-step="1"><span>1</span> About you</li>
-          <li data-progress-step="2"><span>2</span> Learner</li>
-          <li data-progress-step="3"><span>3</span> Support</li>
-          <li data-progress-step="4"><span>4</span> Sessions</li>
-          <li data-progress-step="5"><span>5</span> Review</li>
+        <ol class="intake-progress-list">
+          <li data-progress-step="1"><button type="button" data-progress-button="1" aria-label="Go to section 1: About you" aria-current="step" disabled><span aria-hidden="true">1</span><span class="intake-progress-label">About you</span></button></li>
+          <li data-progress-step="2"><button type="button" data-progress-button="2" aria-label="Go to section 2: About the learner" aria-disabled="true" disabled><span aria-hidden="true">2</span><span class="intake-progress-label">Learner</span></button></li>
+          <li data-progress-step="3"><button type="button" data-progress-button="3" aria-label="Go to section 3: Learning and support profile" aria-disabled="true" disabled><span aria-hidden="true">3</span><span class="intake-progress-label">Support</span></button></li>
+          <li data-progress-step="4"><button type="button" data-progress-button="4" aria-label="Go to section 4: Initial session preferences" aria-disabled="true" disabled><span aria-hidden="true">4</span><span class="intake-progress-label">Sessions</span></button></li>
+          <li data-progress-step="5"><button type="button" data-progress-button="5" aria-label="Go to section 5: Review and submit" aria-disabled="true" disabled><span aria-hidden="true">5</span><span class="intake-progress-label">Review</span></button></li>
         </ol>
       </div>
 
       <div class="intake-live-status sr-only" role="status" aria-live="polite" aria-atomic="true" data-live-status></div>
 
       <form class="intake-form" action="/api/forms/primary-learner-profile" method="post" novalidate data-intake-form>
-        <input type="hidden" name="form_version" value="primary-learner-profile-v4">
+        <input type="hidden" name="form_version" value="primary-learner-profile-v5">
         <div class="form-honeypot" aria-hidden="true">
           <label for="organisation-website">Leave this field blank</label>
           <input id="organisation-website" name="organisation_website" type="text" tabindex="-1" autocomplete="off">
@@ -271,6 +271,31 @@
               <p>This form cannot accept health, disability, SEND, neurodiversity, diagnosis or EHCP information from an education or support professional, other family member or other respondent. Please choose No above and do not include this information in the text boxes. Luke can arrange an appropriate information-sharing route separately where documented authority is in place.</p>
             </aside>
 
+            <aside class="intake-privacy-panel intake-field-full" data-special-category-consent-notice hidden>
+              <h3>Before you provide this optional information</h3>
+              <p>This information is optional and will be used to help us understand the learner and personalise support. You can still submit the form without providing it.</p>
+              <p>Read the <a href="../../privacy-policy/" target="_blank" rel="noopener">Privacy Policy, opens in a new tab</a> for details about how this information is used, stored and protected.</p>
+            </aside>
+
+            <div class="intake-field intake-field-full conditional-field" data-special-category-consent-control data-field-path="confirmations.specialCategoryConsent" data-required="false" data-required-message="Give explicit consent or choose No instead." hidden>
+              <label class="confirmation-card" for="special-category-consent">
+                <input id="special-category-consent" name="special_category_consent" type="checkbox" value="yes" aria-describedby="special-category-consent-help special-category-consent-error">
+                <span>I explicitly consent to The MentorSphere using the optional health, disability, SEND and neurodiversity information I provide to understand the learner and personalise support. <span class="field-marker">Required when providing this information</span></span>
+              </label>
+              <p class="field-help" id="special-category-consent-help">You can withdraw this consent at any time by emailing <a href="mailto:luke@thementorsphere.co.uk">luke@thementorsphere.co.uk</a>. Withdrawal will not affect processing that took place before consent was withdrawn.</p>
+              <p class="field-error" id="special-category-consent-error" data-field-error></p>
+            </div>
+
+            <fieldset class="intake-field intake-field-full conditional-field" data-special-category-consent-control data-field-path="confirmations.learnerConsentRoute" data-field-aliases="confirmations.specialCategoryAuthority" data-required="false" data-required-message="Choose who is giving or authorising this consent." hidden>
+              <legend>Who is giving or authorising this consent? <span class="field-marker">Required when providing this information</span></legend>
+              <div class="choice-grid choice-grid-one" aria-describedby="learner-consent-route-help learner-consent-route-error">
+                <label class="choice-card"><input type="radio" name="learner_consent_route" value="The learner understands how this information will be used and has authorised me to communicate this consent on their behalf."> <span>The learner understands how this information will be used and has authorised me to communicate this consent on their behalf.</span></label>
+                <label class="choice-card"><input type="radio" name="learner_consent_route" value="The learner is not currently able to understand and give informed consent to this use of their information, so I am giving consent as a person with parental responsibility or documented legal authority."> <span>The learner is not currently able to understand and give informed consent to this use of their information, so I am giving consent as a person with parental responsibility or documented legal authority.</span></label>
+              </div>
+              <p class="field-help" id="learner-consent-route-help">By selecting an option, you confirm that the learner has been given the relevant privacy information in a way appropriate to their age and understanding.</p>
+              <p class="field-error" id="learner-consent-route-error" data-field-error></p>
+            </fieldset>
+
             <fieldset class="intake-field intake-field-full conditional-field" data-special-category-field data-field-path="supportProfile.needsStatus" data-required="false" hidden>
               <legend>Does the learner have any diagnosed, suspected or currently assessed needs that may affect their learning or everyday life? <span class="field-optional">Optional</span></legend>
               <div class="choice-grid choice-grid-one" aria-describedby="needs-status-help needs-status-error">
@@ -417,45 +442,13 @@
           </aside>
 
           <div class="intake-confirmations">
-            <div class="intake-field" data-field-path="confirmations.authorised" data-required="true" data-required-message="Confirm that you are authorised to provide the learner's information.">
-              <label class="confirmation-card" for="authorised-confirmation">
-                <input id="authorised-confirmation" name="authorised_confirmation" type="checkbox" value="yes" aria-describedby="authorised-confirmation-error">
-                <span>I confirm that I am authorised to provide the learner's information to The MentorSphere for the purpose of planning and delivering support. <span class="field-marker">Required</span></span>
+            <div class="intake-field" data-field-path="confirmations.authorised" data-field-aliases="confirmations.privacyAcknowledged" data-required="true" data-required-message="Confirm your authority and Privacy Policy acknowledgement.">
+              <label class="confirmation-card" for="authority-privacy-confirmation">
+                <input id="authority-privacy-confirmation" name="authority_privacy_confirmation" type="checkbox" value="yes" aria-describedby="authority-privacy-help authority-privacy-error">
+                <span>I confirm that I am authorised to provide the learner's information to The MentorSphere for the purpose of discussing and planning support, and that I have read The MentorSphere <a href="../../privacy-policy/" target="_blank" rel="noopener">Privacy Policy, opens in a new tab</a>. <span class="field-marker">Required</span></span>
               </label>
-              <p class="field-error" id="authorised-confirmation-error" data-field-error></p>
-            </div>
-
-            <div class="intake-field" data-field-path="confirmations.privacyAcknowledged" data-required="true" data-required-message="Confirm that you have read the privacy information.">
-              <label class="confirmation-card" for="privacy-confirmation">
-                <input id="privacy-confirmation" name="privacy_confirmation" type="checkbox" value="yes" aria-describedby="privacy-confirmation-error">
-                <span>I have read the <a href="../../privacy-policy/" target="_blank" rel="noopener">Privacy Policy, opens in a new tab</a> and understand how information from this form will be used. <span class="field-marker">Required</span></span>
-              </label>
-              <p class="field-error" id="privacy-confirmation-error" data-field-error></p>
-            </div>
-
-            <div class="intake-field conditional-field" data-special-category-confirmation data-field-path="confirmations.specialCategoryConsent" data-required="false" data-required-message="Give explicit consent or remove the optional health, disability, SEND and neurodiversity information." hidden>
-              <label class="confirmation-card" for="special-category-consent">
-                <input id="special-category-consent" name="special_category_consent" type="checkbox" value="yes" aria-describedby="special-category-consent-error">
-                <span><strong>Optional health, disability, SEND and neurodiversity information</strong><br>I explicitly consent to The MentorSphere using the health, disability, SEND and neurodiversity information I choose to provide in this form to understand the learner and personalise support. Providing this information and giving consent are optional, and I can still submit the form without doing so. I can withdraw my consent at any time by emailing <a href="mailto:luke@thementorsphere.co.uk">luke@thementorsphere.co.uk</a>. Withdrawal will not affect processing that took place before it was withdrawn. <span class="field-marker">Required when providing this information</span></span>
-              </label>
-              <p class="field-error" id="special-category-consent-error" data-field-error></p>
-            </div>
-
-            <fieldset class="intake-field conditional-field" data-special-category-confirmation data-field-path="confirmations.learnerConsentRoute" data-required="false" data-required-message="Choose the statement that applies to the learner’s consent." hidden>
-              <legend>Which statement applies to the learner’s consent? <span class="field-marker">Required when providing this information</span></legend>
-              <div class="choice-grid choice-grid-one" aria-describedby="learner-consent-route-error">
-                <label class="choice-card"><input type="radio" name="learner_consent_route" value="The learner is not yet able to understand and give informed consent to this use of their information, so I am giving consent as a person with parental responsibility or documented legal authority."> <span>The learner is not yet able to understand and give informed consent to this use of their information, so I am giving consent as a person with parental responsibility or documented legal authority.</span></label>
-                <label class="choice-card"><input type="radio" name="learner_consent_route" value="The learner understands how this information will be used and has authorised me to communicate this consent on their behalf."> <span>The learner understands how this information will be used and has authorised me to communicate this consent on their behalf.</span></label>
-              </div>
-              <p class="field-error" id="learner-consent-route-error" data-field-error></p>
-            </fieldset>
-
-            <div class="intake-field conditional-field" data-special-category-confirmation data-field-path="confirmations.specialCategoryAuthority" data-required="false" data-required-message="Confirm parental responsibility or documented legal authority, or remove the optional information." hidden>
-              <label class="confirmation-card" for="special-category-authority">
-                <input id="special-category-authority" name="special_category_authority" type="checkbox" value="yes" aria-describedby="special-category-authority-error">
-                <span>I confirm that I have parental responsibility for the learner, or hold documented legal authority to act on their behalf. I have shared the relevant privacy information with the learner in a way appropriate to their age and understanding. The statement selected above accurately reflects the learner’s ability to understand and authorise this consent. <span class="field-marker">Required when providing this information</span></span>
-              </label>
-              <p class="field-error" id="special-category-authority-error" data-field-error></p>
+              <p class="field-help" id="authority-privacy-help">The Privacy Policy explains how information from this form is used, stored and protected.</p>
+              <p class="field-error" id="authority-privacy-error" data-field-error></p>
             </div>
           </div>
 

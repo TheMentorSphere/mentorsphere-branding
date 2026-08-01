@@ -1,3 +1,5 @@
+import { requestSubmission, submissionUiState } from './intake-submission-contract.js';
+
 (() => {
   'use strict';
 
@@ -23,6 +25,7 @@
   const stepCount = document.querySelector('[data-step-count]');
   const progressName = document.querySelector('[data-progress-name]');
   const progressSteps = Array.from(document.querySelectorAll('[data-progress-step]'));
+  const progressButtons = Array.from(document.querySelectorAll('[data-progress-button]'));
   const liveStatus = document.querySelector('[data-live-status]');
   const errorSummary = form.querySelector('[data-error-summary]');
   const errorSummaryList = form.querySelector('[data-error-summary-list]');
@@ -36,15 +39,20 @@
   const dateOfBirth = form.querySelector('#learner-date-of-birth');
   const specialCategoryYes = form.querySelector('[data-special-category-yes]');
   const specialCategoryRestriction = form.querySelector('[data-special-category-restriction]');
+  const specialCategoryNotice = form.querySelector('[data-special-category-consent-notice]');
 
   let currentStep = 1;
+  let highestValidatedStep = 0;
   let submissionId = crypto.randomUUID();
   let submissionInProgress = false;
+  let submissionCompleted = false;
   let turnstileToken = '';
   let turnstileWidgetId = null;
   let turnstileAction = '';
 
-  const fieldWrapper = (path) => form.querySelector(`[data-field-path="${path}"]`);
+  const fieldWrapper = (path) => form.querySelector(
+    `[data-field-path="${path}"], [data-field-aliases~="${path}"]`,
+  );
   const namedControl = (name) => form.elements.namedItem(name);
 
   const singleValue = (name) => {
@@ -189,7 +197,19 @@
     progressSteps.forEach((item, index) => {
       const stepNumber = index + 1;
       item.classList.toggle('is-current', stepNumber === currentStep);
-      item.classList.toggle('is-complete', stepNumber < currentStep);
+      item.classList.toggle('is-complete', stepNumber <= highestValidatedStep && stepNumber !== currentStep);
+    });
+    progressButtons.forEach((button) => {
+      const stepNumber = Number(button.dataset.progressButton);
+      const isCurrent = stepNumber === currentStep;
+      const isCompleted = stepNumber <= highestValidatedStep;
+      const reviewAvailable = stepNumber === 5 && highestValidatedStep >= 4;
+      const available = !submissionCompleted && !isCurrent && (isCompleted || reviewAvailable);
+      button.disabled = !available;
+      if (available) button.removeAttribute('aria-disabled');
+      else button.setAttribute('aria-disabled', 'true');
+      if (isCurrent) button.setAttribute('aria-current', 'step');
+      else button.removeAttribute('aria-current');
     });
   };
 
@@ -255,20 +275,33 @@
       liveStatus.textContent = 'Optional health, disability, SEND, neurodiversity, diagnosis and EHCP fields were cleared. Ask Luke to arrange a separate information-sharing route.';
     }
 
-    const provided = relationshipAllowed && singleValue('special_category_choice') === 'Yes';
+    const requested = relationshipAllowed && singleValue('special_category_choice') === 'Yes';
+    if (specialCategoryNotice) specialCategoryNotice.hidden = !requested;
+    form.querySelectorAll('[data-special-category-consent-control]').forEach((field) => {
+      field.hidden = !requested;
+      field.dataset.required = requested ? 'true' : 'false';
+      const controls = field.querySelectorAll('input, select, textarea');
+      controls.forEach((control) => { control.required = requested; });
+      if (!requested) clearContainerControls(field);
+    });
+
+    const consentComplete = requested &&
+      Boolean(namedControl('special_category_consent')?.checked) &&
+      Boolean(singleValue('learner_consent_route'));
+    let clearedSensitiveInformation = false;
     form.querySelectorAll('[data-special-category-field]').forEach((field) => {
       if (field.dataset.conditional === 'relevant-areas') return;
-      field.hidden = !provided;
-      if (!provided) clearContainerControls(field);
-    });
-    form.querySelectorAll('[data-special-category-confirmation]').forEach((field) => {
-      field.hidden = !provided;
-      field.dataset.required = provided ? 'true' : 'false';
-      const input = field.querySelector('input');
-      if (input) input.required = provided;
-      if (!provided) clearContainerControls(field);
+      const wasVisible = !field.hidden;
+      field.hidden = !consentComplete;
+      if (!consentComplete) {
+        if (wasVisible) clearedSensitiveInformation = true;
+        clearContainerControls(field);
+      }
     });
     updateRelevantAreas();
+    if (clearedSensitiveInformation) {
+      liveStatus.textContent = 'Optional sensitive information was cleared because consent is no longer complete.';
+    }
   };
 
   const updateMobileRequirement = () => {
@@ -295,6 +328,13 @@
     if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return displayValue(value);
     const [year, month, day] = value.split('-');
     return `${day}/${month}/${year}`;
+  };
+
+  const learnerConsentRouteSummary = () => {
+    const route = singleValue('learner_consent_route');
+    if (route.startsWith('The learner understands')) return 'Learner authorised the respondent to communicate consent';
+    if (route.startsWith('The learner is not currently able')) return 'Parental responsibility or documented legal authority';
+    return '';
   };
 
   const reviewData = () => [
@@ -327,7 +367,9 @@
       title: 'Learning and support profile',
       step: 3,
       rows: [
-        ['Optional health, disability, SEND or neurodiversity information', singleValue('special_category_choice')],
+        ['Optional special-category information provided', singleValue('special_category_choice')],
+        ['Explicit consent recorded', singleValue('special_category_choice') === 'Yes' && namedControl('special_category_consent')?.checked ? 'Yes' : 'Not applicable'],
+        ['Learner consent route', learnerConsentRouteSummary()],
         ['Needs status', singleValue('needs_status')],
         ['Relevant areas', multipleValues('relevant_areas')],
         ['Helpful support information', singleValue('support_needs')],
@@ -379,8 +421,13 @@
     }
   }
 
-  const intakePayload = () => ({
-    formVersion: 'primary-learner-profile-v4',
+  const intakePayload = () => {
+    const specialCategoryProvided = singleValue('special_category_choice') === 'Yes';
+    const specialCategoryConsent = Boolean(namedControl('special_category_consent')?.checked);
+    const learnerConsentRoute = singleValue('learner_consent_route');
+    const authorityPrivacyConfirmed = Boolean(namedControl('authority_privacy_confirmation')?.checked);
+    return ({
+    formVersion: 'primary-learner-profile-v5',
     submissionId,
     honeypot: singleValue('organisation_website'),
     turnstileToken,
@@ -404,7 +451,7 @@
       subjectOther: singleValue('subject_other'),
     },
     supportProfile: {
-      specialCategoryProvided: singleValue('special_category_choice') === 'Yes',
+      specialCategoryProvided,
       needsStatus: singleValue('needs_status'),
       relevantAreas: multipleValues('relevant_areas'),
       supportNeeds: singleValue('support_needs'),
@@ -419,13 +466,14 @@
       widerSupport: singleValue('wider_support'),
     },
     confirmations: {
-      authorised: Boolean(namedControl('authorised_confirmation')?.checked),
-      privacyAcknowledged: Boolean(namedControl('privacy_confirmation')?.checked),
-      specialCategoryConsent: Boolean(namedControl('special_category_consent')?.checked),
-      specialCategoryAuthority: Boolean(namedControl('special_category_authority')?.checked),
-      learnerConsentRoute: singleValue('learner_consent_route'),
+      authorised: authorityPrivacyConfirmed,
+      privacyAcknowledged: authorityPrivacyConfirmed,
+      specialCategoryConsent,
+      specialCategoryAuthority: specialCategoryProvided && specialCategoryConsent && Boolean(learnerConsentRoute),
+      learnerConsentRoute,
     },
   });
+  };
 
   const showSubmitStatus = (message, kind) => {
     submitStatus.textContent = message;
@@ -522,6 +570,12 @@
   form.addEventListener('input', (event) => {
     const wrapper = event.target.closest('[data-field-path]');
     if (wrapper) clearFieldError(wrapper);
+    const containingStep = event.target.closest('[data-step]');
+    const editedStep = containingStep ? Number(containingStep.dataset.step) : 0;
+    if (editedStep > 0 && editedStep <= highestValidatedStep) {
+      highestValidatedStep = editedStep - 1;
+      updateProgress();
+    }
     if (event.target.name === 'respondent_mobile') updateMobileRequirement();
   });
 
@@ -536,12 +590,25 @@
     if (event.target.name === 'learner_year_group') updateYearGroupOther();
     if (event.target.name === 'learner_subjects') updateSubjectOther();
     if (event.target.name === 'needs_status') updateRelevantAreas();
-    if (event.target.name === 'special_category_choice') updateSpecialCategoryControls();
+    if (
+      event.target.name === 'special_category_choice' ||
+      event.target.name === 'special_category_consent' ||
+      event.target.name === 'learner_consent_route'
+    ) updateSpecialCategoryControls();
+  });
+
+  progressButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      if (!button.disabled) goToStep(Number(button.dataset.progressButton));
+    });
   });
 
   form.querySelectorAll('[data-continue]').forEach((button) => {
     button.addEventListener('click', () => {
-      if (validateStep(currentStep).length === 0) goToStep(currentStep + 1);
+      if (validateStep(currentStep).length === 0) {
+        highestValidatedStep = Math.max(highestValidatedStep, currentStep);
+        goToStep(currentStep + 1);
+      }
     });
   });
 
@@ -551,7 +618,7 @@
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
-    if (submissionInProgress || !validateEveryStep()) return;
+    if (submissionInProgress || submissionCompleted || !validateEveryStep()) return;
 
     submissionInProgress = true;
     submitButton.disabled = true;
@@ -560,34 +627,20 @@
     form.setAttribute('aria-busy', 'true');
 
     try {
-      const response = await fetch(API_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(intakePayload()),
-      });
-      const result = await response.json().catch(() => ({}));
-      if (response.ok && result.success === true) {
-        showSubmitStatus('Thank you. The learner profile has been submitted. Luke will review it and follow up using your preferred contact methods.', 'success');
-        form.querySelectorAll('input, select, textarea, button').forEach((control) => {
-          control.disabled = true;
-        });
-        submissionId = crypto.randomUUID();
-        liveStatus.textContent = 'The learner profile was submitted successfully.';
-        return;
-      }
-      if (result.fieldErrors && typeof result.fieldErrors === 'object') applyServerErrors(result.fieldErrors);
-      showSubmitStatus(result.error || 'The form could not be submitted. Your answers remain on this page. Please try again.', 'error');
-      resetTurnstile();
-    } catch {
-      showSubmitStatus('A network problem prevented submission. Your answers remain on this page. Check your connection and try again.', 'error');
-      resetTurnstile();
+      const outcome = await requestSubmission(fetch, API_ENDPOINT, intakePayload());
+      const ui = submissionUiState(outcome);
+      showSubmitStatus(ui.message, ui.messageKind);
+      submitButton.textContent = ui.buttonText;
+      submitButton.disabled = ui.buttonDisabled;
+      submissionCompleted = ui.completed;
+      if (ui.resetTurnstile) resetTurnstile();
+      if (outcome.kind === 'created') liveStatus.textContent = 'The learner profile was submitted successfully.';
+      else if (outcome.kind === 'duplicate') liveStatus.textContent = 'This response was already received and its existing record was verified.';
+      else liveStatus.textContent = 'Submission could not be confirmed. Your answers remain on the review section.';
     } finally {
       submissionInProgress = false;
       form.removeAttribute('aria-busy');
-      if (!submitStatus.classList.contains('is-success')) {
-        submitButton.disabled = false;
-        submitButton.textContent = 'Submit learner profile';
-      }
+      updateProgress();
     }
   });
 

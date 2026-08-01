@@ -127,7 +127,9 @@ export async function handleIntakeApi(request: Request, env: IntakeBindings): Pr
     );
   }
 
-  if (validation.request.honeypot) return jsonResponse({ success: true }, 202, requestId);
+  if (validation.request.honeypot) {
+    return jsonResponse({ success: false, stored: false, status: "rejected" }, 202, requestId);
+  }
 
   let turnstileValid = false;
   try {
@@ -146,11 +148,15 @@ export async function handleIntakeApi(request: Request, env: IntakeBindings): Pr
 
   try {
     const accepted = await sendToAppsScript(validation.request.submission, env);
-    if (!accepted) throw new Error("Submission destination rejected the request");
-    return jsonResponse({ success: true }, 201, requestId);
+    return jsonResponse(accepted, accepted.status === "created" ? 201 : 200, requestId);
   } catch {
     return jsonResponse(
-      { error: "Your form could not be submitted just now. Your answers remain on this page. Please try again." },
+      {
+        success: false,
+        stored: false,
+        status: "upstream_failure",
+        error: "We could not confirm that your profile was received. Your answers remain on this page. Please try again or contact Luke.",
+      },
       503,
       requestId,
     );
