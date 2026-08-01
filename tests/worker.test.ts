@@ -208,6 +208,13 @@ describe("primary learner profile Worker", () => {
       response: () => new Response("ok", { status: 200, headers: { "Content-Type": "text/plain" } }),
     },
     {
+      name: "a misleading JSON content-type prefix",
+      response: () => new Response(
+        JSON.stringify({ success: true, stored: true, status: "created", notificationSent: true }),
+        { status: 200, headers: { "Content-Type": "application/jsonp" } },
+      ),
+    },
+    {
       name: "missing contract fields",
       response: () => Response.json({ success: true }),
     },

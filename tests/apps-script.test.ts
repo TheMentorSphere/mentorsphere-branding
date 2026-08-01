@@ -44,6 +44,13 @@ describe("Apps Script retention schema", () => {
     expect(script.hasValidShape_({ issuedAt: new Date().toISOString(), payload: v4 })).toBe(false);
   });
 
+  it("requires the same version 4 UUID submission ID shape as the Worker", async () => {
+    const script = await loadAppsScript();
+    const payload = validIntakeRequest();
+    payload.submissionId = "------------------------------------";
+    expect(script.hasValidShape_({ issuedAt: new Date().toISOString(), payload })).toBe(false);
+  });
+
   it("retains 48 columns and uses the plural contact-method header", async () => {
     const script = await loadAppsScript();
     expect(script.SHEET_COLUMNS).toHaveLength(48);

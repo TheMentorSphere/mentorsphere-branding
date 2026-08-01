@@ -139,7 +139,7 @@ function hasValidShape_(request) {
       payload.confirmations.learnerConsentRoute === '';
   return payload.formVersion === FORM_VERSION &&
     typeof payload.submissionId === 'string' &&
-    /^[0-9a-f-]{36}$/iu.test(payload.submissionId) &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(payload.submissionId) &&
     payload.confirmations.authorised === true &&
     payload.confirmations.privacyAcknowledged === true &&
     typeof payload.supportProfile.specialCategoryProvided === 'boolean' &&

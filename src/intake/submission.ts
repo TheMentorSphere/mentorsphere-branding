@@ -3,6 +3,7 @@ import type { ValidatedIntakeSubmission } from "./validation";
 const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 const TURNSTILE_ACTION = "primary_learner_profile";
 const UPSTREAM_RESPONSE_LIMIT = 16_384;
+const JSON_CONTENT_TYPE = /^application\/json(?:\s*;|$)/iu;
 
 export interface IntakeBindings {
   FORM_PAGE_ENABLED: string;
@@ -135,7 +136,7 @@ export async function sendToAppsScript(
   });
   if (!response.ok) throw new Error("Submission destination returned an HTTP error");
   const contentType = response.headers.get("Content-Type")?.toLowerCase() ?? "";
-  if (!contentType.startsWith("application/json")) throw new Error("Submission destination returned an unexpected content type");
+  if (!JSON_CONTENT_TYPE.test(contentType)) throw new Error("Submission destination returned an unexpected content type");
   const responseText = await readLimitedText(response.body, UPSTREAM_RESPONSE_LIMIT);
   let result: unknown;
   try {
