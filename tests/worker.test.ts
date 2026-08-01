@@ -1,9 +1,11 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { handleIntakeApi, handleWorkerRequest, type WorkerBindings } from "../src/worker";
+import { DIAGNOSTIC_LOG_KEYS, PRE_FORWARD_ERROR_CODES, logPreForwardDiagnostic } from "../src/intake/diagnostics";
 import type { IntakeBindings } from "../src/intake/submission";
 import { validIntakeRequest } from "./fixtures";
 
 const API_URL = "https://www.thementorsphere.co.uk/api/forms/primary-learner-profile";
+const UUID_V4_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const LEARNER_CANNOT_CONSENT =
   "The learner is not currently able to understand and give informed consent to this use of their information, so I am giving consent as a person with parental responsibility or documented legal authority.";
 const LEARNER_AUTHORISED =
@@ -61,6 +63,36 @@ function request(body: unknown, headers: Record<string, string> = {}): Request {
   });
 }
 
+function rawRequest(body: BodyInit | null, headers: Record<string, string> = {}): Request {
+  return new Request(API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Origin: "https://www.thementorsphere.co.uk",
+      ...headers,
+    },
+    body,
+  });
+}
+
+async function expectDiagnostic(
+  response: Response,
+  status: number,
+  errorCode: string,
+): Promise<Record<string, unknown>> {
+  expect(response.status).toBe(status);
+  const result = await response.json() as Record<string, unknown>;
+  expect(result).toMatchObject({
+    success: false,
+    stored: false,
+    status: "rejected",
+    errorCode,
+  });
+  expect(result.requestId).toEqual(expect.stringMatching(UUID_V4_PATTERN));
+  expect(response.headers.get("X-MentorSphere-Request-ID")).toBe(result.requestId);
+  return result;
+}
+
 function mockSuccessfulUpstreams(appsStatus: "created" | "duplicate" = "created") {
   return vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const outbound = new Request(input, init);
@@ -80,11 +112,38 @@ function mockSuccessfulUpstreams(appsStatus: "created" | "duplicate" = "created"
   });
 }
 
+beforeEach(() => {
+  vi.spyOn(console, "warn").mockImplementation(() => undefined);
+});
+
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
 describe("primary learner profile Worker", () => {
+  it("keeps the diagnostic code set explicit and reviewable", () => {
+    expect(PRE_FORWARD_ERROR_CODES).toEqual([
+      "SUBMISSIONS_DISABLED",
+      "INVALID_ORIGIN",
+      "INVALID_CONTENT_TYPE",
+      "REQUEST_TOO_LARGE",
+      "REQUEST_BODY_UNREADABLE",
+      "INVALID_JSON",
+      "PAYLOAD_NOT_OBJECT",
+      "INVALID_FORM_VERSION",
+      "PAYLOAD_VALIDATION_FAILED",
+      "INVALID_SUBMISSION_ID",
+      "TURNSTILE_TOKEN_MISSING",
+      "HONEYPOT_REJECTED",
+      "TURNSTILE_RESPONSE_INVALID",
+      "TURNSTILE_VERIFICATION_FAILED",
+      "TURNSTILE_HOSTNAME_MISMATCH",
+      "TURNSTILE_ACTION_MISMATCH",
+      "TURNSTILE_INTERNAL_ERROR",
+      "UNKNOWN_PREFORWARD_REJECTION",
+    ]);
+  });
+
   it("keeps the public submission configuration disabled by default", async () => {
     const response = await handleIntakeApi(
       new Request(`${API_URL}/config`),
@@ -96,7 +155,7 @@ describe("primary learner profile Worker", () => {
 
   it("rejects cross-origin submissions", async () => {
     const response = await handleIntakeApi(request(validIntakeRequest(), { Origin: "https://attacker.example" }), bindings());
-    expect(response.status).toBe(400);
+    await expectDiagnostic(response, 400, "INVALID_ORIGIN");
     expect(vi.spyOn(globalThis, "fetch")).not.toHaveBeenCalled();
   });
 
@@ -106,8 +165,9 @@ describe("primary learner profile Worker", () => {
     respondent.email = "invalid";
     const fetchSpy = vi.spyOn(globalThis, "fetch");
     const response = await handleIntakeApi(request(body), bindings());
-    expect(response.status).toBe(400);
     const result = await response.json() as { fieldErrors?: Record<string, string> };
+    expect(response.status).toBe(400);
+    expect(result).toMatchObject({ errorCode: "PAYLOAD_VALIDATION_FAILED" });
     expect(result.fieldErrors?.["respondent.email"]).toBe("Enter a valid email address.");
     expect(fetchSpy).not.toHaveBeenCalled();
   });
@@ -149,8 +209,7 @@ describe("primary learner profile Worker", () => {
     body.honeypot = "bot value";
     const fetchSpy = vi.spyOn(globalThis, "fetch");
     const response = await handleIntakeApi(request(body), bindings());
-    expect(response.status).toBe(202);
-    await expect(response.json()).resolves.toEqual({ success: false, stored: false, status: "rejected" });
+    await expectDiagnostic(response, 202, "HONEYPOT_REJECTED");
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
@@ -158,7 +217,7 @@ describe("primary learner profile Worker", () => {
     const fetchSpy = mockSuccessfulUpstreams();
     const response = await handleIntakeApi(request(validIntakeRequest()), bindings());
     expect(response.status).toBe(201);
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toMatchObject({
       success: true,
       stored: true,
       status: "created",
@@ -182,7 +241,7 @@ describe("primary learner profile Worker", () => {
     mockSuccessfulUpstreams("duplicate");
     const response = await handleIntakeApi(request(validIntakeRequest()), bindings());
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toMatchObject({
       success: true,
       stored: false,
       status: "duplicate",
@@ -247,7 +306,7 @@ describe("primary learner profile Worker", () => {
   it("rejects a failed Turnstile result without contacting Apps Script", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json({ success: false }));
     const response = await handleIntakeApi(request(validIntakeRequest()), bindings());
-    expect(response.status).toBe(400);
+    await expectDiagnostic(response, 400, "TURNSTILE_VERIFICATION_FAILED");
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
@@ -272,7 +331,7 @@ describe("primary learner profile Worker", () => {
       Response.json({ success: true, hostname: "localhost", action: "test" }),
     );
     const response = await handleIntakeApi(request(validIntakeRequest()), bindings());
-    expect(response.status).toBe(400);
+    await expectDiagnostic(response, 400, "TURNSTILE_ACTION_MISMATCH");
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
@@ -294,7 +353,163 @@ describe("primary learner profile Worker", () => {
   it("rejects bodies over the configured size limit", async () => {
     const oversized = { ...validIntakeRequest(), padding: "x".repeat(40_000) };
     const response = await handleIntakeApi(request(oversized), bindings());
-    expect(response.status).toBe(413);
+    await expectDiagnostic(response, 413, "REQUEST_TOO_LARGE");
+  });
+
+  it.each([
+    {
+      name: "an incorrect content type",
+      makeRequest: () => rawRequest(JSON.stringify(validIntakeRequest()), { "Content-Type": "text/plain" }),
+      code: "INVALID_CONTENT_TYPE",
+    },
+    {
+      name: "malformed JSON",
+      makeRequest: () => rawRequest("{"),
+      code: "INVALID_JSON",
+    },
+    {
+      name: "a missing request body",
+      makeRequest: () => rawRequest(null),
+      code: "REQUEST_BODY_UNREADABLE",
+    },
+    {
+      name: "a non-object payload",
+      makeRequest: () => rawRequest(JSON.stringify("not an object")),
+      code: "PAYLOAD_NOT_OBJECT",
+    },
+    {
+      name: "the wrong form version",
+      makeRequest: () => request({ ...validIntakeRequest(), formVersion: "primary-learner-profile-v4" }),
+      code: "INVALID_FORM_VERSION",
+    },
+    {
+      name: "an invalid submission UUID",
+      makeRequest: () => request({ ...validIntakeRequest(), submissionId: "not-a-uuid" }),
+      code: "INVALID_SUBMISSION_ID",
+    },
+    {
+      name: "a missing Turnstile token",
+      makeRequest: () => request({ ...validIntakeRequest(), turnstileToken: "" }),
+      code: "TURNSTILE_TOKEN_MISSING",
+    },
+  ])("classifies $name without calling an upstream service", async ({ makeRequest, code }) => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const response = await handleIntakeApi(makeRequest(), bindings());
+    await expectDiagnostic(response, 400, code);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    {
+      name: "a hostname mismatch",
+      turnstileResponse: () => Response.json({
+        success: true,
+        action: "primary_learner_profile",
+        hostname: "unexpected.example",
+      }),
+      code: "TURNSTILE_HOSTNAME_MISMATCH",
+    },
+    {
+      name: "an action mismatch",
+      turnstileResponse: () => Response.json({
+        success: true,
+        action: "different_action",
+        hostname: "www.thementorsphere.co.uk",
+      }),
+      code: "TURNSTILE_ACTION_MISMATCH",
+    },
+    {
+      name: "a malformed JSON response",
+      turnstileResponse: () => new Response("{", { headers: { "Content-Type": "application/json" } }),
+      code: "TURNSTILE_RESPONSE_INVALID",
+    },
+    {
+      name: "an incomplete response object",
+      turnstileResponse: () => Response.json({ hostname: "www.thementorsphere.co.uk" }),
+      code: "TURNSTILE_RESPONSE_INVALID",
+    },
+    {
+      name: "an upstream verification HTTP failure",
+      turnstileResponse: () => Response.json({}, { status: 500 }),
+      code: "TURNSTILE_VERIFICATION_FAILED",
+    },
+  ])("classifies $name and never attempts forwarding", async ({ turnstileResponse, code }) => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(turnstileResponse());
+    const response = await handleIntakeApi(request(validIntakeRequest()), bindings());
+    await expectDiagnostic(response, 400, code);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy.mock.calls.some(([input, init]) => new Request(input, init).url.includes("script.google"))).toBe(false);
+  });
+
+  it("classifies an internal Turnstile transport error without exposing it", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("fictional transport detail"));
+    const response = await handleIntakeApi(request(validIntakeRequest()), bindings());
+    const result = await expectDiagnostic(response, 400, "TURNSTILE_INTERNAL_ERROR");
+    expect(JSON.stringify(result)).not.toContain("transport detail");
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("accepts a valid client request ID and replaces an invalid one", async () => {
+    const supplied = "f47ac10b-58cc-4372-a567-0e02b2c3d479";
+    const accepted = await handleIntakeApi(
+      request(validIntakeRequest(), { "X-MentorSphere-Request-ID": supplied }),
+      bindings({ FORM_SUBMISSIONS_ENABLED: "false" }),
+    );
+    expect(accepted.headers.get("X-MentorSphere-Request-ID")).toBe(supplied);
+    await expect(accepted.json()).resolves.toMatchObject({ requestId: supplied });
+
+    const replaced = await handleIntakeApi(
+      request(validIntakeRequest(), { "X-MentorSphere-Request-ID": "contains-private-data@example.test" }),
+      bindings({ FORM_SUBMISSIONS_ENABLED: "false" }),
+    );
+    const replacement = replaced.headers.get("X-MentorSphere-Request-ID") ?? "";
+    expect(replacement).toMatch(UUID_V4_PATTERN);
+    expect(replacement).not.toBe("contains-private-data@example.test");
+  });
+
+  it("logs only the fixed diagnostic allowlist and ignores unexpected arguments", () => {
+    const warn = vi.mocked(console.warn);
+    warn.mockClear();
+    Reflect.apply(logPreForwardDiagnostic, undefined, [
+      "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "INVALID_JSON",
+      "json_parsing",
+      400,
+      "2026-08-01T17:00:07.000Z",
+      false,
+      false,
+      false,
+      null,
+      "",
+      null,
+      null,
+      false,
+      { payload: validIntakeRequest(), token: "must-not-be-logged", secret: "must-not-be-logged" },
+    ]);
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    const logged = warn.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(Object.keys(logged)).toEqual(DIAGNOSTIC_LOG_KEYS);
+    expect(JSON.stringify(logged)).not.toContain("must-not-be-logged");
+    expect(JSON.stringify(logged)).not.toContain("respondent");
+  });
+
+  it("never logs submitted values, Turnstile tokens, endpoint URLs or HMAC material", async () => {
+    const body = validIntakeRequest();
+    const submittedToken = String(body.turnstileToken);
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json({
+      success: false,
+      "error-codes": ["invalid-input-response", "unexpected-private-detail"],
+    }));
+
+    await handleIntakeApi(request(body), bindings());
+
+    const logged = JSON.stringify(vi.mocked(console.warn).mock.calls);
+    expect(logged).not.toContain(submittedToken);
+    expect(logged).not.toContain("fictional-hmac-secret-with-enough-entropy");
+    expect(logged).not.toContain("script.google.test");
+    expect(logged).not.toContain("unexpected-private-detail");
+    expect(logged).toContain("invalid-input-response");
   });
 });
 
@@ -331,6 +546,7 @@ describe("primary learner profile page release control", () => {
     );
 
     expect(response.status).toBe(503);
+    await expect(response.clone().json()).resolves.toMatchObject({ errorCode: "SUBMISSIONS_DISABLED" });
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 

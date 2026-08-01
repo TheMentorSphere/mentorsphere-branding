@@ -16,11 +16,39 @@ export interface IntakeBindings {
   INTAKE_HMAC_SECRET: string;
 }
 
-interface TurnstileResult {
-  success?: boolean;
-  action?: string;
-  hostname?: string;
-}
+export type TurnstileFailureCode =
+  | "TURNSTILE_RESPONSE_INVALID"
+  | "TURNSTILE_VERIFICATION_FAILED"
+  | "TURNSTILE_HOSTNAME_MISMATCH"
+  | "TURNSTILE_ACTION_MISMATCH"
+  | "TURNSTILE_INTERNAL_ERROR";
+
+export type TurnstileVerificationResult =
+  | {
+    ok: true;
+    returnedSuccess: true;
+    errorCodes: string;
+    hostnameComparisonPassed: boolean | null;
+    actionComparisonPassed: boolean | null;
+  }
+  | {
+    ok: false;
+    errorCode: TurnstileFailureCode;
+    returnedSuccess: boolean | null;
+    errorCodes: string;
+    hostnameComparisonPassed: boolean | null;
+    actionComparisonPassed: boolean | null;
+  };
+
+const TURNSTILE_ERROR_CODE_ALLOWLIST = new Set([
+  "missing-input-secret",
+  "invalid-input-secret",
+  "missing-input-response",
+  "invalid-input-response",
+  "bad-request",
+  "timeout-or-duplicate",
+  "internal-error",
+]);
 
 export type IntakeCreatedResponse = {
   success: true;
@@ -81,12 +109,21 @@ async function readLimitedText(body: ReadableStream<Uint8Array> | null, limit: n
   }
 }
 
+function sanitisedTurnstileErrorCodes(value: unknown): string {
+  if (!Array.isArray(value)) return "";
+  const recognised = value.filter(
+    (code): code is string => typeof code === "string" && TURNSTILE_ERROR_CODE_ALLOWLIST.has(code),
+  );
+  if (recognised.length > 0) return [...new Set(recognised)].join(",");
+  return value.length > 0 ? "unrecognised" : "";
+}
+
 export async function verifyTurnstile(
   token: string,
   submissionId: string,
   remoteIp: string,
   env: IntakeBindings,
-): Promise<boolean> {
+): Promise<TurnstileVerificationResult> {
   const body = new URLSearchParams({
     secret: env.TURNSTILE_SECRET_KEY,
     response: token,
@@ -94,28 +131,127 @@ export async function verifyTurnstile(
   });
   if (remoteIp) body.set("remoteip", remoteIp);
 
-  const response = await fetch(TURNSTILE_VERIFY_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body,
-    signal: AbortSignal.timeout(10_000),
-  });
-  if (!response.ok) return false;
-  const result = (await response.json()) as TurnstileResult;
+  let response: Response;
+  try {
+    response = await fetch(TURNSTILE_VERIFY_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body,
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch {
+    return {
+      ok: false,
+      errorCode: "TURNSTILE_INTERNAL_ERROR",
+      returnedSuccess: null,
+      errorCodes: "",
+      hostnameComparisonPassed: null,
+      actionComparisonPassed: null,
+    };
+  }
+  if (!response.ok) {
+    return {
+      ok: false,
+      errorCode: "TURNSTILE_VERIFICATION_FAILED",
+      returnedSuccess: null,
+      errorCodes: "",
+      hostnameComparisonPassed: null,
+      actionComparisonPassed: null,
+    };
+  }
+
+  let result: unknown;
+  try {
+    result = await response.json();
+  } catch {
+    return {
+      ok: false,
+      errorCode: "TURNSTILE_RESPONSE_INVALID",
+      returnedSuccess: null,
+      errorCodes: "",
+      hostnameComparisonPassed: null,
+      actionComparisonPassed: null,
+    };
+  }
+  if (!isRecord(result) || typeof result.success !== "boolean") {
+    return {
+      ok: false,
+      errorCode: "TURNSTILE_RESPONSE_INVALID",
+      returnedSuccess: null,
+      errorCodes: "",
+      hostnameComparisonPassed: null,
+      actionComparisonPassed: null,
+    };
+  }
+
+  const errorCodes = sanitisedTurnstileErrorCodes(result["error-codes"]);
+  if (!result.success) {
+    return {
+      ok: false,
+      errorCode: "TURNSTILE_VERIFICATION_FAILED",
+      returnedSuccess: false,
+      errorCodes,
+      hostnameComparisonPassed: null,
+      actionComparisonPassed: null,
+    };
+  }
+
+  if (env.TURNSTILE_TEST_MODE === "true") {
+    return {
+      ok: true,
+      returnedSuccess: true,
+      errorCodes,
+      hostnameComparisonPassed: null,
+      actionComparisonPassed: null,
+    };
+  }
+
+  if (typeof result.action !== "string" || typeof result.hostname !== "string") {
+    return {
+      ok: false,
+      errorCode: "TURNSTILE_RESPONSE_INVALID",
+      returnedSuccess: true,
+      errorCodes,
+      hostnameComparisonPassed: typeof result.hostname === "string" ? null : false,
+      actionComparisonPassed: typeof result.action === "string" ? null : false,
+    };
+  }
+
+  const actionComparisonPassed = result.action === TURNSTILE_ACTION;
+  if (!actionComparisonPassed) {
+    return {
+      ok: false,
+      errorCode: "TURNSTILE_ACTION_MISMATCH",
+      returnedSuccess: true,
+      errorCodes,
+      hostnameComparisonPassed: null,
+      actionComparisonPassed,
+    };
+  }
+
   const hostnames = new Set(
     env.TURNSTILE_EXPECTED_HOSTNAMES.split(",")
       .map((hostname) => hostname.trim().toLowerCase())
       .filter(Boolean),
   );
-  if (env.TURNSTILE_TEST_MODE === "true") {
-    return result.success === true;
+  const hostnameComparisonPassed = hostnames.has(result.hostname.toLowerCase());
+  if (!hostnameComparisonPassed) {
+    return {
+      ok: false,
+      errorCode: "TURNSTILE_HOSTNAME_MISMATCH",
+      returnedSuccess: true,
+      errorCodes,
+      hostnameComparisonPassed,
+      actionComparisonPassed,
+    };
   }
-  return (
-    result.success === true &&
-    result.action === TURNSTILE_ACTION &&
-    typeof result.hostname === "string" &&
-    hostnames.has(result.hostname.toLowerCase())
-  );
+  return {
+    ok: true,
+    returnedSuccess: true,
+    errorCodes,
+    hostnameComparisonPassed,
+    actionComparisonPassed,
+  };
 }
 
 export async function sendToAppsScript(

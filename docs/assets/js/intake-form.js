@@ -475,8 +475,17 @@ import { requestSubmission, submissionUiState } from './intake-submission-contra
   });
   };
 
-  const showSubmitStatus = (message, kind) => {
-    submitStatus.textContent = message;
+  const showSubmitStatus = (message, kind, referenceText = '') => {
+    submitStatus.replaceChildren();
+    const messageText = document.createElement('span');
+    messageText.textContent = message;
+    submitStatus.append(messageText);
+    if (referenceText) {
+      const reference = document.createElement('span');
+      reference.className = 'intake-request-reference';
+      reference.textContent = referenceText;
+      submitStatus.append(reference);
+    }
     submitStatus.className = `intake-submit-status is-${kind}`;
     submitStatus.hidden = false;
     submitStatus.focus();
@@ -623,13 +632,14 @@ import { requestSubmission, submissionUiState } from './intake-submission-contra
     submissionInProgress = true;
     submitButton.disabled = true;
     submitButton.textContent = 'Submitting...';
+    submitStatus.replaceChildren();
     submitStatus.hidden = true;
     form.setAttribute('aria-busy', 'true');
 
     try {
       const outcome = await requestSubmission(fetch, API_ENDPOINT, intakePayload());
       const ui = submissionUiState(outcome);
-      showSubmitStatus(ui.message, ui.messageKind);
+      showSubmitStatus(ui.message, ui.messageKind, ui.referenceText);
       submitButton.textContent = ui.buttonText;
       submitButton.disabled = ui.buttonDisabled;
       submissionCompleted = ui.completed;
