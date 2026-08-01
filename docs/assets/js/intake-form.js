@@ -1,4 +1,8 @@
-import { requestSubmission, submissionUiState } from './intake-submission-contract.js';
+import {
+  requestSubmission,
+  submissionUiState,
+  turnstileTokenIsStale,
+} from './intake-submission-contract.js';
 
 (() => {
   'use strict';
@@ -47,6 +51,7 @@ import { requestSubmission, submissionUiState } from './intake-submission-contra
   let submissionInProgress = false;
   let submissionCompleted = false;
   let turnstileToken = '';
+  let turnstileTokenIssuedAt = null;
   let turnstileWidgetId = null;
   let turnstileAction = '';
 
@@ -491,10 +496,27 @@ import { requestSubmission, submissionUiState } from './intake-submission-contra
     submitStatus.focus();
   };
 
-  const resetTurnstile = () => {
+  const resetTurnstile = (statusMessage = 'Complete the security check before submitting.') => {
     turnstileToken = '';
+    turnstileTokenIssuedAt = null;
     if (window.turnstile && turnstileWidgetId !== null) window.turnstile.reset(turnstileWidgetId);
-    turnstileStatus.textContent = 'Complete the security check before submitting.';
+    turnstileStatus.textContent = statusMessage;
+  };
+
+  const clearTurnstile = (statusMessage) => {
+    turnstileToken = '';
+    turnstileTokenIssuedAt = null;
+    turnstileStatus.textContent = statusMessage;
+  };
+
+  const turnstileNeedsRefresh = () => {
+    if (turnstileTokenIsStale(turnstileToken, turnstileTokenIssuedAt)) return true;
+    return Boolean(
+      window.turnstile &&
+      turnstileWidgetId !== null &&
+      typeof window.turnstile.isExpired === 'function' &&
+      window.turnstile.isExpired(turnstileWidgetId)
+    );
   };
 
   const applyServerErrors = (fieldErrors) => {
@@ -549,16 +571,18 @@ import { requestSubmission, submissionUiState } from './intake-submission-contra
           theme: 'light',
           callback: (token) => {
             turnstileToken = token;
+            turnstileTokenIssuedAt = Date.now();
             clearFieldError(fieldWrapper('turnstileToken'));
             turnstileStatus.textContent = 'Security check complete.';
           },
           'expired-callback': () => {
-            turnstileToken = '';
-            turnstileStatus.textContent = 'The security check expired. Please complete it again.';
+            resetTurnstile('The security check expired. Please complete it again.');
+          },
+          'timeout-callback': () => {
+            resetTurnstile('The security check timed out. Please complete it again.');
           },
           'error-callback': () => {
-            turnstileToken = '';
-            turnstileStatus.textContent = 'The security check could not load. Please refresh the page or request an alternative format.';
+            clearTurnstile('The security check could not load. Please refresh the page or request an alternative format.');
           },
         });
         submitButton.disabled = false;
@@ -627,7 +651,16 @@ import { requestSubmission, submissionUiState } from './intake-submission-contra
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
-    if (submissionInProgress || submissionCompleted || !validateEveryStep()) return;
+    if (submissionInProgress || submissionCompleted) return;
+    if (turnstileNeedsRefresh()) {
+      const expiredMessage = 'The security check has expired. Please complete it again before submitting.';
+      resetTurnstile(expiredMessage);
+      setFieldError(fieldWrapper('turnstileToken'), expiredMessage);
+      showSubmitStatus(expiredMessage, 'error');
+      liveStatus.textContent = expiredMessage;
+      return;
+    }
+    if (!validateEveryStep()) return;
 
     submissionInProgress = true;
     submitButton.disabled = true;
