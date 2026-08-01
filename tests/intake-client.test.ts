@@ -130,4 +130,25 @@ describe("primary learner profile client controls", () => {
     expect(css).toContain("@media (max-width: 32rem)");
     expect(css).toMatch(/\.page-intake-form\s*\{[^}]*min-width:\s*0;/su);
   });
+
+  it("renders a selectable, accessible per-request reference without browser storage", async () => {
+    const [html, formScript, contractScript, css] = await Promise.all([
+      readFile(path.join(process.cwd(), "docs", "forms", "primary-learner-profile", "index.html"), "utf8"),
+      readFile(path.join(process.cwd(), "docs", "assets", "js", "intake-form.js"), "utf8"),
+      readFile(path.join(process.cwd(), "docs", "assets", "js", "intake-submission-contract.js"), "utf8"),
+      readFile(path.join(process.cwd(), "docs", "assets", "css", "intake-forms.css"), "utf8"),
+    ]);
+
+    expect(html).toContain('role="status" aria-live="polite" aria-atomic="true"');
+    expect(formScript).toContain("reference.className = 'intake-request-reference'");
+    expect(formScript).toContain("reference.textContent = referenceText");
+    expect(formScript).toContain("submitStatus.replaceChildren()");
+    expect(contractScript).toContain("`Reference: ${requestId}`");
+    expect(css).toMatch(/\.intake-request-reference\s*\{[^}]*user-select:\s*text;/su);
+
+    for (const source of [formScript, contractScript]) {
+      expect(source).not.toContain("localStorage");
+      expect(source).not.toContain("sessionStorage");
+    }
+  });
 });

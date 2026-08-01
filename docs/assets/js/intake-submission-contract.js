@@ -1,14 +1,16 @@
 export const SUBMISSION_TIMEOUT_MS = 30_000;
 
 const JSON_CONTENT_TYPE = /^application\/(?:[a-z0-9.!#$&^_-]+\+)?json(?:\s*;|$)/iu;
+const UUID_V4_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const DIAGNOSTIC_REQUEST_HEADER = 'X-MentorSphere-Request-ID';
 
-export function classifySubmissionResponse(responseOk, contentType, payload) {
-  if (!responseOk) return { kind: 'failure', reason: 'http' };
+export function classifySubmissionResponse(responseOk, contentType, payload, requestId = '', errorCode = '') {
+  if (!responseOk) return { kind: 'failure', reason: 'http', requestId, errorCode };
   if (typeof contentType !== 'string' || !JSON_CONTENT_TYPE.test(contentType)) {
-    return { kind: 'failure', reason: 'content_type' };
+    return { kind: 'failure', reason: 'content_type', requestId, errorCode };
   }
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
-    return { kind: 'failure', reason: 'invalid_json' };
+    return { kind: 'failure', reason: 'invalid_json', requestId, errorCode };
   }
   if (
     payload.success === true &&
@@ -26,36 +28,57 @@ export function classifySubmissionResponse(responseOk, contentType, payload) {
   ) {
     return { kind: 'duplicate' };
   }
-  return { kind: 'failure', reason: 'contract' };
+  return { kind: 'failure', reason: 'contract', requestId, errorCode };
 }
 
 export async function requestSubmission(fetchImplementation, endpoint, payload, timeoutMs = SUBMISSION_TIMEOUT_MS) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const clientRequestId = crypto.randomUUID();
   try {
     const response = await fetchImplementation(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        [DIAGNOSTIC_REQUEST_HEADER]: clientRequestId,
+      },
       body: JSON.stringify(payload),
       signal: controller.signal,
     });
     const contentType = response.headers.get('Content-Type') || '';
-    if (!response.ok || !JSON_CONTENT_TYPE.test(contentType)) {
-      return classifySubmissionResponse(response.ok, contentType, null);
+    const responseRequestId = response.headers.get(DIAGNOSTIC_REQUEST_HEADER) || '';
+    const requestId = UUID_V4_PATTERN.test(responseRequestId) ? responseRequestId : clientRequestId;
+    if (!JSON_CONTENT_TYPE.test(contentType)) {
+      return classifySubmissionResponse(response.ok, contentType, null, requestId);
     }
     const text = await response.text();
     let responsePayload;
     try {
       responsePayload = JSON.parse(text);
     } catch {
-      return { kind: 'failure', reason: 'invalid_json' };
+      return { kind: 'failure', reason: 'invalid_json', requestId, errorCode: '' };
     }
-    return classifySubmissionResponse(response.ok, contentType, responsePayload);
+    const responseBodyRequestId = typeof responsePayload?.requestId === 'string' && UUID_V4_PATTERN.test(responsePayload.requestId)
+      ? responsePayload.requestId
+      : requestId;
+    const errorCode = typeof responsePayload?.errorCode === 'string' ? responsePayload.errorCode : '';
+    return classifySubmissionResponse(response.ok, contentType, responsePayload, responseBodyRequestId, errorCode);
   } catch (error) {
-    return { kind: 'failure', reason: controller.signal.aborted ? 'timeout' : 'network', error };
+    return {
+      kind: 'failure',
+      reason: controller.signal.aborted ? 'timeout' : 'network',
+      error,
+      requestId: clientRequestId,
+      errorCode: '',
+    };
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export function requestReferenceText(requestId) {
+  return UUID_V4_PATTERN.test(requestId) ? `Reference: ${requestId}` : '';
 }
 
 export function submissionUiState(outcome) {
@@ -82,6 +105,8 @@ export function submissionUiState(outcome) {
   return {
     message: 'We could not confirm that your profile was received. Your answers are still on this page. Please try again or contact Luke.',
     messageKind: 'error',
+    requestId: outcome.requestId || '',
+    referenceText: requestReferenceText(outcome.requestId || ''),
     buttonText: 'Submit learner profile',
     buttonDisabled: false,
     resetTurnstile: true,

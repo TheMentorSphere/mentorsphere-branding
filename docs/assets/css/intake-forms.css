@@ -648,6 +648,16 @@
   color: #0f5b45;
 }
 
+.intake-request-reference {
+  display: block;
+  margin-top: 0.45rem;
+  font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace;
+  font-size: 0.9em;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+
 .intake-footer {
   padding-block: 1.75rem;
   border-top: 1px solid rgba(0, 95, 141, 0.15);

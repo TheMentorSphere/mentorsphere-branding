@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   classifySubmissionResponse,
+  requestReferenceText,
   requestSubmission,
   submissionUiState,
 } from '../docs/assets/js/intake-submission-contract.js';
@@ -92,6 +93,9 @@ describe('browser submission contract', () => {
     expect(payload).toEqual(before);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).submissionId).toBe(payload.submissionId);
+    expect(fetchMock.mock.calls[0][1].headers['X-MentorSphere-Request-ID']).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu,
+    );
   });
 
   it('times out once, restores the button and does not retry or replace the submission ID', async () => {
@@ -117,5 +121,54 @@ describe('browser submission contract', () => {
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(payload).toEqual(before);
+  });
+
+  it('keeps a per-request diagnostic reference without displaying the technical code', async () => {
+    const requestId = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({
+      success: false,
+      stored: false,
+      status: 'rejected',
+      errorCode: 'TURNSTILE_HOSTNAME_MISMATCH',
+      requestId,
+    }, {
+      status: 400,
+      headers: { 'X-MentorSphere-Request-ID': requestId },
+    }));
+
+    const outcome = await requestSubmission(fetchMock, endpoint, { fictional: 'Answer remains present' }, 100);
+    const state = submissionUiState(outcome);
+
+    expect(outcome).toMatchObject({
+      kind: 'failure',
+      reason: 'http',
+      errorCode: 'TURNSTILE_HOSTNAME_MISMATCH',
+      requestId,
+    });
+    expect(state.message).toBe(
+      'We could not confirm that your profile was received. Your answers are still on this page. Please try again or contact Luke.',
+    );
+    expect(state.referenceText).toBe(`Reference: ${requestId}`);
+    expect(state.message).not.toContain('TURNSTILE');
+    expect(requestReferenceText('not-a-uuid')).toBe('');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses the generated client request ID when an invalid response ID is returned', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({
+      success: false,
+      stored: false,
+      status: 'rejected',
+      errorCode: 'INVALID_JSON',
+      requestId: 'private-or-invalid-value',
+    }, {
+      status: 400,
+      headers: { 'X-MentorSphere-Request-ID': 'also-invalid' },
+    }));
+
+    const outcome = await requestSubmission(fetchMock, endpoint, {}, 100);
+    const sentRequestId = fetchMock.mock.calls[0][1].headers['X-MentorSphere-Request-ID'];
+    expect(outcome.requestId).toBe(sentRequestId);
+    expect(outcome.requestId).toMatch(/^[0-9a-f-]{36}$/iu);
   });
 });
