@@ -74,9 +74,9 @@ record(!intakeHtml.includes("Owner approval required before launch"), "primary l
 record(!intakeHtml.includes("Draft wording for owner review"), "primary learner profile: internal draft wording is public");
 record(!intakeHtml.includes("Article 6 or Article 9 legal basis"), "primary learner profile: internal legal-basis note is public");
 record(intakeHtml.includes("Step 5"), "primary learner profile: review step is missing");
-record(intakeHtml.includes("I explicitly consent to The MentorSphere using the health, disability, SEND and neurodiversity information I choose to provide"), "primary learner profile: approved explicit-consent wording is missing");
-record(intakeHtml.includes("I confirm that I have parental responsibility for the learner, or hold documented legal authority to act on their behalf."), "primary learner profile: approved authority wording is missing");
-record(intakeHtml.includes("Which statement applies to the learner’s consent?"), "primary learner profile: learner consent route is missing");
+record(intakeHtml.includes("I explicitly consent to The MentorSphere using the optional health, disability, SEND and neurodiversity information I provide"), "primary learner profile: approved explicit-consent wording is missing");
+record(intakeHtml.includes("I confirm that I am authorised to provide the learner's information to The MentorSphere for the purpose of discussing and planning support"), "primary learner profile: approved authority wording is missing");
+record(intakeHtml.includes("Who is giving or authorising this consent?"), "primary learner profile: learner consent route is missing");
 record(intakeHtml.includes("The learner understands how this information will be used and has authorised me to communicate this consent on their behalf."), "primary learner profile: learner-authorised route is missing");
 record(
   ["supportNeeds", "helpfulStrategies", "unhelpfulApproaches", "otherBackground"].every((path) => {
@@ -105,8 +105,8 @@ record(
   "intake-form.js: persistent browser storage found",
 );
 record(!/\bconsole\s*\./u.test(intakeScript), "intake-form.js: browser console logging found");
-record(intakeScript.includes("primary-learner-profile-v4"), "intake-form.js: current form version is missing");
-record(intakeScript.includes("learnerConsentRoute: singleValue('learner_consent_route')"), "intake-form.js: learner consent route is not included in the payload");
+record(intakeScript.includes("primary-learner-profile-v5"), "intake-form.js: current form version is missing");
+record(intakeScript.includes("const learnerConsentRoute = singleValue('learner_consent_route')"), "intake-form.js: learner consent route is not included in the payload");
 
 const headers = await readFile(path.join(docsRoot, "_headers"), "utf8");
 record(headers.includes("/forms/primary-learner-profile/*"), "docs/_headers: intake route is missing");

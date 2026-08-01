@@ -18,25 +18,70 @@ describe("primary learner profile client controls", () => {
     }
   });
 
-  it("uses one shared clearing path for narratives, consent, authority and learner route", async () => {
+  it("uses one shared clearing path for sensitive fields and Part 3 consent controls", async () => {
     const script = await readFile(path.join(process.cwd(), "docs", "assets", "js", "intake-form.js"), "utf8");
 
     expect(script).toContain("form.querySelectorAll('[data-special-category-field]')");
-    expect(script).toContain("form.querySelectorAll('[data-special-category-confirmation]')");
-    expect(script.match(/if \(!provided\) clearContainerControls\(field\);/gu)).toHaveLength(2);
-    expect(script).toContain("learnerConsentRoute: singleValue('learner_consent_route')");
+    expect(script).toContain("form.querySelectorAll('[data-special-category-consent-control]')");
+    expect(script).toContain("clearContainerControls(field)");
+    expect(script).toContain("Optional sensitive information was cleared because consent is no longer complete.");
+    expect(script).toContain("const learnerConsentRoute = singleValue('learner_consent_route')");
   });
 
-  it("ships the v4 payload and exact learner consent-route question", async () => {
+  it("ships the V5 payload and exact learner consent-route question", async () => {
     const [html, script] = await Promise.all([
       readFile(path.join(process.cwd(), "docs", "forms", "primary-learner-profile", "index.html"), "utf8"),
       readFile(path.join(process.cwd(), "docs", "assets", "js", "intake-form.js"), "utf8"),
     ]);
 
-    expect(script).toContain("formVersion: 'primary-learner-profile-v4'");
-    expect(html).toContain('name="form_version" value="primary-learner-profile-v4"');
-    expect(html).toContain("Which statement applies to the learner’s consent?");
+    expect(script).toContain("formVersion: 'primary-learner-profile-v5'");
+    expect(html).toContain('name="form_version" value="primary-learner-profile-v5"');
+    expect(html).toContain("Who is giving or authorising this consent?");
     expect(html).toContain("The learner understands how this information will be used and has authorised me to communicate this consent on their behalf.");
+    expect(html).toContain("The learner is not currently able to understand and give informed consent");
+  });
+
+  it("uses one combined authority and privacy acknowledgement on the final section", async () => {
+    const [html, script] = await Promise.all([
+      readFile(path.join(process.cwd(), "docs", "forms", "primary-learner-profile", "index.html"), "utf8"),
+      readFile(path.join(process.cwd(), "docs", "assets", "js", "intake-form.js"), "utf8"),
+    ]);
+
+    expect(html.match(/name="authority_privacy_confirmation"/gu)).toHaveLength(1);
+    expect(html).not.toContain('name="authorised_confirmation"');
+    expect(html).not.toContain('name="privacy_confirmation"');
+    expect(html).not.toContain('name="special_category_authority"');
+    expect(html).toContain('href="../../privacy-policy/" target="_blank" rel="noopener"');
+    expect(script).toContain("authorised: authorityPrivacyConfirmed");
+    expect(script).toContain("privacyAcknowledged: authorityPrivacyConfirmed");
+  });
+
+  it("places consent before sensitive fields and gates their reveal", async () => {
+    const [html, script] = await Promise.all([
+      readFile(path.join(process.cwd(), "docs", "forms", "primary-learner-profile", "index.html"), "utf8"),
+      readFile(path.join(process.cwd(), "docs", "assets", "js", "intake-form.js"), "utf8"),
+    ]);
+
+    expect(html.indexOf('name="special_category_consent"')).toBeLessThan(html.indexOf('name="needs_status"'));
+    expect(html.indexOf('name="learner_consent_route"')).toBeLessThan(html.indexOf('name="needs_status"'));
+    expect(script).toContain("const consentComplete = requested &&");
+    expect(script).toContain("Boolean(namedControl('special_category_consent')?.checked)");
+    expect(script).toContain("Boolean(singleValue('learner_consent_route'))");
+  });
+
+  it("uses accessible progress buttons without positive tabindex", async () => {
+    const [html, script] = await Promise.all([
+      readFile(path.join(process.cwd(), "docs", "forms", "primary-learner-profile", "index.html"), "utf8"),
+      readFile(path.join(process.cwd(), "docs", "assets", "js", "intake-form.js"), "utf8"),
+    ]);
+
+    expect(html.match(/data-progress-button="[1-5]"/gu)).toHaveLength(5);
+    expect(html.match(/aria-label="Go to section [1-5]:/gu)).toHaveLength(5);
+    expect(html).toContain('aria-current="step"');
+    expect(html).not.toMatch(/tabindex="[1-9]/u);
+    expect(script).toContain("stepNumber <= highestValidatedStep");
+    expect(script).toContain("stepNumber === 5 && highestValidatedStep >= 4");
+    expect(script).toContain("highestValidatedStep = editedStep - 1");
   });
 
   it("uses checkbox contact methods and an ordered array payload", async () => {

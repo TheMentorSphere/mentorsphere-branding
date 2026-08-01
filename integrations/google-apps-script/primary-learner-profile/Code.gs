@@ -1,15 +1,16 @@
-const FORM_VERSION = 'primary-learner-profile-v4';
+const FORM_VERSION = 'primary-learner-profile-v5';
 const CONTACT_METHODS = ['Email', 'Telephone', 'Text message', 'WhatsApp'];
 const PHONE_CONTACT_METHODS = ['Telephone', 'Text message', 'WhatsApp'];
-const CONSENT_WORDING_VERSION = 'explicit-consent-2026-07-31';
-const AUTHORITY_WORDING_VERSION = 'authority-confirmation-2026-07-31';
-const LEARNER_CONSENT_ROUTE_WORDING_VERSION = 'learner-consent-route-2026-07-31';
+const CONSENT_WORDING_VERSION = 'explicit-consent-v5-2026-08-01';
+const AUTHORITY_WORDING_VERSION = 'special-category-authority-v5-2026-08-01';
+const LEARNER_CONSENT_ROUTE_WORDING_VERSION = 'learner-consent-route-v5-2026-08-01';
 const LEARNER_CONSENT_ROUTES = [
-  'The learner is not yet able to understand and give informed consent to this use of their information, so I am giving consent as a person with parental responsibility or documented legal authority.',
   'The learner understands how this information will be used and has authorised me to communicate this consent on their behalf.',
+  'The learner is not currently able to understand and give informed consent to this use of their information, so I am giving consent as a person with parental responsibility or documented legal authority.',
 ];
 const MAX_REQUEST_CHARACTERS = 50000;
 const SIGNATURE_WINDOW_MILLISECONDS = 5 * 60 * 1000;
+const DUPLICATE_CACHE_SECONDS = 6 * 60 * 60;
 
 const SHEET_COLUMNS = [
   'Submission ID',
@@ -66,7 +67,7 @@ function jsonOutput_(value) {
   return ContentService.createTextOutput(JSON.stringify(value)).setMimeType(ContentService.MimeType.JSON);
 }
 function safeError_() {
-  return jsonOutput_({ ok: false, status: 'rejected' });
+  return jsonOutput_({ success: false, stored: false, status: 'rejected' });
 }
 
 function constantTimeEqual_(left, right) {
@@ -262,6 +263,31 @@ function findSubmissionRow_(sheet, submissionId) {
   return match ? match.getRow() : 0;
 }
 
+function duplicateCacheKey_(submissionId) {
+  return `stored:${submissionId}`;
+}
+
+function verifyStoredRow_(sheet, rowNumber, submissionId) {
+  if (!Number.isInteger(rowNumber) || rowNumber < 2) return false;
+  const storedRow = sheet.getRange(rowNumber, 1, 1, SHEET_COLUMNS.length).getValues()[0];
+  return Array.isArray(storedRow) &&
+    storedRow.length === SHEET_COLUMNS.length &&
+    String(storedRow[0]) === submissionId;
+}
+
+function classifyDuplicate_(sheet, submissionId, cache) {
+  const rowNumber = findSubmissionRow_(sheet, submissionId);
+  if (rowNumber > 0) {
+    return verifyStoredRow_(sheet, rowNumber, submissionId)
+      ? { status: 'duplicate', rowNumber }
+      : { status: 'duplicate_without_record', rowNumber: 0 };
+  }
+  if (cache.get(duplicateCacheKey_(submissionId)) === 'stored') {
+    return { status: 'duplicate_without_record', rowNumber: 0 };
+  }
+  return { status: 'new', rowNumber: 0 };
+}
+
 function appendSubmission_(sheet, row) {
   const targetRow = sheet.getLastRow() + 1;
   const range = sheet.getRange(targetRow, 1, 1, SHEET_COLUMNS.length);
@@ -317,33 +343,60 @@ function doPost(event) {
     const lock = LockService.getScriptLock();
     if (!lock.tryLock(10000)) return safeError_();
 
+    const cache = CacheService.getScriptCache();
     let sheet;
-    let rowNumber;
-    let duplicate = false;
+    let rowNumber = 0;
+    let duplicateStatus = 'new';
     const receivedAt = new Date().toISOString();
     try {
       sheet = configuredSheet_(properties);
       ensureHeaders_(sheet);
-      rowNumber = findSubmissionRow_(sheet, request.payload.submissionId);
-      if (rowNumber > 0) duplicate = true;
-      else rowNumber = appendSubmission_(sheet, rowFor_(request, receivedAt));
+      const duplicateResult = classifyDuplicate_(sheet, request.payload.submissionId, cache);
+      duplicateStatus = duplicateResult.status;
+      rowNumber = duplicateResult.rowNumber;
+      if (duplicateStatus === 'duplicate') {
+        cache.put(duplicateCacheKey_(request.payload.submissionId), 'stored', DUPLICATE_CACHE_SECONDS);
+      } else if (duplicateStatus === 'new') {
+        const row = rowFor_(request, receivedAt);
+        if (row.length !== SHEET_COLUMNS.length) throw new Error('Row mapping does not match schema');
+        rowNumber = appendSubmission_(sheet, row);
+        SpreadsheetApp.flush();
+        if (!verifyStoredRow_(sheet, rowNumber, request.payload.submissionId)) {
+          throw new Error('Stored row could not be verified');
+        }
+        cache.put(duplicateCacheKey_(request.payload.submissionId), 'stored', DUPLICATE_CACHE_SECONDS);
+      }
     } finally {
       lock.releaseLock();
     }
 
-    if (duplicate) return jsonOutput_({ ok: true, status: 'duplicate' });
+    if (duplicateStatus === 'duplicate') {
+      return jsonOutput_({
+        success: true,
+        stored: false,
+        status: 'duplicate',
+        existingRecordVerified: true,
+      });
+    }
+    if (duplicateStatus === 'duplicate_without_record') {
+      return jsonOutput_({ success: false, stored: false, status: 'duplicate_without_record' });
+    }
 
     const statusColumn = SHEET_COLUMNS.indexOf('Notification status') + 1;
     const sentAtColumn = SHEET_COLUMNS.indexOf('Notification sent at (UTC)') + 1;
+    let notificationSent = false;
     try {
       sendMinimalNotification_(properties, receivedAt);
       sheet.getRange(rowNumber, statusColumn).setValue('Sent');
       sheet.getRange(rowNumber, sentAtColumn).setValue(new Date().toISOString());
+      SpreadsheetApp.flush();
+      notificationSent = true;
     } catch (notificationError) {
       sheet.getRange(rowNumber, statusColumn).setValue('Failed: review Apps Script executions');
+      SpreadsheetApp.flush();
     }
 
-    return jsonOutput_({ ok: true, status: 'created' });
+    return jsonOutput_({ success: true, stored: true, status: 'created', notificationSent });
   } catch (error) {
     return safeError_();
   }

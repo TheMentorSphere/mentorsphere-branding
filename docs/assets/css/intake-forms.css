@@ -184,10 +184,34 @@
 .intake-progress-list li {
   display: grid;
   justify-items: center;
-  gap: 0.3rem;
 }
 
-.intake-progress-list span {
+.intake-progress-list button {
+  width: 100%;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.intake-progress-list button:disabled {
+  cursor: default;
+}
+
+.intake-progress-list button:focus-visible {
+  outline: 0.2rem solid var(--sunny-yellow);
+  outline-offset: 0.2rem;
+  border-radius: var(--radius-sm);
+}
+
+.intake-progress-list button > span:first-child {
   width: 2.15rem;
   height: 2.15rem;
   display: grid;
@@ -199,17 +223,17 @@
   font-weight: 800;
 }
 
-.intake-progress-list .is-complete span,
-.intake-progress-list .is-current span {
+.intake-progress-list .is-complete button > span:first-child,
+.intake-progress-list .is-current button > span:first-child {
   border-color: var(--deep-blue);
   color: #fff;
 }
 
-.intake-progress-list .is-complete span {
+.intake-progress-list .is-complete button > span:first-child {
   background: var(--sky-blue);
 }
 
-.intake-progress-list .is-current span {
+.intake-progress-list .is-current button > span:first-child {
   background: var(--deep-blue);
   box-shadow: 0 0 0 0.22rem rgba(229, 174, 41, 0.45);
 }
@@ -662,11 +686,16 @@
     grid-template-columns: repeat(5, 1fr);
   }
 
-  .intake-progress-list li {
-    font-size: 0;
+  .intake-progress-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
   }
 
-  .intake-progress-list span {
+  .intake-progress-list button > span:first-child {
     font-size: 0.76rem;
   }
 
@@ -767,7 +796,7 @@
     color: CanvasText;
   }
 
-  .intake-progress-list .is-current span {
+  .intake-progress-list .is-current button > span:first-child {
     outline: 3px solid Highlight;
     outline-offset: 2px;
   }

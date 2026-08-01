@@ -21,6 +21,26 @@ interface TurnstileResult {
   hostname?: string;
 }
 
+export type IntakeCreatedResponse = {
+  success: true;
+  stored: true;
+  status: "created";
+  notificationSent: boolean;
+};
+
+export type IntakeDuplicateResponse = {
+  success: true;
+  stored: false;
+  status: "duplicate";
+  existingRecordVerified: true;
+};
+
+export type IntakeAcceptedResponse = IntakeCreatedResponse | IntakeDuplicateResponse;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function base64Url(bytes: Uint8Array): string {
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
@@ -100,7 +120,7 @@ export async function verifyTurnstile(
 export async function sendToAppsScript(
   submission: ValidatedIntakeSubmission,
   env: IntakeBindings,
-): Promise<boolean> {
+): Promise<IntakeAcceptedResponse> {
   const body = JSON.stringify({
     issuedAt: new Date().toISOString(),
     payload: submission,
@@ -113,14 +133,44 @@ export async function sendToAppsScript(
     redirect: "follow",
     signal: AbortSignal.timeout(12_000),
   });
-  if (!response.ok) return false;
+  if (!response.ok) throw new Error("Submission destination returned an HTTP error");
+  const contentType = response.headers.get("Content-Type")?.toLowerCase() ?? "";
+  if (!contentType.startsWith("application/json")) throw new Error("Submission destination returned an unexpected content type");
   const responseText = await readLimitedText(response.body, UPSTREAM_RESPONSE_LIMIT);
+  let result: unknown;
   try {
-    const result = JSON.parse(responseText) as { ok?: unknown; status?: unknown };
-    return result.ok === true && (result.status === "created" || result.status === "duplicate");
+    result = JSON.parse(responseText) as unknown;
   } catch {
-    return false;
+    throw new Error("Submission destination returned invalid JSON");
   }
+  if (!isRecord(result)) throw new Error("Submission destination returned an invalid response");
+  if (
+    result.success === true &&
+    result.stored === true &&
+    result.status === "created" &&
+    typeof result.notificationSent === "boolean"
+  ) {
+    return {
+      success: true,
+      stored: true,
+      status: "created",
+      notificationSent: result.notificationSent,
+    };
+  }
+  if (
+    result.success === true &&
+    result.stored === false &&
+    result.status === "duplicate" &&
+    result.existingRecordVerified === true
+  ) {
+    return {
+      success: true,
+      stored: false,
+      status: "duplicate",
+      existingRecordVerified: true,
+    };
+  }
+  throw new Error("Submission destination did not confirm durable storage");
 }
 
 export const turnstileAction = TURNSTILE_ACTION;

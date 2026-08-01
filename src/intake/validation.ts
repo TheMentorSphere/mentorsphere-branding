@@ -1,8 +1,8 @@
-export const FORM_VERSION = "primary-learner-profile-v4" as const;
+export const FORM_VERSION = "primary-learner-profile-v5" as const;
 
 export const LEARNER_CONSENT_ROUTES = [
-  "The learner is not yet able to understand and give informed consent to this use of their information, so I am giving consent as a person with parental responsibility or documented legal authority.",
   "The learner understands how this information will be used and has authorised me to communicate this consent on their behalf.",
+  "The learner is not currently able to understand and give informed consent to this use of their information, so I am giving consent as a person with parental responsibility or documented legal authority.",
 ] as const;
 
 export const RELATIONSHIPS = [
@@ -376,7 +376,7 @@ export function validateIntakeRequest(input: unknown): ValidationResult {
   if (!SPECIAL_CATEGORY_RELATIONSHIPS.has(relationship) && hasSpecialCategoryDetail) {
     errors["supportProfile.specialCategoryProvided"] = "This relationship cannot submit health, disability, SEND, neurodiversity, diagnosis, EHCP or related support information through this form. Ask Luke to arrange an appropriate information-sharing route.";
   } else if (!providesSpecialCategoryInformation && hasSpecialCategoryDetail) {
-    errors["supportProfile.specialCategoryProvided"] = "Choose Yes and complete the separate consent controls before providing optional health, disability, SEND, neurodiversity, diagnosis, EHCP or related support information.";
+    errors["supportProfile.specialCategoryProvided"] = "Choose Yes and complete the Part 3 consent controls before providing optional health, disability, SEND, neurodiversity, diagnosis, EHCP or related support information.";
   }
 
   const sessionLength = choice(sessions, "sessionLength", "sessionPreferences.sessionLength", SESSION_LENGTHS, errors);
@@ -402,14 +402,14 @@ export function validateIntakeRequest(input: unknown): ValidationResult {
     LEARNER_CONSENT_ROUTES,
     errors,
   );
-  if (confirmations.authorised !== true) errors["confirmations.authorised"] = "Confirm that you are authorised to provide this information.";
-  if (confirmations.privacyAcknowledged !== true) errors["confirmations.privacyAcknowledged"] = "Confirm that you have read the privacy information.";
+  if (confirmations.authorised !== true) errors["confirmations.authorised"] = "Confirm your authority and Privacy Policy acknowledgement.";
+  if (confirmations.privacyAcknowledged !== true) errors["confirmations.privacyAcknowledged"] = "Confirm your authority and Privacy Policy acknowledgement.";
   if (providesSpecialCategoryInformation) {
     if (confirmations.specialCategoryConsent !== true) {
       errors["confirmations.specialCategoryConsent"] = "Give explicit consent or remove the optional health, disability, SEND and neurodiversity information.";
     }
     if (confirmations.specialCategoryAuthority !== true) {
-      errors["confirmations.specialCategoryAuthority"] = "Confirm parental responsibility or documented legal authority, or remove the optional information.";
+      errors["confirmations.specialCategoryAuthority"] = "Complete the learner consent route in Part 3 or remove the optional information.";
     }
     if (!learnerConsentRoute) {
       errors["confirmations.learnerConsentRoute"] = "Choose the statement that applies to the learner’s consent.";

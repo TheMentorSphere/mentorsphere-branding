@@ -5,7 +5,7 @@ import { validIntakeRequest } from "./fixtures";
 
 const API_URL = "https://www.thementorsphere.co.uk/api/forms/primary-learner-profile";
 const LEARNER_CANNOT_CONSENT =
-  "The learner is not yet able to understand and give informed consent to this use of their information, so I am giving consent as a person with parental responsibility or documented legal authority.";
+  "The learner is not currently able to understand and give informed consent to this use of their information, so I am giving consent as a person with parental responsibility or documented legal authority.";
 const LEARNER_AUTHORISED =
   "The learner understands how this information will be used and has authorised me to communicate this consent on their behalf.";
 
@@ -72,7 +72,9 @@ function mockSuccessfulUpstreams(appsStatus: "created" | "duplicate" = "created"
       });
     }
     if (outbound.url === "https://script.google.test/macros/s/example/exec") {
-      return Response.json({ ok: true, status: appsStatus });
+      return appsStatus === "created"
+        ? Response.json({ success: true, stored: true, status: "created", notificationSent: true })
+        : Response.json({ success: true, stored: false, status: "duplicate", existingRecordVerified: true });
     }
     throw new Error(`Unexpected outbound request: ${outbound.url}`);
   });
@@ -118,7 +120,7 @@ describe("primary learner profile Worker", () => {
     const result = await response.json() as { fieldErrors?: Record<string, string> };
 
     expect(response.status).toBe(400);
-    expect(result.fieldErrors?.["supportProfile.specialCategoryProvided"]).toContain("complete the separate consent controls");
+    expect(result.fieldErrors?.["supportProfile.specialCategoryProvided"]).toContain("complete the Part 3 consent controls");
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
@@ -148,7 +150,7 @@ describe("primary learner profile Worker", () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
     const response = await handleIntakeApi(request(body), bindings());
     expect(response.status).toBe(202);
-    await expect(response.json()).resolves.toEqual({ success: true });
+    await expect(response.json()).resolves.toEqual({ success: false, stored: false, status: "rejected" });
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
@@ -156,7 +158,12 @@ describe("primary learner profile Worker", () => {
     const fetchSpy = mockSuccessfulUpstreams();
     const response = await handleIntakeApi(request(validIntakeRequest()), bindings());
     expect(response.status).toBe(201);
-    await expect(response.json()).resolves.toEqual({ success: true });
+    await expect(response.json()).resolves.toEqual({
+      success: true,
+      stored: true,
+      status: "created",
+      notificationSent: true,
+    });
     expect(fetchSpy).toHaveBeenCalledTimes(2);
 
     const appsCall = fetchSpy.mock.calls.find(([input, init]) => new Request(input, init).url.includes("script.google.test"));
@@ -171,10 +178,63 @@ describe("primary learner profile Worker", () => {
     expect(JSON.stringify(envelope)).not.toContain("fictional-hmac-secret-with-enough-entropy");
   });
 
-  it("treats an Apps Script duplicate response as success", async () => {
+  it("returns a distinct verified duplicate response", async () => {
     mockSuccessfulUpstreams("duplicate");
     const response = await handleIntakeApi(request(validIntakeRequest()), bindings());
-    expect(response.status).toBe(201);
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      success: true,
+      stored: false,
+      status: "duplicate",
+      existingRecordVerified: true,
+    });
+  });
+
+  it.each([
+    {
+      name: "an unverified duplicate",
+      response: () => Response.json({ success: true, stored: false, status: "duplicate" }),
+    },
+    {
+      name: "a stale duplicate marker",
+      response: () => Response.json({ success: false, stored: false, status: "duplicate_without_record" }),
+    },
+    {
+      name: "invalid JSON",
+      response: () => new Response("not-json", { status: 200, headers: { "Content-Type": "application/json" } }),
+    },
+    {
+      name: "an unexpected content type",
+      response: () => new Response("ok", { status: 200, headers: { "Content-Type": "text/plain" } }),
+    },
+    {
+      name: "missing contract fields",
+      response: () => Response.json({ success: true }),
+    },
+    {
+      name: "an upstream HTTP error",
+      response: () => Response.json({ success: false }, { status: 500 }),
+    },
+  ])("fails safely when Apps Script returns $name", async ({ response: appsResponse }) => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const outbound = new Request(input, init);
+      if (outbound.url.includes("challenges.cloudflare.com")) {
+        return Response.json({
+          success: true,
+          action: "primary_learner_profile",
+          hostname: "www.thementorsphere.co.uk",
+        });
+      }
+      return appsResponse();
+    });
+
+    const response = await handleIntakeApi(request(validIntakeRequest()), bindings());
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
+      success: false,
+      stored: false,
+      status: "upstream_failure",
+    });
   });
 
   it("rejects a failed Turnstile result without contacting Apps Script", async () => {
@@ -190,7 +250,7 @@ describe("primary learner profile Worker", () => {
       if (outbound.url.includes("challenges.cloudflare.com")) {
         return Response.json({ success: true, hostname: "localhost", action: "test" });
       }
-      return Response.json({ ok: true, status: "created" });
+      return Response.json({ success: true, stored: true, status: "created", notificationSent: false });
     });
     const response = await handleIntakeApi(
       request(validIntakeRequest()),
@@ -215,12 +275,12 @@ describe("primary learner profile Worker", () => {
       if (outbound.url.includes("challenges.cloudflare.com")) {
         return Response.json({ success: true, action: "primary_learner_profile", hostname: "www.thementorsphere.co.uk" });
       }
-      return Response.json({ ok: false, status: "rejected" });
+      return Response.json({ success: false, stored: false, status: "rejected" });
     });
     const response = await handleIntakeApi(request(validIntakeRequest()), bindings());
     expect(response.status).toBe(503);
     const result = await response.json() as { error?: string };
-    expect(result.error).toContain("could not be submitted");
+    expect(result.error).toContain("could not confirm");
     expect(JSON.stringify(result)).not.toContain("Sam");
   });
 

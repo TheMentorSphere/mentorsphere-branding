@@ -4,6 +4,27 @@ Status: release-readiness testing completed with fictional data on 31 July 2026.
 
 The isolated staging Worker was returned to both release flags `false` after testing. The final GitHub Actions result for each reviewed change is recorded on its pull request.
 
+## V5 false-success correction and usability review
+
+The production V4 page remains live at its existing direct URL while production submissions are disabled. The safety configuration is `FORM_PAGE_ENABLED=true`, `FORM_SUBMISSIONS_ENABLED=false` and `TURNSTILE_TEST_MODE=false`.
+
+The incident code path collapsed Apps Script `created` and `duplicate` responses into the same Worker `{success:true}` response. The browser then accepted any 2xx response with `success:true` as successful storage. V4 did not require `stored`, a recognised status or verified durable-record fields. The V4 success path also disabled the submit button while its label was still `Submitting...`; it did not set the label to a completed state. These two code defects are corrected in V5.
+
+V5 introduces an explicit three-layer contract:
+
+- Apps Script flushes the write and verifies the stored submission ID in the expected 48-column row before returning `stored:true` and `status:"created"`.
+- A duplicate is successful only when the existing durable row is verified. A stale cache marker without a row returns `duplicate_without_record` and is not presented as received.
+- The Worker validates HTTP status, JSON content type and every required response field. Created responses use HTTP 201; verified duplicates use HTTP 200.
+- The browser requires the complete recognised contract, uses a 30-second timeout, does not retry automatically and does not replace the submission ID. Created, duplicate and failure states set the button to `Submitted`, `Already received` or `Submit learner profile` respectively.
+
+The Part 3 flow now presents the optional-information choice, a just-in-time privacy notice, one explicit-consent checkbox and one learner consent route before revealing sensitive fields. Removing Yes, consent or the route clears and hides related values. Restricted respondent relationships remain blocked in both Worker and Apps Script validation.
+
+The final section now has one required combined authority and Privacy Policy acknowledgement. That control populates the two existing backend fields; no Sheet column was added or removed. The Privacy Policy V1.5 content is unchanged.
+
+Progress markers are native buttons. Completed sections support mouse, touch and keyboard navigation, future incomplete sections remain disabled, current state uses `aria-current="step"`, and editing a completed section invalidates forward progress.
+
+Automated V5 review currently passes 103 tests across five test files and validates 29 HTML files. Coverage includes created-only success, explicit verified duplicates, stale duplicates, HTTP errors, timeouts, invalid JSON, unexpected content types, missing fields, answer preservation, Turnstile reset state, no automatic retry, unchanged submission IDs, combined confirmations, Part 3 clearing and restrictions, exact V5 validation, V4 rejection, progress-button semantics, the 48-column schema, contact ordering, mobile conditions, formula protection, HMAC validation, notification minimality, disabled-gate ordering, no answer logging and no browser storage.
+
 ## V4 visual and usability amendment review
 
 The `primary-learner-profile-v4` review branch changes preferred contact methods from one radio choice to one or more checkbox choices. The browser sends `respondent.preferredContactMethods` as an array. Worker validation requires a non-empty allowlisted array, rejects duplicates, restores the fixed order Email, Telephone, Text message, WhatsApp, and requires a mobile number whenever any telephone-based method is selected. The local Apps Script source independently applies the same allowlist, duplicate and mobile checks.

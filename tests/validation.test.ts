@@ -3,7 +3,7 @@ import { validateIntakeRequest } from "../src/intake/validation";
 import { validIntakeRequest } from "./fixtures";
 
 const LEARNER_CANNOT_CONSENT =
-  "The learner is not yet able to understand and give informed consent to this use of their information, so I am giving consent as a person with parental responsibility or documented legal authority.";
+  "The learner is not currently able to understand and give informed consent to this use of their information, so I am giving consent as a person with parental responsibility or documented legal authority.";
 const LEARNER_AUTHORISED =
   "The learner understands how this information will be used and has authorised me to communicate this consent on their behalf.";
 
@@ -14,6 +14,14 @@ function section(input: Record<string, unknown>, name: string): Record<string, u
 }
 
 describe("validateIntakeRequest", () => {
+  it("rejects a V4 payload instead of silently treating it as V5", () => {
+    const input = validIntakeRequest();
+    input.formVersion = "primary-learner-profile-v4";
+    const result = validateIntakeRequest(input);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.formVersion).toBe("Refresh the page before submitting.");
+  });
+
   it("accepts a complete email-only request without a mobile number", () => {
     const result = validateIntakeRequest(validIntakeRequest());
     expect(result.ok).toBe(true);
@@ -192,7 +200,7 @@ describe("validateIntakeRequest", () => {
     section(input, "supportProfile").ehcpStatus = "Yes";
     const result = validateIntakeRequest(input);
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.errors["supportProfile.specialCategoryProvided"]).toContain("separate consent controls");
+    if (!result.ok) expect(result.errors["supportProfile.specialCategoryProvided"]).toContain("Part 3 consent controls");
   });
 
   it.each(["supportNeeds", "helpfulStrategies", "unhelpfulApproaches", "otherBackground"])(
@@ -202,7 +210,7 @@ describe("validateIntakeRequest", () => {
       section(input, "supportProfile")[field] = "Fictional crafted detail";
       const result = validateIntakeRequest(input);
       expect(result.ok).toBe(false);
-      if (!result.ok) expect(result.errors["supportProfile.specialCategoryProvided"]).toContain("complete the separate consent controls");
+      if (!result.ok) expect(result.errors["supportProfile.specialCategoryProvided"]).toContain("complete the Part 3 consent controls");
     },
   );
 
