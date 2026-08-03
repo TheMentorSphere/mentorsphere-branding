@@ -775,57 +775,49 @@ main {
   object-fit: contain;
 }
 
-.orbit-logo-cluster {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: center;
-  justify-items: center;
-  gap: 0;
-}
-
-.orbit-logo-cluster img {
-  width: 100%;
-  height: auto;
-}
-
-.orbit-logo-cluster img:first-child {
-  width: 54%;
-  grid-column: 1 / -1;
-  margin-bottom: -0.48rem;
-}
-
-.orbit-item.tutoring {
+.orbit-item.maths {
   --orbit-start: 205deg;
   --orbit-mid: 385deg;
   --orbit-end: 565deg;
   --orbit-counter-start: -205deg;
   --orbit-counter-mid: -385deg;
   --orbit-counter-end: -565deg;
-  --item-orbit-radius: 11.7rem;
-  width: 9.8rem;
-  padding: 0.45rem;
+}
+
+.orbit-item.english {
+  --orbit-start: 277deg;
+  --orbit-mid: 457deg;
+  --orbit-end: 637deg;
+  --orbit-counter-start: -277deg;
+  --orbit-counter-mid: -457deg;
+  --orbit-counter-end: -637deg;
+}
+
+.orbit-item.science {
+  --orbit-start: 349deg;
+  --orbit-mid: 529deg;
+  --orbit-end: 709deg;
+  --orbit-counter-start: -349deg;
+  --orbit-counter-mid: -529deg;
+  --orbit-counter-end: -709deg;
 }
 
 .orbit-item.adhd {
-  --orbit-start: 325deg;
-  --orbit-mid: 505deg;
-  --orbit-end: 685deg;
-  --orbit-counter-start: -325deg;
-  --orbit-counter-mid: -505deg;
-  --orbit-counter-end: -685deg;
-  --item-orbit-radius: 11.2rem;
+  --orbit-start: 61deg;
+  --orbit-mid: 241deg;
+  --orbit-end: 421deg;
+  --orbit-counter-start: -61deg;
+  --orbit-counter-mid: -241deg;
+  --orbit-counter-end: -421deg;
 }
 
 .orbit-item.support {
-  --orbit-start: 85deg;
-  --orbit-mid: 265deg;
-  --orbit-end: 445deg;
-  --orbit-counter-start: -85deg;
-  --orbit-counter-mid: -265deg;
-  --orbit-counter-end: -445deg;
-  --item-orbit-radius: 11.45rem;
+  --orbit-start: 133deg;
+  --orbit-mid: 313deg;
+  --orbit-end: 493deg;
+  --orbit-counter-start: -133deg;
+  --orbit-counter-mid: -313deg;
+  --orbit-counter-end: -493deg;
 }
 
 .trust-strip {
@@ -2375,20 +2367,6 @@ tbody tr:hover {
     padding: 0.35rem;
   }
 
-  .orbit-item.tutoring {
-    --item-orbit-radius: 7.9rem;
-    width: 7.2rem;
-    padding: 0.3rem;
-  }
-
-  .orbit-item.adhd {
-    --item-orbit-radius: 7.55rem;
-  }
-
-  .orbit-item.support {
-    --item-orbit-radius: 7.7rem;
-  }
-
   .orbit-node.node-blue {
     top: 15%;
     left: 14%;
@@ -2539,6 +2517,16 @@ tbody tr:hover {
     color: var(--deep-blue-ink);
     content: attr(data-label);
     font-weight: 800;
+  }
+}
+
+@media (max-width: 22rem) {
+  .orbit-visual {
+    --orbit-radius: 7.1rem;
+  }
+
+  .orbit-item {
+    width: 5rem;
   }
 }
 
