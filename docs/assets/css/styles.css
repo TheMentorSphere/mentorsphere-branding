@@ -733,19 +733,15 @@ main {
 .orbit-centre {
   position: relative;
   z-index: 3;
-  width: 12.5rem;
+  width: 11.25rem;
   aspect-ratio: 1;
-  padding: 0.75rem;
-  border: 1px solid rgba(0, 95, 141, 0.12);
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 1.2rem 3rem rgba(0, 56, 81, 0.15);
 }
 
 .orbit-centre img {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  filter: drop-shadow(0 0.8rem 1.25rem rgba(0, 56, 81, 0.18));
 }
 
 .orbit-item {
@@ -2343,8 +2339,7 @@ tbody tr:hover {
   }
 
   .orbit-centre {
-    width: 8rem;
-    padding: 0.5rem;
+    width: 7.2rem;
   }
 
   .orbit-ring {
