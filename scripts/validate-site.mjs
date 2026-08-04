@@ -48,17 +48,36 @@ for (const htmlFile of htmlFiles) {
   record(matches(content, /<h1\b/giu).length === 1, `${relative}: expected exactly one H1`);
   if (htmlFile !== intakePath) {
     record(content.includes('class="skip-link" href="#main-content"'), `${relative}: site skip link is missing`);
+    record(content.includes('<div class="site-notice">'), `${relative}: site notice is missing`);
     record(content.includes('<header class="site-header">'), `${relative}: site header is missing`);
     record(content.includes('class="primary-nav"'), `${relative}: primary navigation is missing`);
+    record(content.includes('id="submenu-tutoring"'), `${relative}: Tutoring dropdown is missing`);
+    record(content.includes('id="submenu-adhd-coaching"'), `${relative}: ADHD Coaching dropdown is missing`);
+    record(content.includes('id="submenu-education-send"'), `${relative}: Education & SEND dropdown is missing`);
     record(content.includes('<main id="main-content">'), `${relative}: main content landmark is missing`);
     record(content.includes('<footer class="site-footer">'), `${relative}: site footer is missing`);
+    record(content.includes('class="container footer-main"'), `${relative}: footer main section is missing`);
+    record(content.includes('class="container footer-bottom"'), `${relative}: footer bottom section is missing`);
     record(matches(content, /<link rel="canonical" href="https:\/\/www\.thementorsphere\.co\.uk\/[^"]*">/giu).length === 1, `${relative}: expected one canonical URL`);
+    record(!/(?:Ã‚|Ã¢â‚¬|Ã¢â€ |Ã¯Â¿Â½|�)/u.test(content), `${relative}: mojibake or replacement character found`);
   }
   record(!/\b(TODO|FIXME|lorem ipsum)\b/iu.test(content), `${relative}: placeholder text found`);
 
   const ids = matches(content, /\sid="([^"]+)"/giu).map((match) => match[1]);
   const duplicateIds = ids.filter((id, index) => ids.indexOf(id) !== index);
   record(duplicateIds.length === 0, `${relative}: duplicate IDs: ${[...new Set(duplicateIds)].join(", ")}`);
+
+  const structuredDataBlocks = matches(
+    content,
+    /<script\s+type="application\/ld\+json">([\s\S]*?)<\/script>/giu,
+  );
+  for (const block of structuredDataBlocks) {
+    try {
+      JSON.parse(block[1]);
+    } catch {
+      record(false, `${relative}: application/ld+json block is not valid JSON`);
+    }
+  }
 
   const references = matches(content, /\s(?:href|src)="([^"]+)"/giu).map((match) => match[1]);
   for (const reference of references) {
