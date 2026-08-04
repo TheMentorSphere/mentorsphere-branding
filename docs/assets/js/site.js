@@ -1,4 +1,25 @@
 (() => {
+  const educationSendMenus = document.querySelectorAll('#submenu-education-send');
+  educationSendMenus.forEach((menu) => {
+    const depth = menu.closest('body')?.querySelector('.brand-link')?.getAttribute('href')?.match(/^\.\.\/\.\.\//u) ? '../../' : menu.closest('body')?.querySelector('.brand-link')?.getAttribute('href') === '../' ? '../' : '';
+    const currentPath = window.location.pathname.replace(/\/$/u, '');
+    const entries = [
+      ['Overview', '/education-send-support/'],
+      ['SEND & EHCP Support', '/education-send-support/send-ehcp/'],
+      ['Meetings, Evidence & Communication', '/education-send-support/meetings-evidence-communication/'],
+      ['EOTAS & Education Access', '/education-send-support/eotas-education-access/'],
+      ['Private Exams & Access Arrangements', '/education-send-support/private-exams-access-arrangements/'],
+    ];
+    menu.replaceChildren(...entries.map(([label, path]) => {
+      const item = document.createElement('li');
+      const link = document.createElement('a');
+      link.href = `${depth}${path.slice(1)}`;
+      link.textContent = label;
+      if (currentPath === path.slice(0, -1)) link.setAttribute('aria-current', 'page');
+      item.append(link);
+      return item;
+    }));
+  });
   const currentScript = document.currentScript;
 
   if (currentScript && !document.querySelector('link[data-motion-styles]')) {

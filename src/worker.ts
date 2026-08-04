@@ -347,6 +347,13 @@ export async function handleIntakeApi(request: Request, env: IntakeBindings): Pr
 
 export async function handleWorkerRequest(request: Request, env: WorkerBindings): Promise<Response> {
   const url = new URL(request.url);
+  const redirects: Record<string, string> = {
+    "/support-services/": "/education-send-support/",
+    "/support-services/ehcp-support/": "/education-send-support/send-ehcp/",
+    "/support-services/private-exams/": "/education-send-support/private-exams-access-arrangements/",
+  };
+  const redirectTarget = redirects[url.pathname];
+  if (redirectTarget) return Response.redirect(new URL(redirectTarget, url).toString(), 301);
   if (url.pathname.startsWith("/api/forms/")) return handleIntakeApi(request, env);
   if (isFormPath(url.pathname) && !isPageEnabled(env)) return formNotFound(request, env);
   return env.ASSETS.fetch(request);

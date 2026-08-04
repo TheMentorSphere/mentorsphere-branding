@@ -571,4 +571,15 @@ describe("primary learner profile page release control", () => {
     expect(missing.status).toBe(404);
     expect(await missing.text()).toContain("Page not found");
   });
+
+  it("permanently redirects retired Education and SEND routes to their canonical replacements", async () => {
+    const env = workerBindings({ FORM_PAGE_ENABLED: "false", FORM_SUBMISSIONS_ENABLED: "false" });
+    const response = await handleWorkerRequest(
+      new Request("https://www.thementorsphere.co.uk/support-services/ehcp-support/"),
+      env,
+    );
+
+    expect(response.status).toBe(301);
+    expect(response.headers.get("Location")).toBe("https://www.thementorsphere.co.uk/education-send-support/send-ehcp/");
+  });
 });
