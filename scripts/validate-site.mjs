@@ -44,10 +44,20 @@ const homeEducationRoutes = [
 ];
 const educationMenuLabels = ["Overview", "SEND &amp; EHCP Support", "Meetings, Evidence &amp; Communication", "EOTAS &amp; Education Access", "Private Exams &amp; Access Arrangements"];
 const homeEducationMenuLabels = ["Overview", "Getting Started &amp; Foundations", "Planning, Progress &amp; Mentoring", "Qualifications &amp; Future Pathways"];
+const sharedStylesVersion = "styles.css?v=20260804-home-education-v2";
+const sharedScriptVersion = "site.js?v=20260804-home-education-v2";
 
 for (const htmlFile of htmlFiles) {
   const relative = path.relative(workspace, htmlFile);
   const content = await readFile(htmlFile, "utf8");
+  const sharedStylesReferences = matches(content, /styles\.css\?v=[^"']+/giu).map((match) => match[0]);
+  const sharedScriptReferences = matches(content, /site\.js\?v=[^"']+/giu).map((match) => match[0]);
+  record(sharedStylesReferences.length === 1, `${relative}: expected exactly one shared styles.css reference`);
+  record(sharedStylesReferences.every((reference) => reference === sharedStylesVersion), `${relative}: stale shared styles.css cache key found`);
+  if (sharedScriptReferences.length > 0) {
+    record(sharedScriptReferences.length === 1, `${relative}: expected exactly one shared site.js reference`);
+    record(sharedScriptReferences.every((reference) => reference === sharedScriptVersion), `${relative}: stale shared site.js cache key found`);
+  }
   record(matches(content, /<title>[^<]+<\/title>/giu).length === 1, `${relative}: expected one non-empty title`);
   record(
     matches(content, /<meta\s+name="description"\s+content="[^"]+"/giu).length === 1,
