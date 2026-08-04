@@ -35,6 +35,7 @@ function resolveLocalReference(htmlFile, reference) {
 
 const allFiles = await walk(docsRoot);
 const htmlFiles = allFiles.filter((file) => file.endsWith(".html"));
+const intakePath = path.join(docsRoot, "forms", "primary-learner-profile", "index.html");
 
 for (const htmlFile of htmlFiles) {
   const relative = path.relative(workspace, htmlFile);
@@ -45,6 +46,14 @@ for (const htmlFile of htmlFiles) {
     `${relative}: expected one meta description`,
   );
   record(matches(content, /<h1\b/giu).length === 1, `${relative}: expected exactly one H1`);
+  if (htmlFile !== intakePath) {
+    record(content.includes('class="skip-link" href="#main-content"'), `${relative}: site skip link is missing`);
+    record(content.includes('<header class="site-header">'), `${relative}: site header is missing`);
+    record(content.includes('class="primary-nav"'), `${relative}: primary navigation is missing`);
+    record(content.includes('<main id="main-content">'), `${relative}: main content landmark is missing`);
+    record(content.includes('<footer class="site-footer">'), `${relative}: site footer is missing`);
+    record(matches(content, /<link rel="canonical" href="https:\/\/www\.thementorsphere\.co\.uk\/[^"]*">/giu).length === 1, `${relative}: expected one canonical URL`);
+  }
   record(!/\b(TODO|FIXME|lorem ipsum)\b/iu.test(content), `${relative}: placeholder text found`);
 
   const ids = matches(content, /\sid="([^"]+)"/giu).map((match) => match[1]);
@@ -64,7 +73,6 @@ for (const htmlFile of htmlFiles) {
   }
 }
 
-const intakePath = path.join(docsRoot, "forms", "primary-learner-profile", "index.html");
 const intakeHtml = await readFile(intakePath, "utf8");
 record(
   intakeHtml.includes('<meta name="robots" content="noindex,nofollow,noarchive">'),
