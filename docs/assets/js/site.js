@@ -20,6 +20,26 @@
       return item;
     }));
   });
+  const homeEducationMenus = document.querySelectorAll('#submenu-home-education');
+  homeEducationMenus.forEach((menu) => {
+    const depth = menu.closest('body')?.querySelector('.brand-link')?.getAttribute('href')?.match(/^\.\.\/\.\.\//u) ? '../../' : menu.closest('body')?.querySelector('.brand-link')?.getAttribute('href') === '../' ? '../' : '';
+    const currentPath = window.location.pathname.replace(/\/$/u, '');
+    const entries = [
+      ['Overview', '/home-education/'],
+      ['Getting Started & Foundations', '/home-education/getting-started-foundations/'],
+      ['Planning, Progress & Mentoring', '/home-education/planning-progress-mentoring/'],
+      ['Qualifications & Future Pathways', '/home-education/qualifications-future-pathways/'],
+    ];
+    menu.replaceChildren(...entries.map(([label, path]) => {
+      const item = document.createElement('li');
+      const link = document.createElement('a');
+      link.href = `${depth}${path.slice(1)}`;
+      link.textContent = label;
+      if (currentPath === path.slice(0, -1)) link.setAttribute('aria-current', 'page');
+      item.append(link);
+      return item;
+    }));
+  });
   const currentScript = document.currentScript;
 
   if (currentScript && !document.querySelector('link[data-motion-styles]')) {
