@@ -36,6 +36,14 @@ function resolveLocalReference(htmlFile, reference) {
 const allFiles = await walk(docsRoot);
 const htmlFiles = allFiles.filter((file) => file.endsWith(".html"));
 const intakePath = path.join(docsRoot, "forms", "primary-learner-profile", "index.html");
+const homeEducationRoutes = [
+  "home-education/index.html",
+  "home-education/getting-started-foundations/index.html",
+  "home-education/planning-progress-mentoring/index.html",
+  "home-education/qualifications-future-pathways/index.html",
+];
+const educationMenuLabels = ["Overview", "SEND &amp; EHCP Support", "Meetings, Evidence &amp; Communication", "EOTAS &amp; Education Access", "Private Exams &amp; Access Arrangements"];
+const homeEducationMenuLabels = ["Overview", "Getting Started &amp; Foundations", "Planning, Progress &amp; Mentoring", "Qualifications &amp; Future Pathways"];
 
 for (const htmlFile of htmlFiles) {
   const relative = path.relative(workspace, htmlFile);
@@ -54,6 +62,11 @@ for (const htmlFile of htmlFiles) {
     record(content.includes('id="submenu-tutoring"'), `${relative}: Tutoring dropdown is missing`);
     record(content.includes('id="submenu-adhd-coaching"'), `${relative}: ADHD Coaching dropdown is missing`);
     record(content.includes('id="submenu-education-send"'), `${relative}: Education & SEND dropdown is missing`);
+    record(content.includes('id="submenu-home-education"'), `${relative}: Home Education dropdown is missing`);
+    const educationMenu = content.match(/<ul class="submenu" id="submenu-education-send" data-submenu>([\s\S]*?)<\/ul>/u)?.[1] || "";
+    const homeEducationMenu = content.match(/<ul class="submenu" id="submenu-home-education" data-submenu>([\s\S]*?)<\/ul>/u)?.[1] || "";
+    record(educationMenuLabels.every((label) => educationMenu.includes(`>${label}</a>`)), `${relative}: Education & SEND menu is incomplete or inconsistent`);
+    record(homeEducationMenuLabels.every((label) => homeEducationMenu.includes(`>${label}</a>`)), `${relative}: Home Education menu is incomplete or inconsistent`);
     record(content.includes('<main id="main-content">'), `${relative}: main content landmark is missing`);
     record(content.includes('<footer class="site-footer">'), `${relative}: site footer is missing`);
     record(content.includes('class="container footer-main"'), `${relative}: footer main section is missing`);
@@ -92,6 +105,10 @@ for (const htmlFile of htmlFiles) {
   }
 }
 
+for (const route of homeEducationRoutes) {
+  record(allFiles.includes(path.join(docsRoot, ...route.split("/"))), `Home Education route is missing: ${route}`);
+}
+
 const intakeHtml = await readFile(intakePath, "utf8");
 record(
   intakeHtml.includes('<meta name="robots" content="noindex,nofollow,noarchive">'),
@@ -116,6 +133,11 @@ record(!intakeHtml.includes("sensitive_data_confirmation"), "primary learner pro
 
 const sitemap = await readFile(path.join(docsRoot, "sitemap.xml"), "utf8");
 record(!sitemap.includes("primary-learner-profile"), "docs/sitemap.xml: unlisted learner profile must not be included");
+record(!sitemap.includes("support-services/ehe-eotas"), "docs/sitemap.xml: noindex legacy EHE and EOTAS route must not be included");
+for (const route of homeEducationRoutes) {
+  const publicRoute = route.replace(/index\.html$/u, "");
+  record(sitemap.includes(`https://www.thementorsphere.co.uk/${publicRoute}`), `docs/sitemap.xml: missing ${publicRoute}`);
+}
 
 for (const htmlFile of htmlFiles.filter((file) => file !== intakePath)) {
   const content = await readFile(htmlFile, "utf8");

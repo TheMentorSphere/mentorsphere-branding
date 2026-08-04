@@ -2137,7 +2137,7 @@ tbody tr:hover {
   }
 }
 
-@media (max-width: 82rem) and (min-width: 55.01rem) {
+@media (max-width: 92rem) and (min-width: 55.01rem) {
   .header-inner {
     flex-wrap: wrap;
     gap: 0.45rem 1rem;
