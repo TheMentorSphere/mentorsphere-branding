@@ -808,8 +808,9 @@ main {
 }
 
 .orbit-item.home-education img {
-  width: 92%;
-  height: 92%;
+  width: 68%;
+  height: 68%;
+  object-fit: contain;
 }
 
 .trust-strip {
