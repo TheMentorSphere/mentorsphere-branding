@@ -69,7 +69,19 @@
       const submenuToggle = item.querySelector('[data-submenu-toggle]');
       if (!submenuToggle) return;
 
-      submenuToggle.addEventListener('click', () => {
+      submenuToggle.addEventListener('click', (event) => {
+        const isOpen = submenuToggle.getAttribute('aria-expanded') === 'true';
+        const pointerActivatedOnDesktop = event.detail > 0 && finePointerQuery.matches && window.innerWidth > 880;
+        if (isOpen && !pointerActivatedOnDesktop) {
+          closeSubmenu(item);
+        } else {
+          openSubmenu(item);
+        }
+      });
+
+      submenuToggle.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
         const isOpen = submenuToggle.getAttribute('aria-expanded') === 'true';
         if (isOpen) {
           closeSubmenu(item);

@@ -127,18 +127,18 @@
 
 .motion-ready .hero-copy .eyebrow,
 .motion-ready .hero-copy h1,
-.motion-ready .hero-copy .lead,
-.motion-ready .hero-copy .button-row,
-.motion-ready .hero-copy .hero-note,
+.motion-ready .hero-details .lead,
+.motion-ready .hero-details .button-row,
+.motion-ready .hero-details .hero-note,
 .motion-ready .page-hero-grid > * {
   animation: hero-enter 760ms var(--ease-smooth) both;
 }
 
 .motion-ready .hero-copy .eyebrow { animation-delay: 40ms; }
 .motion-ready .hero-copy h1 { animation-delay: 110ms; }
-.motion-ready .hero-copy .lead { animation-delay: 180ms; }
-.motion-ready .hero-copy .button-row { animation-delay: 250ms; }
-.motion-ready .hero-copy .hero-note { animation-delay: 320ms; }
+.motion-ready .hero-details .lead { animation-delay: 180ms; }
+.motion-ready .hero-details .button-row { animation-delay: 250ms; }
+.motion-ready .hero-details .hero-note { animation-delay: 320ms; }
 .motion-ready .page-hero-grid > :first-child { animation-delay: 70ms; }
 .motion-ready .page-hero-grid > :last-child { animation-delay: 160ms; }
 

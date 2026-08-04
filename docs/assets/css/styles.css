@@ -320,7 +320,8 @@ h4 {
   align-items: center;
 }
 
-.primary-nav a {
+.primary-nav a,
+.submenu-toggle {
   display: inline-flex;
   min-height: 2.75rem;
   align-items: center;
@@ -334,39 +335,14 @@ h4 {
 }
 
 .submenu-toggle {
-  display: none;
-  min-width: 2.75rem;
-  min-height: 2.75rem;
-  align-items: center;
-  justify-content: center;
-  padding: 0.65rem;
   border: 1px solid transparent;
-  border-radius: var(--radius-pill);
   background: transparent;
-  color: var(--deep-blue-ink);
   cursor: pointer;
-}
-
-.js .submenu-toggle {
-  display: inline-flex;
 }
 
 .submenu-toggle:hover,
 .submenu-toggle[aria-expanded="true"] {
   background: var(--sky-blue-soft);
-}
-
-.submenu-chevron {
-  width: 0.58rem;
-  height: 0.58rem;
-  transform: translateY(-0.12rem) rotate(45deg);
-  border-right: 0.14rem solid currentColor;
-  border-bottom: 0.14rem solid currentColor;
-  transition: transform 180ms ease;
-}
-
-.submenu-toggle[aria-expanded="true"] .submenu-chevron {
-  transform: translateY(0.12rem) rotate(225deg);
 }
 
 .primary-nav .submenu {
@@ -548,10 +524,10 @@ main {
 .hero {
   position: relative;
   isolation: isolate;
-  min-height: min(47rem, calc(100vh - 7rem));
+  min-height: min(43rem, calc(100vh - 7rem));
   display: grid;
   align-items: center;
-  padding-block: clamp(3.5rem, 7vw, 7rem);
+  padding-block: clamp(1.75rem, 3vw, 3.5rem);
   background:
     radial-gradient(circle at 82% 20%, rgba(63, 169, 206, 0.18), transparent 24rem),
     radial-gradient(circle at 10% 82%, rgba(229, 174, 41, 0.11), transparent 25rem),
@@ -568,23 +544,29 @@ main {
 
 .hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(22rem, 0.95fr);
+  grid-template-columns: minmax(0, 0.95fr) minmax(24rem, 1.05fr);
   align-items: center;
-  gap: clamp(2.5rem, 6vw, 6rem);
+  gap: clamp(0.75rem, 2vw, 1.5rem) clamp(2rem, 4vw, 4.5rem);
 }
 
 .hero-copy {
-  max-width: 42rem;
+  max-width: 34rem;
 }
 
 .hero-copy h1 {
-  max-width: 13ch;
-  margin-block: 1rem 1.25rem;
+  max-width: 14ch;
+  margin-block: 0.8rem 0;
+  font-size: clamp(2.6rem, 4.4vw, 4.25rem);
 }
 
-.hero-copy .lead {
-  max-width: 39rem;
-  margin-bottom: 1.7rem;
+.hero-details {
+  grid-column: 1 / -1;
+  max-width: 67rem;
+}
+
+.hero-details .lead {
+  max-width: 62rem;
+  margin-bottom: 1.25rem;
   color: #46525a;
   font-size: var(--step-1);
 }
@@ -669,10 +651,10 @@ main {
 }
 
 .orbit-visual {
-  --orbit-radius: 11.4rem;
+  --orbit-radius: 11.9rem;
   position: relative;
-  width: min(100%, 34rem);
-  min-height: 36rem;
+  width: min(100%, 31.5rem);
+  min-height: 31.5rem;
   display: grid;
   place-items: center;
   justify-self: center;
@@ -681,22 +663,22 @@ main {
 
 .orbit-ring {
   position: absolute;
-  width: 28rem;
-  height: 24rem;
+  width: 28.75rem;
+  height: 24.5rem;
   border: 1px solid rgba(0, 95, 141, 0.25);
   border-radius: 50%;
 }
 
 .orbit-ring.ring-two {
-  width: 25rem;
-  height: 27rem;
+  width: 25.5rem;
+  height: 28rem;
   border-color: rgba(216, 74, 57, 0.16);
   transform: rotate(24deg);
 }
 
 .orbit-ring.ring-three {
-  width: 26rem;
-  height: 22rem;
+  width: 27rem;
+  height: 22.75rem;
   border-style: dashed;
   border-color: rgba(229, 174, 41, 0.22);
   transform: rotate(-22deg);
@@ -733,7 +715,7 @@ main {
 .orbit-centre {
   position: relative;
   z-index: 3;
-  width: 11.25rem;
+  width: 9.75rem;
   aspect-ratio: 1;
 }
 
@@ -749,7 +731,7 @@ main {
   top: 50%;
   left: 50%;
   z-index: 4;
-  width: 7.35rem;
+  width: 6.45rem;
   aspect-ratio: 1;
   display: grid;
   place-items: center;
@@ -772,48 +754,62 @@ main {
 }
 
 .orbit-item.maths {
-  --orbit-start: 205deg;
-  --orbit-mid: 385deg;
-  --orbit-end: 565deg;
-  --orbit-counter-start: -205deg;
-  --orbit-counter-mid: -385deg;
-  --orbit-counter-end: -565deg;
+  --orbit-start: 210deg;
+  --orbit-mid: 390deg;
+  --orbit-end: 570deg;
+  --orbit-counter-start: -210deg;
+  --orbit-counter-mid: -390deg;
+  --orbit-counter-end: -570deg;
 }
 
 .orbit-item.english {
-  --orbit-start: 277deg;
-  --orbit-mid: 457deg;
-  --orbit-end: 637deg;
-  --orbit-counter-start: -277deg;
-  --orbit-counter-mid: -457deg;
-  --orbit-counter-end: -637deg;
+  --orbit-start: 270deg;
+  --orbit-mid: 450deg;
+  --orbit-end: 630deg;
+  --orbit-counter-start: -270deg;
+  --orbit-counter-mid: -450deg;
+  --orbit-counter-end: -630deg;
 }
 
 .orbit-item.science {
-  --orbit-start: 349deg;
-  --orbit-mid: 529deg;
-  --orbit-end: 709deg;
-  --orbit-counter-start: -349deg;
-  --orbit-counter-mid: -529deg;
-  --orbit-counter-end: -709deg;
+  --orbit-start: 330deg;
+  --orbit-mid: 510deg;
+  --orbit-end: 690deg;
+  --orbit-counter-start: -330deg;
+  --orbit-counter-mid: -510deg;
+  --orbit-counter-end: -690deg;
 }
 
 .orbit-item.adhd {
-  --orbit-start: 61deg;
-  --orbit-mid: 241deg;
-  --orbit-end: 421deg;
-  --orbit-counter-start: -61deg;
-  --orbit-counter-mid: -241deg;
-  --orbit-counter-end: -421deg;
+  --orbit-start: 30deg;
+  --orbit-mid: 210deg;
+  --orbit-end: 390deg;
+  --orbit-counter-start: -30deg;
+  --orbit-counter-mid: -210deg;
+  --orbit-counter-end: -390deg;
 }
 
 .orbit-item.support {
-  --orbit-start: 133deg;
-  --orbit-mid: 313deg;
-  --orbit-end: 493deg;
-  --orbit-counter-start: -133deg;
-  --orbit-counter-mid: -313deg;
-  --orbit-counter-end: -493deg;
+  --orbit-start: 90deg;
+  --orbit-mid: 270deg;
+  --orbit-end: 450deg;
+  --orbit-counter-start: -90deg;
+  --orbit-counter-mid: -270deg;
+  --orbit-counter-end: -450deg;
+}
+
+.orbit-item.home-education {
+  --orbit-start: 150deg;
+  --orbit-mid: 330deg;
+  --orbit-end: 510deg;
+  --orbit-counter-start: -150deg;
+  --orbit-counter-mid: -330deg;
+  --orbit-counter-end: -510deg;
+}
+
+.orbit-item.home-education img {
+  width: 92%;
+  height: 92%;
 }
 
 .trust-strip {
@@ -2082,7 +2078,8 @@ tbody tr:hover {
     display: none;
   }
 
-  .primary-nav a {
+  .primary-nav a,
+  .submenu-toggle {
     padding-inline: 0.58rem;
     font-size: 0.88rem;
   }
@@ -2106,8 +2103,12 @@ tbody tr:hover {
     max-width: 14ch;
   }
 
+  .hero-details {
+    grid-column: auto;
+  }
+
   .orbit-visual {
-    min-height: 35rem;
+    min-height: 31.5rem;
   }
 
   .page-hero-visual {
@@ -2202,23 +2203,16 @@ tbody tr:hover {
     width: 100%;
   }
 
-  .primary-nav a {
+  .primary-nav a,
+  .submenu-toggle {
     width: 100%;
     justify-content: flex-start;
     padding: 0.72rem 0.9rem;
     border-radius: var(--radius-sm);
   }
 
-  .nav-parent > a {
-    min-width: 0;
-    flex: 1 1 auto;
-  }
-
   .submenu-toggle {
-    flex: 0 0 3rem;
-    min-width: 3rem;
     min-height: 3rem;
-    border-radius: var(--radius-sm);
   }
 
   .primary-nav .submenu {
@@ -2333,32 +2327,32 @@ tbody tr:hover {
   }
 
   .orbit-visual {
-    --orbit-radius: 7.75rem;
+    --orbit-radius: 8rem;
     width: 100%;
-    min-height: 25rem;
+    min-height: 22rem;
   }
 
   .orbit-centre {
-    width: 7.2rem;
+    width: 6.8rem;
   }
 
   .orbit-ring {
-    width: 18rem;
-    height: 16rem;
+    width: 19rem;
+    height: 16.5rem;
   }
 
   .orbit-ring.ring-two {
-    width: 16rem;
-    height: 18rem;
+    width: 17rem;
+    height: 19rem;
   }
 
   .orbit-ring.ring-three {
-    width: 17rem;
-    height: 14.5rem;
+    width: 18rem;
+    height: 15rem;
   }
 
   .orbit-item {
-    width: 5.45rem;
+    width: 5rem;
     padding: 0.35rem;
   }
 
@@ -2517,11 +2511,12 @@ tbody tr:hover {
 
 @media (max-width: 22rem) {
   .orbit-visual {
-    --orbit-radius: 7.1rem;
+    --orbit-radius: 6.85rem;
+    min-height: 19rem;
   }
 
   .orbit-item {
-    width: 5rem;
+    width: 4.55rem;
   }
 }
 
