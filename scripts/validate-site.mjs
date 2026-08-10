@@ -44,6 +44,14 @@ const homeEducationRoutes = [
 ];
 const educationMenuLabels = ["Overview", "SEND &amp; EHCP Support", "Meetings, Evidence &amp; Communication", "EOTAS &amp; Education Access", "Private Exams &amp; Access Arrangements"];
 const homeEducationMenuLabels = ["Overview", "Getting Started &amp; Foundations", "Planning, Progress &amp; Mentoring", "Qualifications &amp; Future Pathways"];
+const footerServices = [
+  ["Tutoring", "tutoring"],
+  ["ADHD Coaching", "adhd-coaching"],
+  ["Education &amp; SEND Support", "education-send-support"],
+  ["Home Education Support", "home-education"],
+  ["Pricing", "pricing"],
+];
+const organizationServices = ["Tutoring", "ADHD Coaching", "Education & SEND Support", "Home Education Support"];
 const sharedStylesVersion = "styles.css?v=20260804-home-education-v2";
 const sharedScriptVersion = "site.js?v=20260804-home-education-v2";
 
@@ -81,6 +89,20 @@ for (const htmlFile of htmlFiles) {
     record(content.includes('<footer class="site-footer">'), `${relative}: site footer is missing`);
     record(content.includes('class="container footer-main"'), `${relative}: footer main section is missing`);
     record(content.includes('class="container footer-bottom"'), `${relative}: footer bottom section is missing`);
+    const footerServiceList = content.match(/<h2 class="footer-heading">Services<\/h2>\s*<ul class="footer-links">([\s\S]*?)<\/ul>/u)?.[1] || "";
+    const footerServiceLinks = matches(footerServiceList, /<a href="([^"]+)">([^<]+)<\/a>/gu);
+    record(footerServiceLinks.length === footerServices.length, `${relative}: footer must contain exactly five service links`);
+    footerServices.forEach(([label, target], index) => {
+      const link = footerServiceLinks[index];
+      record(link?.[2] === label, `${relative}: footer service ${index + 1} must be ${label}`);
+      const resolved = link ? resolveLocalReference(htmlFile, link[1]) : null;
+      record(resolved === path.join(docsRoot, ...target.split("/")), `${relative}: ${label} footer link is not canonical`);
+    });
+    record(!footerServiceList.includes("support-services/"), `${relative}: obsolete general support-services footer link found`);
+    record(
+      content.includes("The MentorSphere brings tutoring, ADHD coaching, Education &amp; SEND Support and Home Education Support together through one consistent, mentoring-led approach."),
+      `${relative}: four-service footer introduction is missing`,
+    );
     record(matches(content, /<link rel="canonical" href="https:\/\/www\.thementorsphere\.co\.uk\/[^"]*">/giu).length === 1, `${relative}: expected one canonical URL`);
     record(!/(?:Ã‚|Ã¢â‚¬|Ã¢â€ |Ã¯Â¿Â½|�)/u.test(content), `${relative}: mojibake or replacement character found`);
   }
@@ -96,7 +118,18 @@ for (const htmlFile of htmlFiles) {
   );
   for (const block of structuredDataBlocks) {
     try {
-      JSON.parse(block[1]);
+      const structuredData = JSON.parse(block[1]);
+      if (structuredData["@type"] === "EducationalOrganization") {
+        const offers = structuredData.hasOfferCatalog?.itemListElement || [];
+        record(
+          offers.map((offer) => offer.name).join("|") === organizationServices.join("|"),
+          `${relative}: organisation structured data must list the four services in the approved order`,
+        );
+        record(
+          organizationServices.every((service) => structuredData.description?.includes(service)),
+          `${relative}: organisation structured-data description must include all four services`,
+        );
+      }
     } catch {
       record(false, `${relative}: application/ld+json block is not valid JSON`);
     }
@@ -167,6 +200,42 @@ record(!/\bconsole\s*\./u.test(intakeScript), "intake-form.js: browser console l
 record(intakeScript.includes("primary-learner-profile-v5"), "intake-form.js: current form version is missing");
 record(intakeScript.includes("const learnerConsentRoute = singleValue('learner_consent_route')"), "intake-form.js: learner consent route is not included in the payload");
 
+const homepage = await readFile(path.join(docsRoot, "index.html"), "utf8");
+record(
+  /class="orbit-item home-education" href="home-education\/"/u.test(homepage),
+  "homepage: Home Education orbit must link to /home-education/",
+);
+record(!homepage.includes('aria-label="The six MentorSphere service branches"'), "homepage: obsolete orbit label remains");
+
+const contactHtml = await readFile(path.join(docsRoot, "contact", "index.html"), "utf8");
+const contactSelect = contactHtml.match(/<select id="service"[\s\S]*?<\/select>/u)?.[0] || "";
+const contactOptions = matches(contactSelect, /<option value="[^"]*">([^<]+)<\/option>/gu).map((option) => option[1]);
+const expectedContactOptions = [
+  "Choose an option",
+  "Tutoring",
+  "ADHD Coaching",
+  "Education &amp; SEND Support",
+  "Home Education Support",
+  "Employer-funded support",
+  "Access to Work",
+  "Unsure or mixed needs",
+  "Other enquiry",
+];
+record(
+  contactOptions.join("|") === expectedContactOptions.join("|"),
+  "contact form: Area of support options are missing or out of order",
+);
+
+for (const [route, obsoleteText] of [
+  ["index.html", "The six MentorSphere service branches"],
+  ["about/index.html", "What stays consistent across every branch"],
+  ["tutoring/index.html", "one of three pathways"],
+  ["adhd-coaching/index.html", "one of three pathways"],
+]) {
+  const content = await readFile(path.join(docsRoot, ...route.split("/")), "utf8");
+  record(!content.includes(obsoleteText), `${route}: obsolete public service architecture wording remains`);
+}
+
 const headers = await readFile(path.join(docsRoot, "_headers"), "utf8");
 record(headers.includes("/forms/primary-learner-profile/*"), "docs/_headers: intake route is missing");
 record(headers.includes("X-Robots-Tag: noindex, nofollow, noarchive"), "docs/_headers: noindex response header is missing");
@@ -176,6 +245,11 @@ record(headers.includes("script-src 'self' https://challenges.cloudflare.com"), 
 const wrangler = await readFile(path.join(workspace, "wrangler.jsonc"), "utf8");
 record(wrangler.includes('"FORM_PAGE_ENABLED": "false"'), "wrangler.jsonc: production form page must default to disabled");
 record(wrangler.includes('"FORM_SUBMISSIONS_ENABLED": "false"'), "wrangler.jsonc: production submissions must default to disabled");
+record(wrangler.includes('"/support-services/"'), "wrangler.jsonc: retired support overview must run Worker-first for its redirect");
+record(wrangler.includes('"/support-services/ehcp-support/"'), "wrangler.jsonc: retired EHCP route must run Worker-first for its redirect");
+record(wrangler.includes('"/support-services/private-exams/"'), "wrangler.jsonc: retired private-exams route must run Worker-first for its redirect");
+record(!wrangler.includes('"/support-services/ehe-eotas/"'), "wrangler.jsonc: legacy EHE/EOTAS route-choice page must remain directly served");
+record(!wrangler.includes('"/support-services/referral-preparation/"'), "wrangler.jsonc: referral-preparation route must remain directly served");
 record(wrangler.includes('"/api/forms/*"'), "wrangler.jsonc: form API route is not Worker-first");
 record(wrangler.includes('"/forms/primary-learner-profile"'), "wrangler.jsonc: form page route is not Worker-first");
 record(wrangler.includes('"/forms/primary-learner-profile/*"'), "wrangler.jsonc: nested form routes are not Worker-first");

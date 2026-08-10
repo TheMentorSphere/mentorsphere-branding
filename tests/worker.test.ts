@@ -572,14 +572,15 @@ describe("primary learner profile page release control", () => {
     expect(await missing.text()).toContain("Page not found");
   });
 
-  it("permanently redirects retired Education and SEND routes to their canonical replacements", async () => {
+  it.each([
+    ["/support-services/", "/education-send-support/"],
+    ["/support-services/ehcp-support/", "/education-send-support/send-ehcp/"],
+    ["/support-services/private-exams/", "/education-send-support/private-exams-access-arrangements/"],
+  ])("permanently redirects retired route %s to %s", async (retiredRoute, canonicalRoute) => {
     const env = workerBindings({ FORM_PAGE_ENABLED: "false", FORM_SUBMISSIONS_ENABLED: "false" });
-    const response = await handleWorkerRequest(
-      new Request("https://www.thementorsphere.co.uk/support-services/ehcp-support/"),
-      env,
-    );
+    const response = await handleWorkerRequest(new Request(`https://www.thementorsphere.co.uk${retiredRoute}`), env);
 
     expect(response.status).toBe(301);
-    expect(response.headers.get("Location")).toBe("https://www.thementorsphere.co.uk/education-send-support/send-ehcp/");
+    expect(response.headers.get("Location")).toBe(`https://www.thementorsphere.co.uk${canonicalRoute}`);
   });
 });
