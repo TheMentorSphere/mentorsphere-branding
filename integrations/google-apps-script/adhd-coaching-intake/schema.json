@@ -1,0 +1,219 @@
+{
+  "name": "adhd",
+  "slug": "adhd-coaching-intake",
+  "validator": "validateAdhdRequest",
+  "columns": [
+    {
+      "label": "Submission ID",
+      "expression": "payload.submissionId"
+    },
+    {
+      "label": "Worker accepted at (UTC)",
+      "expression": "request.issuedAt"
+    },
+    {
+      "label": "Google received at (UTC)",
+      "expression": "receivedAt"
+    },
+    {
+      "label": "Form version",
+      "expression": "payload.formVersion"
+    },
+    {
+      "label": "Respondent first name",
+      "expression": "payload.respondent.firstName"
+    },
+    {
+      "label": "Respondent surname",
+      "expression": "payload.respondent.surname"
+    },
+    {
+      "label": "Respondent email",
+      "expression": "payload.respondent.email"
+    },
+    {
+      "label": "Contact number",
+      "expression": "payload.respondent.mobile"
+    },
+    {
+      "label": "Preferred contact methods",
+      "expression": "canonicalContactMethods_(payload.respondent.preferredContactMethods)"
+    },
+    {
+      "label": "Support for",
+      "expression": "payload.supportFor"
+    },
+    {
+      "label": "ADHD status",
+      "expression": "payload.adult.adhdStatus"
+    },
+    {
+      "label": "ADHD status details",
+      "expression": "payload.adult.adhdStatusOther"
+    },
+    {
+      "label": "Adult current difficulties",
+      "expression": "payload.adult.difficulties"
+    },
+    {
+      "label": "Adult difficulty details",
+      "expression": "payload.adult.difficultiesOther"
+    },
+    {
+      "label": "Coaching priority",
+      "expression": "payload.adult.priority"
+    },
+    {
+      "label": "Coaching priority details",
+      "expression": "payload.adult.priorityOther"
+    },
+    {
+      "label": "Child name",
+      "expression": "payload.child.name"
+    },
+    {
+      "label": "Educational stage",
+      "expression": "payload.child.educationalStage"
+    },
+    {
+      "label": "Educational stage details",
+      "expression": "payload.child.educationalStageOther"
+    },
+    {
+      "label": "Known or suspected neurodivergence",
+      "expression": "payload.child.neurodivergence"
+    },
+    {
+      "label": "Neurodivergence details",
+      "expression": "payload.child.neurodivergenceOther"
+    },
+    {
+      "label": "Child current difficulties",
+      "expression": "payload.child.difficulties"
+    },
+    {
+      "label": "Child difficulty details",
+      "expression": "payload.child.difficultiesOther"
+    },
+    {
+      "label": "Household context",
+      "expression": "payload.parent.household"
+    },
+    {
+      "label": "Household context details",
+      "expression": "payload.parent.householdOther"
+    },
+    {
+      "label": "Daily impact",
+      "expression": "payload.parent.dailyImpact"
+    },
+    {
+      "label": "Daily impact details",
+      "expression": "payload.parent.dailyImpactOther"
+    },
+    {
+      "label": "Parent support preferences",
+      "expression": "payload.parent.help"
+    },
+    {
+      "label": "Parent support details",
+      "expression": "payload.parent.helpOther"
+    },
+    {
+      "label": "Additional relevant information",
+      "expression": "payload.additionalInformation"
+    },
+    {
+      "label": "Ordinary information authority",
+      "expression": "payload.confirmations.authorised"
+    },
+    {
+      "label": "Privacy acknowledgement",
+      "expression": "payload.confirmations.privacyAcknowledged"
+    },
+    {
+      "label": "Adult explicit consent",
+      "expression": "payload.confirmations.adultSpecialCategoryConsent"
+    },
+    {
+      "label": "Adult consent wording version",
+      "expression": "payload.confirmations.adultSpecialCategoryConsent ? ADULT_CONSENT_WORDING_VERSION : ''"
+    },
+    {
+      "label": "Adult consent recorded at (UTC)",
+      "expression": "payload.confirmations.adultSpecialCategoryConsent ? receivedAt : ''"
+    },
+    {
+      "label": "Adult consent status",
+      "expression": "payload.confirmations.adultSpecialCategoryConsent ? 'Active' : 'Not applicable'"
+    },
+    {
+      "label": "Adult consent withdrawn at (UTC)",
+      "expression": "''"
+    },
+    {
+      "label": "Child explicit consent",
+      "expression": "payload.confirmations.childSpecialCategoryConsent"
+    },
+    {
+      "label": "Child consent wording version",
+      "expression": "payload.confirmations.childSpecialCategoryConsent ? CONSENT_WORDING_VERSION : ''"
+    },
+    {
+      "label": "Child consent recorded at (UTC)",
+      "expression": "payload.confirmations.childSpecialCategoryConsent ? receivedAt : ''"
+    },
+    {
+      "label": "Parental responsibility or documented authority",
+      "expression": "payload.confirmations.childSpecialCategoryAuthority"
+    },
+    {
+      "label": "Authority wording version",
+      "expression": "payload.confirmations.childSpecialCategoryConsent ? AUTHORITY_WORDING_VERSION : ''"
+    },
+    {
+      "label": "Learner consent route",
+      "expression": "payload.confirmations.learnerConsentRoute"
+    },
+    {
+      "label": "Learner consent route wording version",
+      "expression": "payload.confirmations.childSpecialCategoryConsent ? LEARNER_CONSENT_ROUTE_WORDING_VERSION : ''"
+    },
+    {
+      "label": "Child consent status",
+      "expression": "payload.confirmations.childSpecialCategoryConsent ? 'Active' : 'Not applicable'"
+    },
+    {
+      "label": "Child consent withdrawn at (UTC)",
+      "expression": "''"
+    },
+    {
+      "label": "Notification status",
+      "expression": "'Pending'"
+    },
+    {
+      "label": "Notification sent at (UTC)",
+      "expression": "''"
+    },
+    {
+      "label": "Record status",
+      "expression": "'Prospective'"
+    },
+    {
+      "label": "Last meaningful contact date",
+      "expression": "receivedAt.slice(0, 10)"
+    },
+    {
+      "label": "Retention review date",
+      "expression": "retentionReviewDate_(receivedAt)"
+    },
+    {
+      "label": "Safeguarding or legal hold",
+      "expression": "'No'"
+    },
+    {
+      "label": "Retention notes",
+      "expression": "''"
+    }
+  ]
+}
