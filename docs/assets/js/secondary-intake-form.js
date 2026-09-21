@@ -4,9 +4,12 @@ import {
   turnstileTokenIsStale,
 } from './intake-submission-contract.js';
 
+export const secondaryExamBoard = (selected, custom) => selected === 'Other' ? custom.trim() || 'Other' : selected;
+
 (() => {
   'use strict';
 
+  if (typeof document === 'undefined') return;
   document.documentElement.classList.replace('no-js', 'js');
 
   const form = document.querySelector('[data-intake-form]');
@@ -261,7 +264,9 @@ import {
   const updateExamBoards = () => {
     const selected = multipleValues('learner_subjects');
     for (const subject of ['English', 'Maths', 'Science', 'Other']) {
-      setConditionalField(`exam-board-${subject.toLowerCase()}`, selected.includes(subject));
+      const key = subject.toLowerCase();
+      setConditionalField(`exam-board-${key}`, selected.includes(subject));
+      setConditionalField(`exam-board-${key}-custom`, selected.includes(subject) && singleValue(`exam_board_${key}`) === 'Other');
     }
     const gcse = ['Year 10', 'Year 11'].includes(singleValue('learner_year_group'));
     form.querySelector('[data-exam-board-help]').textContent = gcse
@@ -345,6 +350,9 @@ import {
     if (!required || mobileInput.value.trim()) clearFieldError(wrapper);
   };
 
+  const examBoardValue = (subject) => multipleValues('learner_subjects').includes(subject)
+    ? secondaryExamBoard(singleValue(`exam_board_${subject.toLowerCase()}`), singleValue(`exam_board_${subject.toLowerCase()}_custom`)) : '';
+
   const displayValue = (value) => {
     if (Array.isArray(value)) return value.length ? value.join(', ') : 'Not provided';
     return value && String(value).trim() ? String(value).trim() : 'Not provided';
@@ -387,7 +395,7 @@ import {
         ['Year group details', singleValue('year_group_other')],
         ['Subjects', multipleValues('learner_subjects')],
         ['Other subject', singleValue('subject_other')],
-        ...['English', 'Maths', 'Science', 'Other'].filter((subject) => multipleValues('learner_subjects').includes(subject)).map((subject) => [`${subject} exam board`, singleValue(`exam_board_${subject.toLowerCase()}`)]),
+        ...['English', 'Maths', 'Science', 'Other'].filter((subject) => multipleValues('learner_subjects').includes(subject)).map((subject) => [`${subject} exam board`, examBoardValue(subject)]),
       ],
     },
     {
@@ -477,7 +485,7 @@ import {
       yearGroupOther: singleValue('year_group_other'),
       subjects: multipleValues('learner_subjects'),
       subjectOther: singleValue('subject_other'),
-      examBoards: Object.fromEntries(['English', 'Maths', 'Science', 'Other'].map((subject) => [subject, singleValue(`exam_board_${subject.toLowerCase()}`)])),
+      examBoards: Object.fromEntries(['English', 'Maths', 'Science', 'Other'].map((subject) => [subject, examBoardValue(subject)])),
     },
     supportProfile: {
       specialCategoryProvided,
@@ -634,6 +642,10 @@ import {
       updateProgress();
     }
     if (event.target.name === 'respondent_mobile') updateMobileRequirement();
+    if (event.target.name === 'subject_other') {
+      namedControl('exam_board_other').value = '';
+      updateExamBoards();
+    }
   });
 
   form.addEventListener('change', (event) => {
@@ -646,6 +658,7 @@ import {
     if (event.target.name === 'preferred_contact_methods') updateMobileRequirement();
     if (event.target.name === 'learner_year_group') { updateYearGroupOther(); updateExamBoards(); }
     if (event.target.name === 'learner_subjects') { updateSubjectOther(); updateExamBoards(); }
+    if (/^exam_board_(english|maths|science|other)$/.test(event.target.name)) updateExamBoards();
     if (event.target.name === 'needs_status') updateRelevantAreas();
     if (
       event.target.name === 'special_category_choice' ||

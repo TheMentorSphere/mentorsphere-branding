@@ -244,29 +244,84 @@
             <aside class="intake-privacy-panel intake-field-full"><h3>Exam boards</h3><p data-exam-board-help>Exam boards are optional and are not usually needed for Years 7 to 9. Choose a subject above to add its board if helpful.</p><p>For GCSE subjects, add the board if known. You can leave it blank, or choose Not known or Not applicable.</p></aside>
             <div class="intake-field intake-field-full conditional-field" data-conditional="exam-board-english" data-field-path="learner.examBoards.English" hidden>
               <label for="exam-board-english">English exam board <span class="field-optional">Optional</span></label>
-              <input id="exam-board-english" name="exam_board_english" type="text" maxlength="160" list="exam-board-options" aria-describedby="exam-board-english-help exam-board-english-error">
-              <p class="field-help" id="exam-board-english-help">Enter the board if known, or choose Not known or Not applicable. Please leave out health or support information here.</p>
+              <select id="exam-board-english" name="exam_board_english" aria-describedby="exam-board-english-help exam-board-english-error">
+                <option value="">Choose an exam board</option>
+                <option value="AQA">AQA</option>
+                <option value="Pearson Edexcel">Pearson Edexcel</option>
+                <option value="OCR">OCR</option>
+                <option value="WJEC / Eduqas">WJEC / Eduqas</option>
+                <option value="CCEA">CCEA</option>
+                <option value="Not known">Not known</option>
+                <option value="Not applicable">Not applicable</option>
+                <option value="Other">Other / another board</option>
+              </select>
+              <div class="intake-field conditional-field" data-conditional="exam-board-english-custom" hidden>
+                <label for="exam-board-english-custom">Other exam board <span class="field-optional">Optional</span></label>
+                <input id="exam-board-english-custom" name="exam_board_english_custom" type="text" maxlength="160" aria-describedby="exam-board-english-help">
+              </div>
+              <p class="field-help" id="exam-board-english-help">Choose the board if known, or choose Not known or Not applicable. Please leave out health or support information here.</p>
               <p class="field-error" id="exam-board-english-error" data-field-error></p>
             </div>
             <div class="intake-field intake-field-full conditional-field" data-conditional="exam-board-maths" data-field-path="learner.examBoards.Maths" hidden>
               <label for="exam-board-maths">Maths exam board <span class="field-optional">Optional</span></label>
-              <input id="exam-board-maths" name="exam_board_maths" type="text" maxlength="160" list="exam-board-options" aria-describedby="exam-board-maths-help exam-board-maths-error">
-              <p class="field-help" id="exam-board-maths-help">Enter the board if known, or choose Not known or Not applicable. Please leave out health or support information here.</p>
+              <select id="exam-board-maths" name="exam_board_maths" aria-describedby="exam-board-maths-help exam-board-maths-error">
+                <option value="">Choose an exam board</option>
+                <option value="AQA">AQA</option>
+                <option value="Pearson Edexcel">Pearson Edexcel</option>
+                <option value="OCR">OCR</option>
+                <option value="WJEC / Eduqas">WJEC / Eduqas</option>
+                <option value="CCEA">CCEA</option>
+                <option value="Not known">Not known</option>
+                <option value="Not applicable">Not applicable</option>
+                <option value="Other">Other / another board</option>
+              </select>
+              <div class="intake-field conditional-field" data-conditional="exam-board-maths-custom" hidden>
+                <label for="exam-board-maths-custom">Other exam board <span class="field-optional">Optional</span></label>
+                <input id="exam-board-maths-custom" name="exam_board_maths_custom" type="text" maxlength="160" aria-describedby="exam-board-maths-help">
+              </div>
+              <p class="field-help" id="exam-board-maths-help">Choose the board if known, or choose Not known or Not applicable. Please leave out health or support information here.</p>
               <p class="field-error" id="exam-board-maths-error" data-field-error></p>
             </div>
             <div class="intake-field intake-field-full conditional-field" data-conditional="exam-board-science" data-field-path="learner.examBoards.Science" hidden>
               <label for="exam-board-science">Science exam board <span class="field-optional">Optional</span></label>
-              <input id="exam-board-science" name="exam_board_science" type="text" maxlength="160" list="exam-board-options" aria-describedby="exam-board-science-help exam-board-science-error">
-              <p class="field-help" id="exam-board-science-help">Enter the board if known, or choose Not known or Not applicable. Please leave out health or support information here.</p>
+              <select id="exam-board-science" name="exam_board_science" aria-describedby="exam-board-science-help exam-board-science-error">
+                <option value="">Choose an exam board</option>
+                <option value="AQA">AQA</option>
+                <option value="Pearson Edexcel">Pearson Edexcel</option>
+                <option value="OCR">OCR</option>
+                <option value="WJEC / Eduqas">WJEC / Eduqas</option>
+                <option value="CCEA">CCEA</option>
+                <option value="Not known">Not known</option>
+                <option value="Not applicable">Not applicable</option>
+                <option value="Other">Other / another board</option>
+              </select>
+              <div class="intake-field conditional-field" data-conditional="exam-board-science-custom" hidden>
+                <label for="exam-board-science-custom">Other exam board <span class="field-optional">Optional</span></label>
+                <input id="exam-board-science-custom" name="exam_board_science_custom" type="text" maxlength="160" aria-describedby="exam-board-science-help">
+              </div>
+              <p class="field-help" id="exam-board-science-help">Choose the board if known, or choose Not known or Not applicable. Please leave out health or support information here.</p>
               <p class="field-error" id="exam-board-science-error" data-field-error></p>
             </div>
             <div class="intake-field intake-field-full conditional-field" data-conditional="exam-board-other" data-field-path="learner.examBoards.Other" hidden>
               <label for="exam-board-other">Other subject exam board <span class="field-optional">Optional</span></label>
-              <input id="exam-board-other" name="exam_board_other" type="text" maxlength="160" list="exam-board-options" aria-describedby="exam-board-other-help exam-board-other-error">
-              <p class="field-help" id="exam-board-other-help">Enter the board if known, or choose Not known or Not applicable. Please leave out health or support information here.</p>
+              <select id="exam-board-other" name="exam_board_other" aria-describedby="exam-board-other-help exam-board-other-error">
+                <option value="">Choose an exam board</option>
+                <option value="AQA">AQA</option>
+                <option value="Pearson Edexcel">Pearson Edexcel</option>
+                <option value="OCR">OCR</option>
+                <option value="WJEC / Eduqas">WJEC / Eduqas</option>
+                <option value="CCEA">CCEA</option>
+                <option value="Not known">Not known</option>
+                <option value="Not applicable">Not applicable</option>
+                <option value="Other">Other / another board</option>
+              </select>
+              <div class="intake-field conditional-field" data-conditional="exam-board-other-custom" hidden>
+                <label for="exam-board-other-custom">Other exam board <span class="field-optional">Optional</span></label>
+                <input id="exam-board-other-custom" name="exam_board_other_custom" type="text" maxlength="160" aria-describedby="exam-board-other-help">
+              </div>
+              <p class="field-help" id="exam-board-other-help">Choose the board if known, or choose Not known or Not applicable. Please leave out health or support information here.</p>
               <p class="field-error" id="exam-board-other-error" data-field-error></p>
             </div>
-            <datalist id="exam-board-options"><option value="Not known"></option><option value="Not applicable"></option><option value="AQA"></option><option value="Pearson Edexcel"></option><option value="OCR"></option><option value="WJEC / Eduqas"></option><option value="CCEA"></option></datalist>
           </div>
 
           <div class="intake-actions">

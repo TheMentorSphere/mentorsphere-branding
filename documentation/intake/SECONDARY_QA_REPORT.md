@@ -44,3 +44,11 @@ Reproducible screenshots are generated under ignored `tmp/extension-browser-qa/`
 ## Boundaries
 
 No Primary page/client/validation/CSS/submission-contract/Apps Script/schema/policy file was changed. No Primary deployment, production credential, Sheet or configuration was changed. Production Secondary page and submission controls remain false. Preview assets omit Primary and permit only the new form and its dependencies. Temporary local storage is removed by the storage tests; owner previews intentionally persist no responses. Google-hosted integration remains a separate owner-approved setup and verification step.
+
+## Owner-review refinement: exam-board controls
+
+The four optional exam-board datalists are now full-width native selects. Choices can be reopened and changed without clearing the current value. Each subject has an optional Other exam board field that appears for Other and clears when a different board or subject is chosen. Editing the Other subject name also clears its previous board. Review and payload use the same resolved string: custom text, or `Other` if blank. The 52-column storage schema is unchanged.
+
+Current validation: **233 tests passed**, comprising **103 Secondary tests** and **130 unchanged Primary regressions**. Content validation (39 pages), TypeScript, generated Worker types, production-config dry build and isolated preview dry build passed. The existing local browser suite passed all **13 groups**. The new `qa-intake-refinements.mjs` suite passed **6 local groups** and **5 deployed groups**, including all four native selects, repeated reopening, keyboard selection/focus, clearing, unchanged payload shape, desktop and 320px width, and 200% CSS zoom/reflow. CSS zoom is a rendered reflow check, not browser chrome zoom. Screenshots are in ignored `tmp/intake-refinements/`.
+
+The existing workers.dev preview was updated using only test Turnstile and simulated outcomes. No Primary, production storage, Apps Script deployment, notification email, custom-domain route or policy was changed. Privacy Policy V1.6, DPIA and LIA work remains deferred.

@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
+import { secondaryExamBoard } from "../docs/assets/js/secondary-intake-form.js";
 const html = await readFile("docs/forms/secondary-learner-profile/index.html", "utf8");
 const script = await readFile("docs/assets/js/secondary-intake-form.js", "utf8");
 describe("Secondary client privacy and content invariants", () => {
@@ -30,7 +31,7 @@ describe("Secondary client privacy and content invariants", () => {
             expect(html).toContain(`<option value="Year ${year}">`);
         expect(html).toContain('Other / not currently following a standard school year');
         for (const subject of ["english", "maths", "science", "other"])
-            expect(html).toMatch(new RegExp(`name="exam_board_${subject}"[^>]+maxlength="160"[^>]+>`, "u"));
+            expect(html).toMatch(new RegExp(`<select id="exam-board-${subject}" name="exam_board_${subject}"[^>]+>`, "u"));
         expect(html).toContain('value="Not known"');
         expect(html).toContain('value="Not applicable"');
         expect(html).not.toContain('name="target_grade"');
@@ -57,4 +58,24 @@ describe("Secondary client privacy and content invariants", () => {
         expect(script).toContain("button.setAttribute('aria-current', 'step')");
         expect(html).not.toMatch(/tabindex="[1-9]/u);
     });
+});
+
+describe('Secondary exam-board select regression', () => {
+  it('removes obsolete datalists and keeps four optional labelled native selects', () => {
+    expect(html).not.toMatch(/<datalist|list="exam-board-options"/u);
+    for (const subject of ['english', 'maths', 'science', 'other']) {
+      const select = html.match(new RegExp('<select id="exam-board-' + subject + '"[^>]*>[\\s\\S]*?</select>'))?.[0] || '';
+      expect(select).toContain('<option value="">Choose an exam board</option>');
+      expect(select).not.toMatch(/required|role=|aria-expanded|onkeydown/u);
+      expect(html).toContain('data-conditional="exam-board-' + subject + '-custom" hidden');
+      expect(html).toContain('name="exam_board_' + subject + '_custom" type="text" maxlength="160"');
+    }
+  });
+  it.each(['AQA', 'Pearson Edexcel', 'OCR', 'WJEC / Eduqas', 'CCEA', 'Not known', 'Not applicable', ''])('maps %s to the existing single string', board => {
+    expect(secondaryExamBoard(board, 'stale custom value')).toBe(board);
+  });
+  it('maps optional custom text or the Other fallback', () => {
+    expect(secondaryExamBoard('Other', '  Fictional board  ')).toBe('Fictional board');
+    expect(secondaryExamBoard('Other', '  ')).toBe('Other');
+  });
 });

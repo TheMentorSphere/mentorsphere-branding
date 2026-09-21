@@ -65,3 +65,7 @@ Automated Worker/validation/storage/client tests, Primary regression tests, cont
 2. Decide whether optional grade, target and tier fields should be added in a later revision.
 3. Separately approve creation of a dedicated private Sheet, standalone Apps Script project and unique HMAC/Turnstile credentials; validate Google-hosted persistence, access control, retention, notification and duplicate behaviour using fictional data.
 4. Separately approve production deployment and enabling the new page/submission flags after release checks. Neither draft PR is merged by this task.
+
+## Latest owner refinements
+
+Exam boards now use native selects, with an optional custom board field for Other. Selections can be reopened and changed normally. Removing a subject, changing the Other subject name or moving away from Other clears the related custom board. No new storage columns were added. See the latest validation section in `SECONDARY_QA_REPORT.md`. Policy/governance changes remain deferred; this PR stays draft for owner review.
