@@ -71,7 +71,7 @@
 </button>
 </li>
 <li data-progress-step="4">
-<button type="button" data-progress-button="4" aria-label="Go to section 4: Anything else" aria-disabled="true" disabled><span aria-hidden="true">4</span><span class="intake-progress-label">Anything else</span>
+<button type="button" data-progress-button="4" aria-label="Go to section 4: Anything else" aria-disabled="true" disabled><span aria-hidden="true">4</span><span class="intake-progress-label">Additional information</span>
 </button>
 </li>
 <li data-progress-step="5">
@@ -167,13 +167,13 @@
 <input id="support-for-0" type="radio" name="support_for" value="adult"> <span>Myself: adult coaching (18 or over)</span>
 </label>
 <label class="choice-card">
-<input id="support-for-1" type="radio" name="support_for" value="child"> <span>My child/teen</span>
+<input id="support-for-1" type="radio" name="support_for" value="child"> <span>My child/teen: coaching (ages 10 to 17)</span>
 </label>
 <label class="choice-card">
 <input id="support-for-2" type="radio" name="support_for" value="parent"> <span>Myself as a parent/carer</span>
 </label>
 <label class="choice-card">
-<input id="support-for-3" type="radio" name="support_for" value="combined"> <span>Child/teen plus parent/carer support</span>
+<input id="support-for-3" type="radio" name="support_for" value="combined"> <span>Child/teen (ages 10 to 17) plus parent/carer support</span>
 </label>
 </div>
 <p class="field-error" id="support-for-error" data-field-error>
@@ -194,7 +194,7 @@
 <div class="intake-field-full" data-adult-consent-slot>
 <div class="intake-field-grid intake-field-full" data-adult-consent data-consent-group hidden>
 <aside class="intake-privacy-panel intake-field-full">
-<h3>Optional information about yourself</h3>
+<h3 id="adult-consent-heading" tabindex="-1">Optional information about yourself</h3>
 <p>You can skip this information and still submit the form or discuss it during the call. Read the <a href="../../privacy-policy/" target="_blank" rel="noopener">Privacy Policy, opens in a new tab</a>, for how this information is used, stored and protected.</p>
 <p>Only share your own information here. Do not include children’s or other people’s diagnoses or health information.</p>
 </aside>
@@ -336,6 +336,20 @@
 </div>
 </div>
 <div class="intake-field-grid intake-field-full" data-branch="child combined" hidden>
+<div class="intake-field intake-field-full" data-field-path="child.age" data-review-label="Child or young person's age">
+<label for="child-age">Child or young person's age <span class="field-marker">Required</span></label>
+<input id="child-age" name="child_age" type="number" min="0" max="120" step="1" inputmode="numeric" required aria-describedby="child-age-help child-age-error">
+<p class="field-help" id="child-age-help">Enter age in completed years, not a date of birth. Direct young-person coaching is currently offered for ages 10 to 17. Parent/carer support is available independently.</p>
+<p class="field-error" id="child-age-error" data-field-error></p>
+</div>
+<aside class="intake-privacy-panel intake-field-full" data-age-under10 hidden aria-live="polite">
+<p>Direct coaching is currently offered from age 10. Parent/carer support is available independently, including for parents and carers of younger children.</p>
+<button class="button button-secondary" type="button" data-age-switch="parent">Switch to Parent/carer support</button>
+</aside>
+<aside class="intake-privacy-panel intake-field-full" data-age-adult hidden aria-live="polite">
+<p>For someone aged 18 or over, use Adult coaching. Their own information and consent should be provided through that route. Parent/carer support remains available independently.</p>
+<button class="button button-secondary" type="button" data-age-switch="adult">Switch to Adult coaching</button>
+</aside>
 <div class="intake-field intake-field-full " data-field-path="child.name" data-review-label="Child’s or young person’s name" >
 <label for="child-name">Child’s or young person’s name <span class="field-marker">Required</span>
 </label>
@@ -382,7 +396,7 @@
 </p>
 </div>
 <aside class="intake-privacy-panel intake-field-full">
-<h3>Optional information about the child or young person</h3>
+<h3 id="child-consent-heading" tabindex="-1">Optional information about the child or young person</h3>
 <p>You can skip the sensitive questions and still submit the form. Read the <a href="../../privacy-policy/" target="_blank" rel="noopener">Privacy Policy, opens in a new tab</a>, for how this information is used, stored and protected.</p>
 <p>Only a parent or carer with parental responsibility or documented legal authority may use this route. If that does not describe your situation, leave these controls blank and <a href="../../contact/">ask Luke about an appropriate information-sharing route</a>.</p>
 </aside>
@@ -662,12 +676,14 @@
 </section>
 <section class="intake-step" data-step="4" aria-labelledby="step-4-heading">
 <div class="intake-step-heading">
-<h2 id="step-4-heading" tabindex="-1">Anything else</h2>
+<h2 id="step-4-heading" tabindex="-1">Additional information</h2>
+<p>This section is optional. You can share anything else that would be useful for the discovery call, including accessibility or communication preferences.</p>
 <p>Please include only information that is relevant to the discovery call or support you are seeking.</p>
 </div>
 <div class="intake-field-grid">
-<aside class="intake-privacy-panel intake-field-full" data-additional-consent-help>
-<p>This optional text box can include sensitive information. To use it, complete the relevant consent controls in the coaching or parent/carer context step. For combined support, complete both sets of consent controls. You can continue without it and discuss preferences during the call.</p>
+<aside class="intake-privacy-panel intake-field-full" data-additional-consent-help hidden>
+<p data-consent-help-text></p>
+<button class="button button-secondary" type="button" data-review-consent>Review consent sections</button>
 </aside>
 <div class="intake-field-grid intake-field-full" data-sensitive="additional" hidden>
 <div class="intake-field intake-field-full " data-field-path="additionalInformation" data-review-label="Is there anything else you would like to mention?" >

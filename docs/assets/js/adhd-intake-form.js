@@ -15,6 +15,25 @@ export function adhdConsentState(supportFor, adultConsent, childConsent, childAu
   return { adult, child, additional };
 }
 
+export function adhdChildAgeState(value) {
+  if (!value) return 'missing';
+  if (!/^(0|[1-9]\d{0,2})$/.test(value) || Number(value) > 120) return 'invalid';
+  return Number(value) < 10 ? 'under10' : Number(value) >= 18 ? 'adult' : 'eligible';
+}
+
+export function adhdConsentHelp(supportFor, consent) {
+  if (consent.additional) return null;
+  const childTarget = { step: 2, heading: 'child-consent-heading' };
+  const adultTarget = { step: supportFor === 'adult' ? 2 : 3, heading: 'adult-consent-heading' };
+  const routes = {
+    adult: { ...adultTarget, label: 'Go back to coaching consent', text: 'To add optional information here, go back to the Coaching context step and give consent for us to use the health, disability or neurodiversity information you choose to provide. You can also leave this section blank and continue.' },
+    parent: { ...adultTarget, label: 'Go back to parent/carer consent', text: 'To add optional information here, go back to the Parent/carer context step and give consent for us to use the relevant information you choose to provide about yourself. You can also leave this section blank and continue.' },
+    child: { ...childTarget, label: 'Go back to child consent', text: 'To add optional information here, go back to the Coaching context step and complete the optional child information consent and authority section. You can also leave this section blank and continue.' },
+    combined: { ...(!consent.child ? childTarget : adultTarget), label: 'Review consent sections', text: 'To add optional information here, the relevant consent sections for both you and the child or young person need to be completed. Go back to review the consent sections, or leave this section blank and continue.' },
+  };
+  return routes[supportFor] || null;
+}
+
 (() => {
   'use strict';
 
@@ -26,7 +45,7 @@ export function adhdConsentState(supportFor, adultConsent, childConsent, childAu
 
   const API_ENDPOINT = '/api/forms/adhd-coaching-intake';
   const CONFIG_ENDPOINT = `${API_ENDPOINT}/config`;
-  const STEP_NAMES = ['About you', 'Coaching context', 'Parent/carer context', 'Anything else', 'Review and submit'];
+  const STEP_NAMES = ['About you', 'Coaching context', 'Parent/carer context', 'Additional information', 'Review and submit'];
   const CONTACT_METHODS = ['Email', 'Telephone', 'Text message', 'WhatsApp'];
   const PHONE_CONTACT_METHODS = new Set(['Telephone', 'Text message', 'WhatsApp']);
   const steps = Array.from(form.querySelectorAll('[data-step]'));
@@ -116,6 +135,12 @@ export function adhdConsentState(supportFor, adultConsent, childConsent, childAu
     if (wrapper.closest('[data-conditional][hidden]')) return '';
 
     const path = wrapper.dataset.fieldPath || '';
+    if (path === 'child.age') {
+      const age = adhdChildAgeState(singleValue('child_age'));
+      if (age === 'missing' || age === 'invalid') return "Enter the child or young person's age in completed years.";
+      if (age === 'under10') return 'Direct coaching is currently offered from age 10. You can switch to Parent/carer support.';
+      if (age === 'adult') return 'For someone aged 18 or over, use Adult coaching.';
+    }
     if (path === 'confirmations.childSpecialCategoryConsent') {
       const partial = namedControl('child_special_category_consent')?.checked ||
         namedControl('child_special_category_authority')?.checked || singleValue('learner_consent_route');
@@ -279,9 +304,17 @@ export function adhdConsentState(supportFor, adultConsent, childConsent, childAu
     if (adultConsent.hidden) clearContainerControls(adultConsent);
     const combinedChoice = form.querySelector('[data-parent-support-choice]');
     combinedChoice.value = supportFor === 'combined' ? 'Yes' : 'No';
+    updateAgeEligibility();
     updateSensitiveControls();
     updateProgress();
   };
+
+  function updateAgeEligibility() {
+    const hasChild = ['child', 'combined'].includes(singleValue('support_for'));
+    const age = adhdChildAgeState(singleValue('child_age'));
+    form.querySelector('[data-age-under10]').hidden = !hasChild || age !== 'under10';
+    form.querySelector('[data-age-adult]').hidden = !hasChild || age !== 'adult';
+  }
 
   function updateSensitiveControls() {
     const consent = consentState();
@@ -293,7 +326,12 @@ export function adhdConsentState(supportFor, adultConsent, childConsent, childAu
       if (!visible) clearContainerControls(field);
     });
     const additionalHelp = form.querySelector('[data-additional-consent-help]');
-    additionalHelp.hidden = consent.additional;
+    const help = adhdConsentHelp(singleValue('support_for'), consent);
+    additionalHelp.hidden = !help;
+    if (help) {
+      form.querySelector('[data-consent-help-text]').textContent = help.text;
+      form.querySelector('[data-review-consent]').textContent = help.label;
+    }
     form.querySelector('[data-additional-scope]').textContent = singleValue('support_for') === 'child'
       ? 'Only include information about the child or young person covered by the consent above. Do not include health information about yourself or anyone else.'
       : singleValue('support_for') === 'combined'
@@ -392,7 +430,7 @@ export function adhdConsentState(supportFor, adultConsent, childConsent, childAu
       respondent: { email: singleValue('respondent_email'), firstName: singleValue('respondent_first_name'), surname: singleValue('respondent_surname'), mobile: singleValue('respondent_mobile'), preferredContactMethods: canonicalContactMethods() },
       supportFor,
       adult: { adhdStatus: value(adult, 'adult_status'), adhdStatusOther: value(adult, 'adult_status_other'), difficulties: values(adult, 'adult_difficulties'), difficultiesOther: value(adult, 'adult_difficulties_other'), priority: value(adult, 'adult_priority'), priorityOther: value(adult, 'adult_priority_other') },
-      child: { name: value(child, 'child_name'), educationalStage: value(child, 'child_stage'), educationalStageOther: value(child, 'child_stage_other'), neurodivergence: values(consent.child, 'child_neurodivergence'), neurodivergenceOther: value(consent.child, 'child_neurodivergence_other'), difficulties: values(consent.child, 'child_difficulties'), difficultiesOther: value(consent.child, 'child_difficulties_other') },
+      child: { name: value(child, 'child_name'), age: value(child, 'child_age'), educationalStage: value(child, 'child_stage'), educationalStageOther: value(child, 'child_stage_other'), neurodivergence: values(consent.child, 'child_neurodivergence'), neurodivergenceOther: value(consent.child, 'child_neurodivergence_other'), difficulties: values(consent.child, 'child_difficulties'), difficultiesOther: value(consent.child, 'child_difficulties_other') },
       parent: { household: values(parent, 'parent_household'), householdOther: value(parent, 'parent_household_other'), dailyImpact: value(parent, 'parent_impact'), dailyImpactOther: value(parent, 'parent_impact_other'), help: values(parent, 'parent_help'), helpOther: value(parent, 'parent_help_other') },
       additionalInformation: value(consent.additional, 'additional_information'),
       confirmations: {
@@ -535,6 +573,7 @@ export function adhdConsentState(supportFor, adultConsent, childConsent, childAu
       updateProgress();
     }
     if (event.target.name === 'respondent_mobile') updateMobileRequirement();
+    if (event.target.name === 'child_age') updateAgeEligibility();
   });
 
   form.addEventListener('change', (event) => {
@@ -549,6 +588,7 @@ export function adhdConsentState(supportFor, adultConsent, childConsent, childAu
       updateBranches();
     }
     if (event.target.name === 'preferred_contact_methods') updateMobileRequirement();
+    if (event.target.name === 'child_age') updateAgeEligibility();
     updateSensitiveControls();
     updateProgress();
   });
@@ -556,6 +596,23 @@ export function adhdConsentState(supportFor, adultConsent, childConsent, childAu
   progressButtons.forEach((button) => {
     button.addEventListener('click', () => {
       if (!button.disabled) goToStep(Number(button.dataset.progressButton));
+    });
+  });
+
+  form.querySelector('[data-review-consent]').addEventListener('click', () => {
+    const help = adhdConsentHelp(singleValue('support_for'), consentState());
+    if (!help) return;
+    goToStep(help.step);
+    form.querySelector(`#${help.heading}`).focus();
+  });
+
+  form.querySelectorAll('[data-age-switch]').forEach((button) => {
+    button.addEventListener('click', () => {
+      form.querySelector(`[name="support_for"][value="${button.dataset.ageSwitch}"]`).checked = true;
+      highestValidatedStep = 0;
+      updateBranches();
+      goToStep(1);
+      liveStatus.textContent = 'Support route changed. Your contact details have been kept. Please review who the support is for before continuing.';
     });
   });
 

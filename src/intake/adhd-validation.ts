@@ -83,6 +83,9 @@ export function validateAdhdRequest(input: unknown) {
     const priority = choice(adult, "priority", "adult.priority", ADULT_PRIORITIES);
     const adultValues = { adhdStatus, adhdStatusOther: other(adult, "adhdStatusOther", "adult.adhdStatusOther", adhdStatus), difficulties: adultDifficulties, difficultiesOther: other(adult, "difficultiesOther", "adult.difficultiesOther", adultDifficulties), priority, priorityOther: other(adult, "priorityOther", "adult.priorityOther", priority) };
     const name = text(child, "name", "child.name", 200, hasChild);
+    const age = text(child, "age", "child.age", 3, hasChild);
+    if (hasChild && (!/^(0|[1-9]\d{0,2})$/.test(age) || Number(age) < 10 || Number(age) > 17))
+        errors["child.age"] = "Direct young-person coaching is for ages 10 to 17. Use Parent/carer support for under 10s or Adult coaching for age 18 or over.";
     const educationalStage = choice(child, "educationalStage", "child.educationalStage", EDUCATIONAL_STAGES, hasChild);
     const educationalStageOther = other(child, "educationalStageOther", "child.educationalStageOther", educationalStage);
     const neurodivergence = choices(child, "neurodivergence", "child.neurodivergence", NEURODIVERGENCE), childDifficulties = choices(child, "difficulties", "child.difficulties", CHILD_DIFFICULTIES);
@@ -96,7 +99,7 @@ export function validateAdhdRequest(input: unknown) {
         errors.parent = "Remove parent information or give the appropriate explicit consent.";
     if ((!hasChild || !childSpecialCategoryConsent || !childSpecialCategoryAuthority || !learnerConsentRoute) && hasValues(childSensitiveValues))
         errors.child = "Remove optional child information or complete the child consent and authority route.";
-    if (!hasChild && (name || educationalStage || educationalStageOther))
+    if (!hasChild && (name || age || educationalStage || educationalStageOther))
         errors.child = "Remove child details for a route that is not selected.";
     const additionalInformation = text(data, "additionalInformation", "additionalInformation", 5000);
     const additionalAllowed = (!hasAdult && !hasParent || adultSpecialCategoryConsent) && (!hasChild || childSpecialCategoryConsent && childSpecialCategoryAuthority && Boolean(learnerConsentRoute));
@@ -106,7 +109,7 @@ export function validateAdhdRequest(input: unknown) {
         return { ok: false as const, errors };
     return { ok: true as const, request: { turnstileToken, honeypot, submission: {
                 formVersion: FORM_VERSION, submissionId, respondent: { firstName, surname, email, mobile, preferredContactMethods }, supportFor,
-                adult: adultValues, child: { name, educationalStage, educationalStageOther, ...childSensitiveValues }, parent: parentValues,
+                adult: adultValues, child: { name, age, educationalStage, educationalStageOther, ...childSensitiveValues }, parent: parentValues,
                 additionalInformation, confirmations: { authorised: true as const, privacyAcknowledged: true as const, adultSpecialCategoryConsent, childSpecialCategoryConsent, childSpecialCategoryAuthority, learnerConsentRoute },
             } } };
 }

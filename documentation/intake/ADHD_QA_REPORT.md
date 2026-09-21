@@ -4,7 +4,7 @@ Date: 21 September 2026. All information used was fictional. See [Primary baseli
 
 ## Automated checks
 
-The ADHD suites pass **99 tests**: validation 30, Worker/API 31, client route/privacy/accessibility rules 31, and Apps Script durable-storage harness 7. The existing Primary suites pass **130 tests**. The full combined implementation passes **322 tests across 14 files**; Secondary contributes the remaining 93 tests.
+The ADHD suites pass **155 tests**: validation 58, Worker/API 35, client route/privacy/accessibility rules 49, and Apps Script durable-storage harness 13. The existing Primary suites pass **130 tests**. The full combined implementation passes **388 tests across 14 files**; Secondary contributes the remaining 103 tests.
 
 Coverage includes adult, child/teen, parent-only and combined routes; independent explicit consent and child authority/learner routes; crafted/irrelevant sensitive payload rejection; prefer-not-to-say and Other choices; additional-information consent scopes; contact conditions; version/UUID/JSON/content-type/honeypot failures; Turnstile validation and form action; strict created/verified-duplicate/stale-duplicate contracts; malformed/time-out/failure handling; HMAC, formula protection, notification failure and no-answer diagnostics. The real Apps Script executes against a temporary disk-backed Sheet-service harness, including reopened-file readback and conflicting-duplicate rejection. Files are deleted after tests. No Google-hosted integration is claimed by this harness.
 
@@ -40,3 +40,15 @@ No axe package was available in the bundled runtime. No screen-reader or native 
 ## Boundaries
 
 Primary's page, client, validation, CSS, response/token contract, Apps Script, schema and Privacy Policy remain unchanged. No Primary deployment or production credential/storage change was made. ADHD production page and submission controls remain false; the workers.dev preview packages only its own page/dependencies and uses published test keys. Its records and notification outcomes are simulations, and local durable-storage test files are removed. Separate Google-hosted storage and deployment need owner approval and a later controlled integration test.
+
+## Owner-review refinements: consent help and age eligibility
+
+The final combined suite passes **388 tests across 14 files**: **130 Primary**, **103 Secondary** and **155 ADHD**. All existing tests remain, with the datalist assertion updated to require native selects. The new Secondary assertions were also run against the old HTML: both native-select/datalist checks failed as expected, then the current file was restored.
+
+`qa-intake-refinements.mjs --form=adhd` passes **16 local groups** and **16 deployed groups**. These check exact route-specific wording; all four direct-consent buttons; relevant heading focus and progress; the first incomplete combined consent; partial-consent validation; exactly one textarea; immediate hide/reveal state; withdrawal clearing; successful forward navigation with or without optional text; and child/combined ages 9, 10, 17 and 18. Parent/adult switches retain contact information, clear irrelevant child answers and never infer consent from age. Screenshots for the four callouts and available textarea were visually inspected.
+
+All callouts and textarea states passed desktop, **320px** and **200% CSS zoom/reflow** checks with no horizontal overflow. The separate existing local suite also passed **22 ADHD groups**, and all **six deployed submission scenarios** passed with real test Turnstile verification and simulated storage outcomes. CSS zoom is not a claim of browser-chrome zoom testing. Native screen-reader and Google-hosted end-to-end checks remain unverified.
+
+Content validation passed for **40 HTML pages**. TypeScript, JavaScript syntax checks, generated Apps Script/schema/manifest reproducibility for both forms, the combined Worker dry build and isolated ADHD preview dry build passed. The Apps Script age tests verify stored completed years and reject changed-age duplicate payloads, ineligible ages and malformed ages. The draft ADHD schema is now 54 columns; Secondary remains at 52.
+
+Preview deployment version: `fec3bb64-d2cc-446e-b08f-ca75ae8be57b`. It is workers.dev only with published Turnstile test credentials, no production Sheet/Apps Script/email and no custom-domain route. Primary files, shared form CSS/transport, production configuration and the current Privacy Policy are unchanged. Privacy Policy V1.6, DPIA, LIA and policy publication remain deferred; no governance PR was created. No governance branch or open governance PR was found during the starting inspection.

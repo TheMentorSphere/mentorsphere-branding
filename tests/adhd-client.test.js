@@ -1,11 +1,48 @@
 import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
-import { adhdConsentState, adhdStepRoute } from '../docs/assets/js/adhd-intake-form.js';
+import { adhdConsentState, adhdStepRoute, adhdConsentHelp, adhdChildAgeState } from '../docs/assets/js/adhd-intake-form.js';
 
 const html = await readFile('docs/forms/adhd-coaching-intake/index.html', 'utf8');
 const client = await readFile('docs/assets/js/adhd-intake-form.js', 'utf8');
 const contract = await readFile('docs/assets/js/intake-submission-contract.js', 'utf8');
 const css = await readFile('docs/assets/css/intake-forms.css', 'utf8');
+
+describe('Owner consent-help and age regression', () => {
+  it.each([
+    ['adult', 2, 'adult-consent-heading', 'Go back to coaching consent', 'Coaching context step and give consent'],
+    ['parent', 3, 'adult-consent-heading', 'Go back to parent/carer consent', 'Parent/carer context step and give consent'],
+    ['child', 2, 'child-consent-heading', 'Go back to child consent', 'optional child information consent and authority section'],
+    ['combined', 2, 'child-consent-heading', 'Review consent sections', 'both you and the child or young person'],
+  ])('%s has route-specific help and a direct consent target', (route, step, heading, label, wording) => {
+    const help = adhdConsentHelp(route, { adult: false, child: false, additional: false });
+    expect(help).toMatchObject({ step, heading, label });
+    expect(help.text).toContain(wording);
+    expect(help.text).toMatch(/leave this section blank and continue/);
+    expect(adhdConsentHelp(route, { adult: true, child: true, additional: true })).toBeNull();
+  });
+  it('combined targets the first incomplete section in wizard order', () => {
+    expect(adhdConsentHelp('combined', { adult: true, child: false, additional: false }).step).toBe(2);
+    expect(adhdConsentHelp('combined', { adult: false, child: true, additional: false }).step).toBe(3);
+  });
+  it('keeps one shared textarea and optional step, using existing navigation and heading focus', () => {
+    expect(html.match(/<textarea[^>]*name="additional_information"/gu)).toHaveLength(1);
+    expect(html).toContain('data-review-consent');
+    expect(client).toContain('goToStep(help.step)');
+    expect(client).toContain('form.querySelector(`#${help.heading}`).focus()');
+    expect(html).toContain('This section is optional. You can share anything else');
+    expect(html).not.toContain('This optional text box can include sensitive information.');
+  });
+  it.each([['', 'missing'], ['9', 'under10'], ['0', 'under10'], ['10', 'eligible'], ['17', 'eligible'], ['18', 'adult'], ['120', 'adult'], ['121', 'invalid'], ['10.5', 'invalid'], ['1e1', 'invalid'], ['-1', 'invalid']])('age %s has service state %s without inferring consent', (value, state) => {
+    expect(adhdChildAgeState(value)).toBe(state);
+    expect(adhdConsentState('child', false, false, false, '').child).toBe(false);
+  });
+  it('asks only completed years and offers both route switches', () => {
+    expect(html).toContain('name="child_age" type="number"');
+    expect(html).not.toContain('type="date"');
+    expect(html).toContain('data-age-switch="parent"');
+    expect(html).toContain('data-age-switch="adult"');
+  });
+});
 
 describe('ADHD route and consent rules used by the client', () => {
   it.each([

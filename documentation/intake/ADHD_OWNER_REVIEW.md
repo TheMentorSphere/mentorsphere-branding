@@ -21,24 +21,24 @@ About you: ordinary respondent/contact details and support route
 |
 +-- Myself: adult coaching (18 or over)
 |   +-- Coaching context: explicit own-information consent, optional adult questions
-|   +-- Anything else: optional consented free text
+|   +-- Additional information: optional consented free text
 |   +-- Review and submit
 |
 +-- My child/teen
-|   +-- Coaching context: name/stage, child consent/authority, optional child questions
+|   +-- Coaching context: age/name/stage, child consent/authority, optional child questions
 |   |   +-- Parent support also wanted? Yes changes route to combined
-|   +-- Anything else: optional consented child information
+|   +-- Additional information: optional consented child information
 |   +-- Review and submit
 |
 +-- Myself as a parent/carer
 |   +-- Parent/carer context: explicit own-information consent, optional parent questions
-|   +-- Anything else: optional consented own information
+|   +-- Additional information: optional consented own information
 |   +-- Review and submit
 |
 +-- Child/teen plus parent/carer support
     +-- Coaching context: ordinary child details, child consent and questions
     +-- Parent/carer context: separate own-information consent and questions
-    +-- Anything else: enabled only with both sets of consent complete
+    +-- Additional information: enabled only with both sets of consent complete
     +-- Review and submit
 ```
 
@@ -52,7 +52,7 @@ Required means required only if the person chooses to submit this entirely optio
 | --- | --- | --- |
 | Every route | First name; surname; email address; preferred contact methods; telephone/mobile number; support route | Names, email, contact selection and route required. Number required only for Telephone, Text message or WhatsApp. |
 | Adult | Current ADHD status; Other status; current difficulties; Other difficulties; main coaching priority; Other priority | All optional, revealed after own-information consent. |
-| Child/combined ordinary details | Child/young person's name; educational stage; Other educational stage; whether parent support is also wanted | Name and stage required; Other stage text optional. The parent support selector updates the support route, without a duplicate stored answer. |
+| Child/combined ordinary details | Child/young person's age in completed years; name; educational stage; Other educational stage; whether parent support is also wanted | Age (10 to 17), name and stage required; Other stage text optional. The parent support selector updates the support route, without a duplicate stored answer. |
 | Child/combined sensitive context | Known/suspected neurodivergence or related support needs; Other needs; current support difficulties; Other difficulties | All optional after all three child consent controls. |
 | Parent/combined | Household context; Other household context; daily impact; Other daily impact; helpful support areas; Other support areas | All optional after own-information consent. No child name, diagnoses or identifiers requested on the parent-only route. |
 | Every route | Additional information | Optional, gated by the relevant consent(s), maximum 5,000 characters. |
@@ -103,7 +103,7 @@ Free text cannot reliably be classified for accidental disclosures on the client
 | Legacy source | Website implementation | Reason |
 | --- | --- | --- |
 | Three initial routes, with combined route selected later | Four explicit routes, retaining the child's follow-up parent-support selector | Preserves the source paths with clearer navigation and no repeated contact details. |
-| Numerous mandatory context questions in an optional form | Context questions optional after separate consent; ordinary contact and selected child identity/stage required | The person can submit ordinary information without being compelled to disclose sensitive information. |
+| Numerous mandatory context questions in an optional form | Context questions optional after separate consent; ordinary contact and selected child age/identity/stage required | The person can submit ordinary information without being compelled to disclose sensitive information. |
 | Phone number always required | Required only when selecting a phone-based contact method | Follows Primary's modern contact/minimisation pattern. |
 | Contact methods near the end, including Other | Canonical Primary contact checkboxes on the first step | Prevents duplicate respondent data and avoids an unneeded free-text contact field. An alternative format remains available through Contact Luke. |
 | Self-Diagnosed / Suspected | Self-identified / suspected | Avoids presenting self-identification as a clinical diagnosis. |
@@ -120,14 +120,35 @@ The form does not add a diagnosis requirement, clinical claims, counselling/ther
 
 ## Proposed storage
 
-Dedicated ADHD storage is specified in [the 53-column schema](../../integrations/google-apps-script/adhd-coaching-intake/SCHEMA.md). The payload is `adhd-coaching-intake-v1`. It uses its own API path, Turnstile action and isolated Apps Script/HMAC configuration. It must never target the Primary production response Sheet.
+Dedicated ADHD storage is specified in [the 54-column schema](../../integrations/google-apps-script/adhd-coaching-intake/SCHEMA.md). The payload is `adhd-coaching-intake-v1`. It uses its own API path, Turnstile action and isolated Apps Script/HMAC configuration. It must never target the Primary production response Sheet.
 
 The schema contains submission identity and receipt time, ordinary respondent details, support route, branch-specific answers, separate consent/authority/learner-route versions and timestamps, and notification status. Irrelevant or unconsented branch values are empty. The backend rejects crafted out-of-branch or unconsented sensitive values instead of silently accepting them.
 
 ## Validation and release review
 
-The focused client suite currently contains **31 passing tests** covering route selection, the consent truth table, minimisation, source wording, conditional clearing safeguards, contacts, progress validation, shared submission contract, token lifecycle, no browser storage, no answer-bearing URLs, metadata, IDs and error descriptions. Run with `node node_modules/vitest/vitest.mjs run tests/adhd-client.test.js`.
+The focused client suite currently contains **49 passing tests** covering route selection, the consent truth table, minimisation, source wording, conditional clearing safeguards, contacts, progress validation, shared submission contract, token lifecycle, no browser storage, no answer-bearing URLs, metadata, IDs and error descriptions. Run with `node node_modules/vitest/vitest.mjs run tests/adhd-client.test.js`.
 
 Actual browser interaction, responsive/reflow review, backend integration and the full Primary regression baseline are recorded in the task's combined QA report. This document does not treat static assertions as a substitute for browser testing.
 
-Before any production setup, Luke should review the displayed wording, consent scopes, child authority route, conservative gate on final text and the 53-column storage proposal. Dedicated production storage, Apps Script deployment, secrets, page enablement and submission enablement require separate owner approval. No production deployment is authorised by this review document.
+Before any production setup, Luke should review the displayed wording, consent scopes, child authority route, conservative gate on final text and the 54-column storage proposal. Dedicated production storage, Apps Script deployment, secrets, page enablement and submission enablement require separate owner approval. No production deployment is authorised by this review document.
+
+## Owner-review refinements, 21 September 2026
+
+The separate Additional information step keeps one shared textarea. The heading is **Additional information**, with the intro: **This section is optional. You can share anything else that would be useful for the discovery call, including accessibility or communication preferences.** All previous example guidance and the relevant-information reminder remain.
+
+The yellow panel appears only while the relevant optional consent is incomplete. It hides immediately when consent is complete. The secondary button uses existing wizard navigation, preserves answers, updates progress and focuses the relevant consent heading. Editing consent invalidates later completed steps; normal Continue and final-submit validation remain active. Withdrawal clears Additional information immediately.
+
+| Route | Yellow-panel wording | Button and destination |
+| --- | --- | --- |
+| Adult | To add optional information here, go back to the Coaching context step and give consent for us to use the health, disability or neurodiversity information you choose to provide. You can also leave this section blank and continue. | Go back to coaching consent: Coaching context, own-information consent heading. |
+| Parent/carer | To add optional information here, go back to the Parent/carer context step and give consent for us to use the relevant information you choose to provide about yourself. You can also leave this section blank and continue. | Go back to parent/carer consent: Parent/carer context, own-information consent heading. |
+| Child | To add optional information here, go back to the Coaching context step and complete the optional child information consent and authority section. You can also leave this section blank and continue. | Go back to child consent: Coaching context, child consent heading. |
+| Combined | To add optional information here, the relevant consent sections for both you and the child or young person need to be completed. Go back to review the consent sections, or leave this section blank and continue. | Review consent sections: first incomplete consent in wizard order, child before parent. |
+
+### Service age boundary
+
+The latest owner instruction confirms adult coaching for ages 18+, direct young-person coaching for ages 10 to 17, and independent parent/carer support. The child/combined route now requires completed-years age, never full date of birth. Ages 10 and 17 are accepted. Under 10s receive a direct switch to Parent/carer support; ages 18+ receive a direct switch to Adult coaching. Switches return to About you for route review, preserve respondent/contact details and clear child-specific or sensitive answers that no longer apply. The parent-only route has no child-age restriction. Age never determines consent or capacity. Both the Worker and generated Apps Script independently enforce this service boundary.
+
+The draft ADHD schema now has 54 columns, including Child age in completed years after Child name. No production Sheet or Apps Script has been provisioned or changed. Secondary's 52-column schema remains unchanged.
+
+Privacy Policy V1.6, DPIA and LIA revisions and policy publication are deferred. No governance PR was created; no current Privacy Policy was edited. Both form PRs remain draft and require owner review.

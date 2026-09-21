@@ -72,6 +72,10 @@
       "expression": "payload.child.name"
     },
     {
+      "label": "Child age in completed years",
+      "expression": "payload.child.age"
+    },
+    {
       "label": "Educational stage",
       "expression": "payload.child.educationalStage"
     },

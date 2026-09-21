@@ -236,7 +236,8 @@ async function adhd(branch, consent = true) {
   } else if (branch === 'child' || branch === 'combined') {
     await next(page); await step(page, 2);
     await named(page, 'child_name').fill('Fictional Child');
-    await choice(page, 'child_stage', 'Years 7 to 9 / KS3');
+    await named(page, 'child_age').fill('12');
+  await choice(page, 'child_stage', 'Years 7 to 9 / KS3');
     assert.equal(await named(page, 'child_neurodivergence').first().isVisible(), false);
     if (consent) {
       await named(page, 'child_special_category_consent').check();
@@ -329,6 +330,7 @@ async function adhdBranchChanges() {
   await choice(page, 'support_for', 'combined');
   await next(page);
   await named(page, 'child_name').fill('Fictional Child');
+  await named(page, 'child_age').fill('12');
   await choice(page, 'child_stage', 'Years 7 to 9 / KS3');
   await named(page, 'child_special_category_consent').check();
   await named(page, 'child_special_category_authority').check();

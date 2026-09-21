@@ -5,6 +5,33 @@ import { validAdhdRequest } from "./adhd-fixtures";
 import { section } from "./secondary-fixtures";
 function adultConsent(input: Record<string, unknown>) { section(input, "confirmations").adultSpecialCategoryConsent = true; }
 function childConsent(input: Record<string, unknown>) { Object.assign(section(input, "confirmations"), { childSpecialCategoryConsent: true, childSpecialCategoryAuthority: true, learnerConsentRoute: LEARNER_CONSENT_ROUTES[0] }); }
+describe("ADHD completed-years service boundary", () => {
+    for (const route of ["child", "combined"]) {
+        it.each(["10", "17"])(`${route} accepts boundary age %s without optional consent`, age => {
+            const input = validAdhdRequest(route);
+            section(input, "child").age = age;
+            const result = validateAdhdRequest(input);
+            expect(result.ok).toBe(true);
+            if (result.ok) {
+                expect(result.request.submission.child.age).toBe(age);
+                expect(result.request.submission.confirmations.childSpecialCategoryConsent).toBe(false);
+            }
+        });
+        it.each(["", "0", "9", "18", "120", "10.5", "1e1", "-1", undefined, null, 12])(`${route} rejects missing, malformed or ineligible age %s`, age => {
+            const input = validAdhdRequest(route);
+            section(input, "child").age = age;
+            const result = validateAdhdRequest(input);
+            expect(result.ok).toBe(false);
+            if (!result.ok) expect(result.errors["child.age"]).toBeTruthy();
+        });
+    }
+    it.each(["adult", "parent"])("%s has no child age requirement and rejects residual child age", route => {
+        const input = validAdhdRequest(route);
+        expect(validateAdhdRequest(input).ok).toBe(true);
+        section(input, "child").age = "9";
+        expect(validateAdhdRequest(input).ok).toBe(false);
+    });
+});
 describe("ADHD intake schema", () => {
     it.each(SUPPORT_FOR)("allows ordinary-only optional route %s", route => { expect(validateAdhdRequest(validAdhdRequest(route)).ok).toBe(true); });
     it.each(ADHD_STATUS)("accepts consented adult status %s", adhdStatus => { const input = validAdhdRequest(); adultConsent(input); section(input, "adult").adhdStatus = adhdStatus; expect(validateAdhdRequest(input).ok).toBe(true); });
