@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "mentorsphere-secondary-owner-preview",
+  "main": "src/preview/secondary-preview.ts",
+  "compatibility_date": "2026-09-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "routes": [],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".preview-assets/secondary-learner-profile",
+    "run_worker_first": true
+  },
+  "observability": { "enabled": true, "logs": { "enabled": true, "head_sampling_rate": 1, "invocation_logs": false } }
+}

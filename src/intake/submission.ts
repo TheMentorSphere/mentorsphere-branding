@@ -1,5 +1,3 @@
-import type { ValidatedIntakeSubmission } from "./validation";
-
 const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 const TURNSTILE_ACTION = "primary_learner_profile";
 const UPSTREAM_RESPONSE_LIMIT = 16_384;
@@ -123,6 +121,7 @@ export async function verifyTurnstile(
   submissionId: string,
   remoteIp: string,
   env: IntakeBindings,
+  expectedAction: string = TURNSTILE_ACTION,
 ): Promise<TurnstileVerificationResult> {
   const body = new URLSearchParams({
     secret: env.TURNSTILE_SECRET_KEY,
@@ -217,7 +216,7 @@ export async function verifyTurnstile(
     };
   }
 
-  const actionComparisonPassed = result.action === TURNSTILE_ACTION;
+  const actionComparisonPassed = result.action === expectedAction;
   if (!actionComparisonPassed) {
     return {
       ok: false,
@@ -255,7 +254,7 @@ export async function verifyTurnstile(
 }
 
 export async function sendToAppsScript(
-  submission: ValidatedIntakeSubmission,
+  submission: { formVersion: string; submissionId: string },
   env: IntakeBindings,
 ): Promise<IntakeAcceptedResponse> {
   const body = JSON.stringify({
