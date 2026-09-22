@@ -17,7 +17,9 @@
       "/forms/primary-learner-profile",
       "/forms/primary-learner-profile/*",
       "/forms/secondary-learner-profile",
-      "/forms/secondary-learner-profile/*"
+      "/forms/secondary-learner-profile/*",
+      "/forms/adhd-coaching-intake",
+      "/forms/adhd-coaching-intake/*"
     ]
   },
   "vars": {

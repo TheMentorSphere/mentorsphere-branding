@@ -7,7 +7,7 @@ import {
 import { FORM_VERSION, validateIntakeRequest } from "./intake/validation";
 
 import { secondaryDefinition, secondaryBindings } from "./intake/secondary";
-
+import { adhdDefinition, adhdBindings } from "./intake/adhd";
 
 export type IntakeValidation = { ok: true; request: { submission: { formVersion: string; submissionId: string }; turnstileToken: string; honeypot: string } } | { ok: false; errors: Record<string, string> };
 export interface IntakeDefinition { apiPath: string; formPath: string; formVersion: string; action: string; validate(input: unknown): IntakeValidation }
@@ -380,7 +380,7 @@ export async function handleWorkerRequest(request: Request, env: WorkerBindings)
   if (redirectTarget) return Response.redirect(new URL(redirectTarget, url).toString(), 301);
   for (const [definition, isolatedEnv] of [
     [secondaryDefinition, secondaryBindings(env)],
-
+    [adhdDefinition, adhdBindings(env)],
   ] as const) {
     if (url.pathname === definition.apiPath || url.pathname.startsWith(definition.apiPath + "/")) return handleIntakeApi(request, isolatedEnv, definition);
     if ((url.pathname === definition.formPath || url.pathname.startsWith(definition.formPath + "/")) && !isPageEnabled(isolatedEnv)) return formNotFound(request, env);

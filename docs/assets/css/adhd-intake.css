@@ -1,0 +1,11 @@
+.page-adhd-intake [hidden] { display: none !important; }
+.page-adhd-intake .intake-progress-list { grid-template-columns: repeat(auto-fit, minmax(2.75rem, 1fr)); }
+.page-adhd-intake .intake-subject-logo { width: fit-content; max-width: 100%; }
+.page-adhd-intake .intake-field-grid > .intake-field-grid { gap: 1.5rem; }
+.page-adhd-intake .intake-field-grid > div:empty { display: none; }
+.page-adhd-intake .intake-field, .page-adhd-intake .intake-field-grid { min-width: 0; }
+.page-adhd-intake .intake-field legend, .page-adhd-intake .confirmation-card, .page-adhd-intake .field-help { overflow-wrap: anywhere; }
+
+.page-adhd-intake .intake-field input[type="number"] { width: 100%; min-height: 3.15rem; padding: .75rem .85rem; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: #fff; color: var(--charcoal); font-size: 1rem; line-height: 1.5; }
+.page-adhd-intake .intake-field input[type="number"]:focus { border-color: var(--deep-blue); }
+.page-adhd-intake [data-additional-consent-help] .button, .page-adhd-intake [data-age-switch] { white-space: normal; max-width: 100%; text-align: center; }

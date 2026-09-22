@@ -67,6 +67,9 @@ async function layout(page, label, selects = false) {
     }
     await page.locator('[data-step]:not([hidden]) h2').scrollIntoViewIfNeeded();
     await page.screenshot({ path: path.join(output, `${label}-${width}-${zoom}x.png`), fullPage: true });
+    if (label.includes('consent-help') || label.includes('additional-field')) {
+      await page.locator('[data-step]:not([hidden])').screenshot({ path: path.join(output, `${label}-step-${width}-${zoom}x.png`) });
+    }
   }
   await page.evaluate(() => { document.documentElement.style.zoom = ''; });
   pass(`${label}: desktop, 320px, 200% CSS zoom, no overflow${selects ? ', full-width selects' : ''}`);
@@ -142,8 +145,140 @@ async function secondary() {
   }
   await page.close();
 }
+
+const consentText = {
+  adult: 'To add optional information here, go back to the Coaching context step and give consent for us to use the health, disability or neurodiversity information you choose to provide. You can also leave this section blank and continue.',
+  child: 'To add optional information here, go back to the Coaching context step and complete the optional child information consent and authority section. You can also leave this section blank and continue.',
+  parent: 'To add optional information here, go back to the Parent/carer context step and give consent for us to use the relevant information you choose to provide about yourself. You can also leave this section blank and continue.',
+  combined: 'To add optional information here, the relevant consent sections for both you and the child or young person need to be completed. Go back to review the consent sections, or leave this section blank and continue.',
+};
+async function childDetails(page, age = '12') {
+  await named(page, 'child_age').fill(age);
+  await named(page, 'child_name').fill('Fictional Child');
+  await choice(page, 'child_stage', 'Years 7 to 9 / KS3');
+}
+async function childConsent(page) {
+  await named(page, 'child_special_category_consent').check();
+  await named(page, 'child_special_category_authority').check();
+  await named(page, 'learner_consent_route').first().check();
+}
+async function forwardToAdditional(page) {
+  while (!await page.locator('[data-step="4"]').isVisible()) await next(page);
+}
+async function adhd() {
+  for (const route of ['adult', 'child', 'parent', 'combined']) {
+    const { page } = await open('adhd');
+    await choice(page, 'support_for', route);
+    await next(page);
+    const child = route === 'child' || route === 'combined';
+    if (child) await childDetails(page);
+    await forwardToAdditional(page);
+    const help = page.locator('[data-additional-consent-help]');
+    const text = named(page, 'additional_information');
+    assert.equal(await text.count(), 1);
+    assert.equal(await text.isVisible(), false);
+    assert.equal(await help.isVisible(), true);
+    assert.equal(await page.locator('[data-consent-help-text]').innerText(), consentText[route]);
+    await layout(page, `adhd-${route}-consent-help`);
+    const button = page.locator('[data-review-consent]');
+    const labels = { adult: 'Go back to coaching consent', child: 'Go back to child consent', parent: 'Go back to parent/carer consent', combined: 'Review consent sections' };
+    assert.equal(await button.innerText(), labels[route]);
+    await button.focus(); await page.keyboard.press('Enter');
+    const firstStep = route === 'parent' ? 3 : 2;
+    assert.equal(await page.locator(`[data-step="${firstStep}"]`).isVisible(), true);
+    assert.equal(await page.evaluate(() => document.activeElement.id), child ? 'child-consent-heading' : 'adult-consent-heading');
+    assert.equal(await page.locator(`[data-progress-button="${firstStep}"]`).getAttribute('aria-current'), 'step');
+    assert.equal(await named(page, 'respondent_email').inputValue(), 'fictional@example.test');
+    if (child) {
+      // A partial child consent must still fail ordinary Continue validation.
+      await named(page, 'child_special_category_consent').check();
+      await next(page);
+      assert.equal(await page.locator('[data-step="2"]').isVisible(), true);
+      assert.equal(await page.locator('[data-error-summary]').isVisible(), true);
+      await childConsent(page);
+    } else await named(page, 'adult_special_category_consent').check();
+    if (route === 'combined') {
+      await forwardToAdditional(page);
+      assert.equal(await help.isVisible(), true);
+      await button.click();
+      assert.equal(await page.locator('[data-step="3"]').isVisible(), true);
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'adult-consent-heading');
+      await named(page, 'adult_special_category_consent').check();
+    }
+    // Hidden state updates immediately at consent time, before navigating forward.
+    assert.equal(await help.getAttribute('hidden'), '');
+    assert.equal(await page.locator('[data-sensitive="additional"]').getAttribute('hidden'), null);
+    await forwardToAdditional(page);
+    assert.equal(await help.isVisible(), false);
+    assert.equal(await text.isVisible(), true);
+    await text.fill('Fictional preference: captions please.');
+    await layout(page, `adhd-${route}-additional-field`);
+    await page.locator(`[data-progress-button="${route === 'parent' || route === 'combined' ? 3 : 2}"]`).click();
+    if (route === 'child') {
+      await named(page, 'child_special_category_authority').uncheck();
+      assert.equal(await text.inputValue(), '');
+      assert.equal(await page.locator('[data-sensitive="additional"]').getAttribute('hidden'), '');
+      await page.locator('[data-clear-child-consent]').click();
+    } else await named(page, 'adult_special_category_consent').uncheck();
+    assert.equal(await text.inputValue(), '');
+    assert.equal(await page.locator('[data-progress-button="5"]').isDisabled(), true);
+    await forwardToAdditional(page);
+    assert.equal(await help.isVisible(), true);
+    assert.equal(await text.isVisible(), false);
+    await next(page);
+    assert.equal(await page.locator('[data-step="5"]').isVisible(), true, 'Optional Additional information does not block review');
+    pass(`ADHD ${route}: exact help, keyboard navigation/focus/progress, consent reveal, withdrawal clearing, forward state, one optional shared textarea`);
+    await page.close();
+  }
+  for (const route of ['child', 'combined']) {
+    const { page } = await open('adhd');
+    await choice(page, 'support_for', route); await next(page);
+    await childDetails(page, '9');
+    await next(page);
+    assert.equal(await page.locator('[data-step="2"]').isVisible(), true);
+    assert.equal(await page.locator('[data-age-under10]').isVisible(), true);
+    await layout(page, `adhd-${route}-age-boundary`);
+    for (const age of ['10', '17']) {
+      await named(page, 'child_age').fill(age);
+      assert.equal(await page.locator('[data-age-under10]').isVisible(), false);
+      await next(page);
+      assert.equal(await page.locator(`[data-step="${route === 'combined' ? 3 : 4}"]`).isVisible(), true);
+      await page.locator('[data-step]:not([hidden]) [data-back]').click();
+      assert.equal(await named(page, 'child_special_category_consent').isChecked(), false, 'Age does not confer consent');
+    }
+    await childConsent(page);
+    await choice(page, 'child_neurodivergence', 'ADHD');
+    await named(page, 'child_age').fill('9');
+    await page.locator('[data-age-switch="parent"]').focus(); await page.keyboard.press('Enter');
+    assert.equal(await page.locator('[data-step="1"]').isVisible(), true);
+    assert.equal(await named(page, 'respondent_first_name').inputValue(), 'Fictional');
+    assert.equal(await named(page, 'respondent_email').inputValue(), 'fictional@example.test');
+    for (const field of ['child_name', 'child_age']) assert.equal(await named(page, field).inputValue(), '');
+    assert.equal(await named(page, 'child_special_category_consent').isChecked(), false);
+    assert.equal(await page.locator('[name="child_neurodivergence"]:checked').count(), 0);
+    await next(page);
+    assert.equal(await page.locator('[data-step="3"]').isVisible(), true);
+    await next(page); await next(page);
+    assert.equal(await page.locator('[data-step="5"]').isVisible(), true, 'Parent support has no child age restriction');
+    await page.locator('[data-progress-button="1"]').click();
+    await choice(page, 'support_for', route); await next(page); await childDetails(page, '18');
+    await next(page);
+    assert.equal(await page.locator('[data-step="2"]').isVisible(), true);
+    assert.equal(await page.locator('[data-age-adult]').isVisible(), true);
+    await page.locator('[data-age-switch="adult"]').click();
+    assert.equal(await named(page, 'child_age').inputValue(), '');
+    assert.equal(await named(page, 'respondent_email').inputValue(), 'fictional@example.test');
+    await next(page);
+    assert.equal(await page.locator('[data-step="2"]').isVisible(), true);
+    assert.equal(await page.locator('[data-adult-consent]').isVisible(), true);
+    assert.equal(await named(page, 'adult_special_category_consent').isChecked(), false);
+    pass(`ADHD ${route}: 9/10/17/18 boundaries, parent/adult route switches preserve contact and clear child answers, no age-based consent`);
+    await page.close();
+  }
+}
 try {
   if (selected === 'secondary' || selected === 'all') await secondary();
+  if (selected === 'adhd' || selected === 'all') await adhd();
   assert.deepEqual(errors, []);
   await writeFile(path.join(output, 'results.json'), JSON.stringify({ selected, deployed, results }, null, 2));
   console.log(`${results.length} refinement scenario groups passed.`);
