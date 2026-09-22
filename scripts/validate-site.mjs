@@ -36,6 +36,8 @@ function resolveLocalReference(htmlFile, reference) {
 const allFiles = await walk(docsRoot);
 const htmlFiles = allFiles.filter((file) => file.endsWith(".html"));
 const intakePath = path.join(docsRoot, "forms", "primary-learner-profile", "index.html");
+const intakeSlugs = ["primary-learner-profile", "secondary-learner-profile", "adhd-coaching-intake"];
+const intakePaths = new Set(intakeSlugs.map(slug => path.join(docsRoot, "forms", slug, "index.html")));
 const homeEducationRoutes = [
   "home-education/index.html",
   "home-education/getting-started-foundations/index.html",
@@ -72,7 +74,7 @@ for (const htmlFile of htmlFiles) {
     `${relative}: expected one meta description`,
   );
   record(matches(content, /<h1\b/giu).length === 1, `${relative}: expected exactly one H1`);
-  if (htmlFile !== intakePath) {
+  if (!intakePaths.has(htmlFile)) {
     record(content.includes('class="skip-link" href="#main-content"'), `${relative}: site skip link is missing`);
     record(content.includes('<div class="site-notice">'), `${relative}: site notice is missing`);
     record(content.includes('<header class="site-header">'), `${relative}: site header is missing`);
@@ -182,12 +184,23 @@ for (const route of homeEducationRoutes) {
   record(sitemap.includes(`https://www.thementorsphere.co.uk/${publicRoute}`), `docs/sitemap.xml: missing ${publicRoute}`);
 }
 
-for (const htmlFile of htmlFiles.filter((file) => file !== intakePath)) {
+for (const htmlFile of htmlFiles.filter((file) => !intakePaths.has(file))) {
   const content = await readFile(htmlFile, "utf8");
   record(
-    !content.includes("forms/primary-learner-profile"),
+    intakeSlugs.every(slug => !content.includes(`forms/${slug}`)),
     `${path.relative(workspace, htmlFile)}: unlisted learner profile is linked from a public page`,
   );
+}
+
+for (const slug of intakeSlugs.slice(1)) {
+  const filename = path.join(docsRoot, "forms", slug, "index.html");
+  if (!htmlFiles.includes(filename)) continue;
+  const html = await readFile(filename, "utf8");
+  record(html.includes('<meta name="robots" content="noindex,nofollow,noarchive">'), `${slug}: robots controls missing`);
+  record(!sitemap.includes(slug), `${slug}: unlisted form must not appear in sitemap`);
+  record(/<main\b[^>]*id="main-content"/u.test(html), `${slug}: main landmark missing`);
+  record(html.includes('class="skip-link" href="#main-content"'), `${slug}: skip link missing`);
+  record(html.includes('data-error-summary'), `${slug}: accessible error summary missing`);
 }
 
 const intakeScript = await readFile(path.join(docsRoot, "assets", "js", "intake-form.js"), "utf8");

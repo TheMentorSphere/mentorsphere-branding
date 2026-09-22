@@ -4,11 +4,18 @@ import {
   type PreForwardErrorCode,
   type PreForwardStage,
 } from "./intake/diagnostics";
-import { FORM_VERSION, validateIntakeRequest, type ValidationResult } from "./intake/validation";
+import { FORM_VERSION, validateIntakeRequest } from "./intake/validation";
+
+import { secondaryDefinition, secondaryBindings } from "./intake/secondary";
+
+
+export type IntakeValidation = { ok: true; request: { submission: { formVersion: string; submissionId: string }; turnstileToken: string; honeypot: string } } | { ok: false; errors: Record<string, string> };
+export interface IntakeDefinition { apiPath: string; formPath: string; formVersion: string; action: string; validate(input: unknown): IntakeValidation }
 
 const API_PATH = "/api/forms/primary-learner-profile";
-const CONFIG_PATH = `${API_PATH}/config`;
+
 const FORM_PATH = "/forms/primary-learner-profile";
+const PRIMARY_DEFINITION: IntakeDefinition = { apiPath: API_PATH, formPath: FORM_PATH, formVersion: FORM_VERSION, action: turnstileAction, validate: validateIntakeRequest };
 const MAX_REQUEST_BYTES = 32_768;
 const DIAGNOSTIC_REQUEST_HEADER = "X-MentorSphere-Request-ID";
 const UUID_V4_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
@@ -25,6 +32,22 @@ class BodyReadError extends Error {
 }
 
 export interface WorkerBindings extends IntakeBindings {
+  SECONDARY_FORM_PAGE_ENABLED?: string;
+  SECONDARY_FORM_SUBMISSIONS_ENABLED?: string;
+  SECONDARY_TURNSTILE_SITE_KEY?: string;
+  SECONDARY_TURNSTILE_SECRET_KEY?: string;
+  SECONDARY_TURNSTILE_EXPECTED_HOSTNAMES?: string;
+  SECONDARY_TURNSTILE_TEST_MODE?: string;
+  SECONDARY_APPS_SCRIPT_URL?: string;
+  SECONDARY_HMAC_SECRET?: string;
+  ADHD_INTAKE_PAGE_ENABLED?: string;
+  ADHD_INTAKE_SUBMISSIONS_ENABLED?: string;
+  ADHD_TURNSTILE_SITE_KEY?: string;
+  ADHD_TURNSTILE_SECRET_KEY?: string;
+  ADHD_TURNSTILE_EXPECTED_HOSTNAMES?: string;
+  ADHD_TURNSTILE_TEST_MODE?: string;
+  ADHD_APPS_SCRIPT_URL?: string;
+  ADHD_HMAC_SECRET?: string;
   ASSETS: {
     fetch(request: Request): Promise<Response>;
   };
@@ -98,9 +121,9 @@ function isJson(request: Request): boolean {
   return /^application\/(?:[a-z0-9.!#$&^_-]+\+)?json(?:\s*;|$)/iu.test(contentType);
 }
 
-function validationErrorCode(body: unknown, validation: ValidationResult): PreForwardErrorCode {
+function validationErrorCode(body: unknown, validation: IntakeValidation, formVersion: string): PreForwardErrorCode {
   if (!isRecord(body)) return "PAYLOAD_NOT_OBJECT";
-  if (body.formVersion !== FORM_VERSION) return "INVALID_FORM_VERSION";
+  if (body.formVersion !== formVersion) return "INVALID_FORM_VERSION";
   if (typeof body.submissionId !== "string" || !UUID_V4_PATTERN.test(body.submissionId.trim())) {
     return "INVALID_SUBMISSION_ID";
   }
@@ -189,24 +212,24 @@ async function formNotFound(request: Request, env: WorkerBindings): Promise<Resp
   });
 }
 
-export async function handleIntakeApi(request: Request, env: IntakeBindings): Promise<Response> {
+export async function handleIntakeApi(request: Request, env: IntakeBindings, definition: IntakeDefinition = PRIMARY_DEFINITION, forward: typeof sendToAppsScript = sendToAppsScript): Promise<Response> {
   const requestId = diagnosticRequestId(request);
   const url = new URL(request.url);
 
-  if (url.pathname === CONFIG_PATH && request.method === "GET") {
+  if (url.pathname === `${definition.apiPath}/config` && request.method === "GET") {
     const configuredSiteKey = env.TURNSTILE_SITE_KEY !== "CONFIGURE_BEFORE_PRODUCTION_LAUNCH";
     return jsonResponse(
       {
         enabled: areSubmissionsEnabled(env) && configuredSiteKey,
         siteKey: configuredSiteKey ? env.TURNSTILE_SITE_KEY : "",
-        action: turnstileAction,
+        action: definition.action,
       },
       200,
       requestId,
     );
   }
 
-  if (url.pathname !== API_PATH) return jsonResponse({ error: "Not found." }, 404, requestId);
+  if (url.pathname !== definition.apiPath) return jsonResponse({ error: "Not found." }, 404, requestId);
   if (request.method !== "POST") return jsonResponse({ error: "Method not allowed." }, 405, requestId);
   if (!areSubmissionsEnabled(env)) {
     return preForwardRejection(requestId, "SUBMISSIONS_DISABLED", "release_gate", 503, INITIAL_DIAGNOSTIC_STATE, {
@@ -253,9 +276,9 @@ export async function handleIntakeApi(request: Request, env: IntakeBindings): Pr
     );
   }
 
-  let validation: ValidationResult;
+  let validation: IntakeValidation;
   try {
-    validation = validateIntakeRequest(body);
+    validation = definition.validate(body);
   } catch {
     return preForwardRejection(
       requestId,
@@ -267,7 +290,7 @@ export async function handleIntakeApi(request: Request, env: IntakeBindings): Pr
     );
   }
   if (!validation.ok) {
-    const errorCode = validationErrorCode(body, validation);
+    const errorCode = validationErrorCode(body, validation, definition.formVersion);
     return preForwardRejection(
       requestId,
       errorCode,
@@ -301,6 +324,7 @@ export async function handleIntakeApi(request: Request, env: IntakeBindings): Pr
     validation.request.submission.submissionId,
     request.headers.get("CF-Connecting-IP") ?? "",
     env,
+    definition.action,
   );
   if (!turnstileResult.ok) {
     const stage: PreForwardStage = turnstileResult.errorCode === "TURNSTILE_ACTION_MISMATCH"
@@ -329,7 +353,7 @@ export async function handleIntakeApi(request: Request, env: IntakeBindings): Pr
   }
 
   try {
-    const accepted = await sendToAppsScript(validation.request.submission, env);
+    const accepted = await forward(validation.request.submission, env);
     return jsonResponse(accepted, accepted.status === "created" ? 201 : 200, requestId);
   } catch {
     return jsonResponse(
@@ -354,6 +378,13 @@ export async function handleWorkerRequest(request: Request, env: WorkerBindings)
   };
   const redirectTarget = redirects[url.pathname];
   if (redirectTarget) return Response.redirect(new URL(redirectTarget, url).toString(), 301);
+  for (const [definition, isolatedEnv] of [
+    [secondaryDefinition, secondaryBindings(env)],
+
+  ] as const) {
+    if (url.pathname === definition.apiPath || url.pathname.startsWith(definition.apiPath + "/")) return handleIntakeApi(request, isolatedEnv, definition);
+    if ((url.pathname === definition.formPath || url.pathname.startsWith(definition.formPath + "/")) && !isPageEnabled(isolatedEnv)) return formNotFound(request, env);
+  }
   if (url.pathname.startsWith("/api/forms/")) return handleIntakeApi(request, env);
   if (isFormPath(url.pathname) && !isPageEnabled(env)) return formNotFound(request, env);
   return env.ASSETS.fetch(request);

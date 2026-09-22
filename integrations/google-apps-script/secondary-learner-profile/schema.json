@@ -1,0 +1,215 @@
+{
+  "name": "secondary",
+  "slug": "secondary-learner-profile",
+  "validator": "validateSecondaryRequest",
+  "columns": [
+    {
+      "label": "Submission ID",
+      "expression": "payload.submissionId"
+    },
+    {
+      "label": "Worker accepted at (UTC)",
+      "expression": "request.issuedAt"
+    },
+    {
+      "label": "Google received at (UTC)",
+      "expression": "receivedAt"
+    },
+    {
+      "label": "Form version",
+      "expression": "payload.formVersion"
+    },
+    {
+      "label": "Respondent email",
+      "expression": "payload.respondent.email"
+    },
+    {
+      "label": "Respondent first name",
+      "expression": "payload.respondent.firstName"
+    },
+    {
+      "label": "Respondent surname",
+      "expression": "payload.respondent.surname"
+    },
+    {
+      "label": "Relationship to learner",
+      "expression": "payload.respondent.relationship"
+    },
+    {
+      "label": "Relationship details",
+      "expression": "payload.respondent.relationshipOther"
+    },
+    {
+      "label": "Mobile number",
+      "expression": "payload.respondent.mobile"
+    },
+    {
+      "label": "Preferred contact methods",
+      "expression": "canonicalContactMethods_(payload.respondent.preferredContactMethods)"
+    },
+    {
+      "label": "Suitable contact times",
+      "expression": "payload.respondent.suitableContactTimes"
+    },
+    {
+      "label": "Learner first name",
+      "expression": "payload.learner.firstName"
+    },
+    {
+      "label": "Learner surname",
+      "expression": "payload.learner.surname"
+    },
+    {
+      "label": "Learner date of birth",
+      "expression": "payload.learner.dateOfBirth"
+    },
+    {
+      "label": "Year group or equivalent",
+      "expression": "payload.learner.yearGroup"
+    },
+    {
+      "label": "Year group details",
+      "expression": "payload.learner.yearGroupOther"
+    },
+    {
+      "label": "Subjects requiring support",
+      "expression": "payload.learner.subjects"
+    },
+    {
+      "label": "Other subject",
+      "expression": "payload.learner.subjectOther"
+    },
+    {
+      "label": "English exam board",
+      "expression": "payload.learner.examBoards.English"
+    },
+    {
+      "label": "Maths exam board",
+      "expression": "payload.learner.examBoards.Maths"
+    },
+    {
+      "label": "Science exam board",
+      "expression": "payload.learner.examBoards.Science"
+    },
+    {
+      "label": "Other subject exam board",
+      "expression": "payload.learner.examBoards.Other"
+    },
+    {
+      "label": "Needs status",
+      "expression": "payload.supportProfile.needsStatus"
+    },
+    {
+      "label": "Relevant need areas",
+      "expression": "payload.supportProfile.relevantAreas"
+    },
+    {
+      "label": "Support needs information",
+      "expression": "payload.supportProfile.supportNeeds"
+    },
+    {
+      "label": "Helpful strategies",
+      "expression": "payload.supportProfile.helpfulStrategies"
+    },
+    {
+      "label": "Unhelpful approaches",
+      "expression": "payload.supportProfile.unhelpfulApproaches"
+    },
+    {
+      "label": "Other educational or personal background",
+      "expression": "payload.supportProfile.otherBackground"
+    },
+    {
+      "label": "EHCP status",
+      "expression": "payload.supportProfile.ehcpStatus"
+    },
+    {
+      "label": "Preferred session length",
+      "expression": "payload.sessionPreferences.sessionLength"
+    },
+    {
+      "label": "Preferred session frequency",
+      "expression": "payload.sessionPreferences.sessionFrequency"
+    },
+    {
+      "label": "Wider MentorSphere support discussion",
+      "expression": "payload.sessionPreferences.widerSupport"
+    },
+    {
+      "label": "Authorised confirmation",
+      "expression": "payload.confirmations.authorised"
+    },
+    {
+      "label": "Privacy acknowledgement",
+      "expression": "payload.confirmations.privacyAcknowledged"
+    },
+    {
+      "label": "Special-category information provided",
+      "expression": "payload.supportProfile.specialCategoryProvided"
+    },
+    {
+      "label": "Explicit consent",
+      "expression": "payload.confirmations.specialCategoryConsent"
+    },
+    {
+      "label": "Explicit consent wording version",
+      "expression": "payload.supportProfile.specialCategoryProvided ? CONSENT_WORDING_VERSION : ''"
+    },
+    {
+      "label": "Consent recorded at (UTC)",
+      "expression": "payload.supportProfile.specialCategoryProvided ? receivedAt : ''"
+    },
+    {
+      "label": "Parental responsibility or documented authority",
+      "expression": "payload.confirmations.specialCategoryAuthority"
+    },
+    {
+      "label": "Authority wording version",
+      "expression": "payload.supportProfile.specialCategoryProvided ? AUTHORITY_WORDING_VERSION : ''"
+    },
+    {
+      "label": "Learner consent route",
+      "expression": "payload.supportProfile.specialCategoryProvided ? payload.confirmations.learnerConsentRoute : ''"
+    },
+    {
+      "label": "Learner consent route wording version",
+      "expression": "payload.supportProfile.specialCategoryProvided ? LEARNER_CONSENT_ROUTE_WORDING_VERSION : ''"
+    },
+    {
+      "label": "Special-category consent status",
+      "expression": "payload.supportProfile.specialCategoryProvided ? 'Active' : 'Not applicable'"
+    },
+    {
+      "label": "Consent withdrawn at (UTC)",
+      "expression": "''"
+    },
+    {
+      "label": "Notification status",
+      "expression": "'Pending'"
+    },
+    {
+      "label": "Notification sent at (UTC)",
+      "expression": "''"
+    },
+    {
+      "label": "Record status",
+      "expression": "'Prospective'"
+    },
+    {
+      "label": "Last meaningful contact date",
+      "expression": "receivedAt.slice(0, 10)"
+    },
+    {
+      "label": "Retention review date",
+      "expression": "retentionReviewDate_(receivedAt)"
+    },
+    {
+      "label": "Safeguarding or legal hold",
+      "expression": "'No'"
+    },
+    {
+      "label": "Retention notes",
+      "expression": "''"
+    }
+  ]
+}

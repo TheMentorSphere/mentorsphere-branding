@@ -15,7 +15,9 @@
       "/support-services/private-exams/",
       "/api/forms/*",
       "/forms/primary-learner-profile",
-      "/forms/primary-learner-profile/*"
+      "/forms/primary-learner-profile/*",
+      "/forms/secondary-learner-profile",
+      "/forms/secondary-learner-profile/*"
     ]
   },
   "vars": {
@@ -23,7 +25,11 @@
     "FORM_SUBMISSIONS_ENABLED": "true",
     "TURNSTILE_SITE_KEY": "0x4AAAAAAEC-gRgenEKQMHhe",
     "TURNSTILE_EXPECTED_HOSTNAMES": "www.thementorsphere.co.uk",
-    "TURNSTILE_TEST_MODE": "false"
+    "TURNSTILE_TEST_MODE": "false",
+    "SECONDARY_FORM_PAGE_ENABLED": "false",
+    "SECONDARY_FORM_SUBMISSIONS_ENABLED": "false",
+    "ADHD_INTAKE_PAGE_ENABLED": "false",
+    "ADHD_INTAKE_SUBMISSIONS_ENABLED": "false"
   },
   "secrets": {
     "required": [
@@ -57,7 +63,11 @@
         "FORM_SUBMISSIONS_ENABLED": "false",
         "TURNSTILE_SITE_KEY": "1x00000000000000000000AA",
         "TURNSTILE_EXPECTED_HOSTNAMES": "example.com",
-        "TURNSTILE_TEST_MODE": "true"
+        "TURNSTILE_TEST_MODE": "true",
+        "SECONDARY_FORM_PAGE_ENABLED": "false",
+        "SECONDARY_FORM_SUBMISSIONS_ENABLED": "false",
+        "ADHD_INTAKE_PAGE_ENABLED": "false",
+        "ADHD_INTAKE_SUBMISSIONS_ENABLED": "false"
       },
       "secrets": {
         "required": [
