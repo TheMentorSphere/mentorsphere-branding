@@ -434,7 +434,7 @@ function text_(value) {
   if (value === false) return 'No';
   if (value === null || value === undefined) return '';
   const text = String(value).trim();
-  return /^[=+\-@]/u.test(text) ? `'${text}` : text;
+  return /^['=+\-@]/u.test(text) ? `'${text}` : text;
 }
 
 function canonicalContactMethods_(values) {
@@ -562,11 +562,15 @@ function verifyStoredRow_(sheet, rowNumber, submissionId) {
 }
 
 function verifyStoredPayload_(sheet, rowNumber, request) {
-  const stored = sheet.getRange(rowNumber, 1, 1, SHEET_COLUMNS.length).getValues()[0];
+  const range = sheet.getRange(rowNumber, 1, 1, SHEET_COLUMNS.length);
+  const stored = range.getValues()[0];
+  const formulas = range.getFormulas()[0];
   const canonical = rowFor_(request, String(stored[2]));
   const formColumnCount = SHEET_COLUMNS.indexOf('Notification status');
+  // Compare readback to readback: Sheets consumes one leading text-escape apostrophe.
+  // Never normalise stored answers or accept a formula with a coincidentally equal value.
   return formColumnCount > 0 && canonical.slice(0, formColumnCount).every((value, index) =>
-    index === 1 || String(stored[index]) === String(value));
+    formulas[index] === '' && (index === 1 || stored[index] === (value.startsWith("'") ? value.slice(1) : value)));
 }
 
 function classifyDuplicate_(sheet, submissionId, cache, request) {
@@ -576,6 +580,7 @@ function classifyDuplicate_(sheet, submissionId, cache, request) {
       ? (verifyStoredPayload_(sheet, rowNumber, request) ? { status: 'duplicate', rowNumber } : { status: 'duplicate_conflict', rowNumber: 0 })
       : { status: 'duplicate_without_record', rowNumber: 0 };
   }
+  if (!cache) throw new Error('Duplicate cache unavailable before storage');
   if (cache.get(duplicateCacheKey_(submissionId)) === 'stored') {
     return { status: 'duplicate_without_record', rowNumber: 0 };
   }
@@ -616,7 +621,28 @@ function sendMinimalNotification_(properties, receivedAt) {
   });
 }
 
+// Shared by the generated Secondary and ADHD receivers only. Never installed in Primary.
+function rememberVerifiedSubmission_(cache, submissionId) {
+  try {
+    if (cache) cache.put(duplicateCacheKey_(submissionId), 'stored', DUPLICATE_CACHE_SECONDS);
+  } catch (cacheError) {
+    // The verified Sheet row is authoritative; a cache write is only an optimisation.
+  }
+}
+
+function updateNotificationStatus_(sheet, rowNumber, status, sentAt) {
+  try {
+    sheet.getRange(rowNumber, SHEET_COLUMNS.indexOf('Notification sent at (UTC)') + 1).setValue(sentAt);
+    sheet.getRange(rowNumber, SHEET_COLUMNS.indexOf('Notification status') + 1).setValue(status);
+    SpreadsheetApp.flush();
+  } catch (statusError) {
+    // Administrative cells are best effort after the exact submission is committed.
+    // Do not log exceptions: service errors can contain submitted data.
+  }
+}
+
 function doPost(event) {
+  let accepted = null;
   try {
     const raw = event && event.postData && typeof event.postData.contents === 'string'
       ? event.postData.contents
@@ -637,19 +663,20 @@ function doPost(event) {
     const lock = LockService.getScriptLock();
     if (!lock.tryLock(10000)) return safeError_();
 
-    const cache = CacheService.getScriptCache();
     let sheet;
     let rowNumber = 0;
     let duplicateStatus = 'new';
     const receivedAt = new Date().toISOString();
     try {
+      let cache = null;
+      try { cache = CacheService.getScriptCache(); } catch (cacheError) { /* Sheet lookup still runs. */ }
       sheet = configuredSheet_(properties);
       ensureHeaders_(sheet);
       const duplicateResult = classifyDuplicate_(sheet, request.payload.submissionId, cache, request);
       duplicateStatus = duplicateResult.status;
       rowNumber = duplicateResult.rowNumber;
       if (duplicateStatus === 'duplicate') {
-        cache.put(duplicateCacheKey_(request.payload.submissionId), 'stored', DUPLICATE_CACHE_SECONDS);
+        accepted = { success: true, stored: false, status: 'duplicate', existingRecordVerified: true };
       } else if (duplicateStatus === 'new') {
         const row = rowFor_(request, receivedAt);
         if (row.length !== SHEET_COLUMNS.length) throw new Error('Row mapping does not match schema');
@@ -658,20 +685,17 @@ function doPost(event) {
         if (!verifyStoredRow_(sheet, rowNumber, request.payload.submissionId) || !verifyStoredPayload_(sheet, rowNumber, request)) {
           throw new Error('Stored row could not be verified');
         }
-        cache.put(duplicateCacheKey_(request.payload.submissionId), 'stored', DUPLICATE_CACHE_SECONDS);
+        // Commit point: no subsequent cache, lock, mail or status error may erase this result.
+        accepted = { success: true, stored: true, status: 'created', notificationSent: false };
       }
+      if (accepted) rememberVerifiedSubmission_(cache, request.payload.submissionId);
     } finally {
-      lock.releaseLock();
+      try { lock.releaseLock(); } catch (lockError) {
+        if (!accepted) throw lockError;
+      }
     }
 
-    if (duplicateStatus === 'duplicate') {
-      return jsonOutput_({
-        success: true,
-        stored: false,
-        status: 'duplicate',
-        existingRecordVerified: true,
-      });
-    }
+    if (duplicateStatus === 'duplicate') return jsonOutput_(accepted);
     if (duplicateStatus === 'duplicate_conflict') {
       return jsonOutput_({ success: false, stored: false, status: 'duplicate_conflict' });
     }
@@ -679,27 +703,23 @@ function doPost(event) {
       return jsonOutput_({ success: false, stored: false, status: 'duplicate_without_record' });
     }
 
-    const statusColumn = SHEET_COLUMNS.indexOf('Notification status') + 1;
-    const sentAtColumn = SHEET_COLUMNS.indexOf('Notification sent at (UTC)') + 1;
-    let notificationSent = false;
+    // Isolated test mode suppresses real mail unless testing its forced failure path.
     if (properties.getProperty('TEST_MODE') === 'true' && !testFlagEnabled_(properties, 'FORCE_NOTIFICATION_FAILURE')) {
-      sheet.getRange(rowNumber, statusColumn).setValue('Disabled: isolated test');
-      SpreadsheetApp.flush();
-      return jsonOutput_({ success: true, stored: true, status: 'created', notificationSent: false });
+      updateNotificationStatus_(sheet, rowNumber, 'Disabled: isolated test', '');
+      return jsonOutput_(accepted);
     }
     try {
       sendMinimalNotification_(properties, receivedAt);
-      sheet.getRange(rowNumber, statusColumn).setValue('Sent');
-      sheet.getRange(rowNumber, sentAtColumn).setValue(new Date().toISOString());
-      SpreadsheetApp.flush();
-      notificationSent = true;
+      accepted.notificationSent = true;
     } catch (notificationError) {
-      sheet.getRange(rowNumber, statusColumn).setValue('Failed: review Apps Script executions');
-      SpreadsheetApp.flush();
+      // A notification failure does not change the confirmed storage result.
     }
-
-    return jsonOutput_({ success: true, stored: true, status: 'created', notificationSent });
+    updateNotificationStatus_(sheet, rowNumber,
+      accepted.notificationSent ? 'Sent' : 'Failed: review Apps Script executions',
+      accepted.notificationSent ? new Date().toISOString() : '');
+    return jsonOutput_(accepted);
   } catch (error) {
-    return safeError_();
+    // Pre-commit failures remain closed; post-commit failures preserve the receipt.
+    return accepted ? jsonOutput_(accepted) : safeError_();
   }
 }
