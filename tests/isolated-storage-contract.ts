@@ -28,7 +28,7 @@ export function isolatedStorageTests(slug: string, fixture: () => Record<string,
             expect(persisted.rows[0]).toHaveLength(columnCount);
             expect(persisted.rows[1]).toHaveLength(columnCount);
             const record = Object.fromEntries((persisted.rows[0] ?? []).map((key, index) => [key, persisted.rows[1]?.[index]]));
-            expect(record["Respondent first name"]).toBe("'=FICTIONAL_FORMULA()");
+            expect(record["Respondent first name"]).toBe("=FICTIONAL_FORMULA()");
             expect(record["Form version"]).toBe(slug + "-v1");
             expect(record["Notification status"]).toBe("Disabled: isolated test");
             expect(record["Google received at (UTC)"]).toMatch(/^\d{4}-\d\d-\d\dT/u);
