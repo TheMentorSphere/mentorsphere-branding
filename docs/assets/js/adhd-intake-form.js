@@ -1,7 +1,7 @@
+import { createIntakeTurnstile } from './intake-turnstile.js';
 import {
   requestSubmission,
   submissionUiState,
-  turnstileTokenIsStale,
 } from './intake-submission-contract.js';
 
 
@@ -70,10 +70,13 @@ export function adhdConsentHelp(supportFor, consent) {
   let submissionId = crypto.randomUUID();
   let submissionInProgress = false;
   let submissionCompleted = false;
-  let turnstileToken = '';
-  let turnstileTokenIssuedAt = null;
-  let turnstileWidgetId = null;
-  let turnstileAction = '';
+  const security = createIntakeTurnstile({
+    configEndpoint: CONFIG_ENDPOINT,
+    container: turnstileContainer,
+    status: turnstileStatus,
+    submitButton,
+    onVerified: () => clearFieldError(fieldWrapper('turnstileToken')),
+  });
   let previousSupportFor = '';
 
   const fieldWrapper = (path) => form.querySelector(
@@ -147,7 +150,7 @@ export function adhdConsentHelp(supportFor, consent) {
       if (partial && !consentState().child) return 'Complete all three child consent controls, or clear them to continue without optional sensitive information.';
     }
     if (path === 'turnstileToken') {
-      if (!turnstileToken) return wrapper.dataset.requiredMessage || 'Complete the security check.';
+      if (!security.token) return wrapper.dataset.requiredMessage || 'Complete the security check.';
       return '';
     }
 
@@ -260,6 +263,7 @@ export function adhdConsentHelp(supportFor, consent) {
     currentStep = route().includes(stepNumber) ? stepNumber : 1;
     steps.forEach((step) => { step.hidden = Number(step.dataset.step) !== currentStep; });
     if (currentStep === 5) renderReview();
+    security.setReview(currentStep === 5);
     updateProgress();
     clearErrorSummary();
     const heading = form.querySelector(`[data-step="${currentStep}"] h2`);
@@ -426,7 +430,7 @@ export function adhdConsentHelp(supportFor, consent) {
     const values = (allowed, name) => allowed ? multipleValues(name) : [];
     return {
       formVersion: 'adhd-coaching-intake-v1', submissionId,
-      honeypot: singleValue('organisation_website'), turnstileToken,
+      honeypot: singleValue('organisation_website'), turnstileToken: security.token,
       respondent: { email: singleValue('respondent_email'), firstName: singleValue('respondent_first_name'), surname: singleValue('respondent_surname'), mobile: singleValue('respondent_mobile'), preferredContactMethods: canonicalContactMethods() },
       supportFor,
       adult: { adhdStatus: value(adult, 'adult_status'), adhdStatusOther: value(adult, 'adult_status_other'), difficulties: values(adult, 'adult_difficulties'), difficultiesOther: value(adult, 'adult_difficulties_other'), priority: value(adult, 'adult_priority'), priorityOther: value(adult, 'adult_priority_other') },
@@ -457,29 +461,6 @@ export function adhdConsentHelp(supportFor, consent) {
     submitStatus.className = `intake-submit-status is-${kind}`;
     submitStatus.hidden = false;
     submitStatus.focus();
-  };
-
-  const resetTurnstile = (statusMessage = 'Complete the security check before submitting.') => {
-    turnstileToken = '';
-    turnstileTokenIssuedAt = null;
-    if (window.turnstile && turnstileWidgetId !== null) window.turnstile.reset(turnstileWidgetId);
-    turnstileStatus.textContent = statusMessage;
-  };
-
-  const clearTurnstile = (statusMessage) => {
-    turnstileToken = '';
-    turnstileTokenIssuedAt = null;
-    turnstileStatus.textContent = statusMessage;
-  };
-
-  const turnstileNeedsRefresh = () => {
-    if (turnstileTokenIsStale(turnstileToken, turnstileTokenIssuedAt)) return true;
-    return Boolean(
-      window.turnstile &&
-      turnstileWidgetId !== null &&
-      typeof window.turnstile.isExpired === 'function' &&
-      window.turnstile.isExpired(turnstileWidgetId)
-    );
   };
 
   const applyServerErrors = (fieldErrors) => {
@@ -515,52 +496,6 @@ export function adhdConsentHelp(supportFor, consent) {
     }
     clearErrorSummary();
     return true;
-  };
-
-  const loadTurnstile = async () => {
-    try {
-      const response = await fetch(CONFIG_ENDPOINT, { headers: { Accept: 'application/json' }, cache: 'no-store' });
-      if (!response.ok) throw new Error('Configuration unavailable');
-      const config = await response.json();
-      if (!config.enabled || !config.siteKey || !config.action) {
-        turnstileStatus.textContent = 'This form is not accepting submissions yet.';
-        return;
-      }
-      turnstileAction = config.action;
-      window.mentorSphereADHDTurnstileReady = () => {
-        turnstileWidgetId = window.turnstile.render(turnstileContainer, {
-          sitekey: config.siteKey,
-          action: turnstileAction,
-          theme: 'light',
-          callback: (token) => {
-            turnstileToken = token;
-            turnstileTokenIssuedAt = Date.now();
-            clearFieldError(fieldWrapper('turnstileToken'));
-            turnstileStatus.textContent = 'Security check complete.';
-          },
-          'expired-callback': () => {
-            resetTurnstile('The security check expired. Please complete it again.');
-          },
-          'timeout-callback': () => {
-            resetTurnstile('The security check timed out. Please complete it again.');
-          },
-          'error-callback': () => {
-            clearTurnstile('The security check could not load. Please refresh the page or request an alternative format.');
-          },
-        });
-        submitButton.disabled = false;
-      };
-      const script = document.createElement('script');
-      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=mentorSphereADHDTurnstileReady&render=explicit';
-      script.async = true;
-      script.defer = true;
-      script.addEventListener('error', () => {
-        turnstileStatus.textContent = 'The security check could not load. Please refresh the page or request an alternative format.';
-      });
-      document.head.append(script);
-    } catch {
-      turnstileStatus.textContent = 'The security check is temporarily unavailable. Please try again later or request an alternative format.';
-    }
   };
 
   form.addEventListener('input', (event) => {
@@ -643,17 +578,12 @@ export function adhdConsentHelp(supportFor, consent) {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (submissionInProgress || submissionCompleted) return;
-    if (turnstileNeedsRefresh()) {
-      const expiredMessage = 'The security check has expired. Please complete it again before submitting.';
-      resetTurnstile(expiredMessage);
-      setFieldError(fieldWrapper('turnstileToken'), expiredMessage);
-      showSubmitStatus(expiredMessage, 'error');
-      liveStatus.textContent = expiredMessage;
-      return;
-    }
+    if (!security.ensureReady()) return;
     if (!validateEveryStep()) return;
 
+    const payload = intakePayload();
     submissionInProgress = true;
+    security.beginSubmission();
     submitButton.disabled = true;
     submitButton.textContent = 'Submitting...';
     submitStatus.replaceChildren();
@@ -661,7 +591,7 @@ export function adhdConsentHelp(supportFor, consent) {
     form.setAttribute('aria-busy', 'true');
 
     try {
-      const outcome = await requestSubmission(fetch, API_ENDPOINT, intakePayload());
+      const outcome = await requestSubmission(fetch, API_ENDPOINT, payload);
       const ui = submissionUiState(outcome);
       if (outcome.kind === 'created') ui.message = 'Thank you. Your optional intake form has been submitted. Luke will review it before following up.';
       if (outcome.kind === 'failure') {
@@ -672,12 +602,12 @@ export function adhdConsentHelp(supportFor, consent) {
       submitButton.textContent = ui.buttonText;
       submitButton.disabled = ui.buttonDisabled;
       submissionCompleted = ui.completed;
-      if (ui.resetTurnstile) resetTurnstile();
       if (outcome.kind === 'created') liveStatus.textContent = 'The optional intake form was submitted successfully.';
       else if (outcome.kind === 'duplicate') liveStatus.textContent = 'This response was already received and its existing record was verified.';
       else liveStatus.textContent = 'Submission could not be confirmed. Your answers remain on the review section.';
     } finally {
       submissionInProgress = false;
+      security.finishSubmission(submissionCompleted);
       form.removeAttribute('aria-busy');
       updateProgress();
     }
@@ -686,5 +616,5 @@ export function adhdConsentHelp(supportFor, consent) {
   updateMobileRequirement();
   updateBranches();
   goToStep(1, false);
-  void loadTurnstile();
+  void security.load();
 })();

@@ -156,18 +156,18 @@ describe('ADHD client contract and safeguards', () => {
   it('uses the unchanged proven submission contract with a stable retry identity', () => {
     expect(client).toContain("from './intake-submission-contract.js'");
     expect(client.match(/submissionId = crypto.randomUUID\(\)/gu)).toHaveLength(1);
-    expect(client).toContain('requestSubmission(fetch, API_ENDPOINT, intakePayload())');
+    expect(client).toContain('requestSubmission(fetch, API_ENDPOINT, payload)');
     expect(contract).toContain('SUBMISSION_TIMEOUT_MS = 30_000');
     expect(client).toContain("ui.buttonText = 'Submit optional intake form'");
     expect(client).toContain('reference.textContent = referenceText');
   });
 
   it('refreshes expired or failed Turnstile checks and records token time', () => {
-    expect(client).toContain('turnstileTokenIssuedAt = Date.now()');
-    expect(client).toContain('turnstileTokenIsStale(turnstileToken, turnstileTokenIssuedAt)');
-    expect(client).toContain('window.turnstile.isExpired(turnstileWidgetId)');
-    for (const callback of ['expired-callback', 'timeout-callback', 'error-callback']) expect(client).toContain(callback);
-    expect(client).toContain('if (ui.resetTurnstile) resetTurnstile()');
+    expect(client).toContain("from './intake-turnstile.js'");
+    expect(client).toContain('security.setReview(currentStep === 5)');
+    expect(client).toContain('if (!security.ensureReady()) return');
+    expect(client).toContain('security.beginSubmission()');
+    expect(client).toContain('security.finishSubmission(submissionCompleted)');
   });
 
   it('keeps answers in memory and out of storage, URLs and analytics', () => {

@@ -36,7 +36,7 @@ async function open(form) {
   const payloads = [];
   if (!deployed) await page.route('**/*', route => {
     const url = new URL(route.request().url());
-    if (url.hostname === 'challenges.cloudflare.com') return route.fulfill({ contentType: 'application/javascript', body: `window.turnstile={render:(el,opts)=>{queueMicrotask(()=>opts.callback('fictional-token'));return 'widget';},isExpired:()=>false};window[${JSON.stringify(url.searchParams.get('onload'))}]();` });
+    if (url.hostname === 'challenges.cloudflare.com') return route.fulfill({ contentType: 'application/javascript', body: `window.turnstile={render:(el,opts)=>{window.__challenge=opts;return 'widget';},execute:()=>queueMicrotask(()=>window.__challenge.callback('fictional-token')),reset:()=>{},remove:()=>{},isExpired:()=>false};window[${JSON.stringify(url.searchParams.get('onload'))}]();` });
     if (url.origin !== local) return route.abort();
     if (url.pathname.endsWith('/config')) return route.fulfill({ json: { enabled: true, siteKey: 'test', action: slug.replaceAll('-', '_') } });
     if (url.pathname.startsWith('/api/')) {
@@ -46,7 +46,7 @@ async function open(form) {
     return route.continue();
   });
   await page.goto(`${origin}/forms/${slug}/`);
-  await page.waitForFunction(() => document.querySelector('[data-turnstile-status]').textContent.includes('Security check complete'));
+  await page.waitForFunction(() => Boolean(window.turnstile));
   await named(page, 'respondent_email').fill('fictional@example.test');
   await named(page, 'respondent_first_name').fill('Fictional');
   await named(page, 'respondent_surname').fill('Review');
