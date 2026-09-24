@@ -1,4 +1,5 @@
-export const SUBMISSION_TIMEOUT_MS = 30_000;
+// The Worker ends its receipt path within 55s; reserve 15s for transport.
+export const SUBMISSION_TIMEOUT_MS = 70_000;
 export const TURNSTILE_TOKEN_MAX_AGE_MS = 4 * 60 * 1_000;
 
 const JSON_CONTENT_TYPE = /^application\/(?:[a-z0-9.!#$&^_-]+\+)?json(?:\s*;|$)/iu;

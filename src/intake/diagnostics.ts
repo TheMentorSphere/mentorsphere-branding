@@ -84,3 +84,29 @@ export function logPreForwardDiagnostic(
     forwardingAttempted,
   });
 }
+
+export const RECEIPT_ERROR_CODES = [
+  "WORKER_RECEIPT_TIMEOUT",
+  "UPSTREAM_TIMEOUT",
+  "UPSTREAM_SIGNING_FAILURE",
+  "UPSTREAM_TRANSPORT_FAILURE",
+  "UPSTREAM_HTTP_FAILURE",
+  "UPSTREAM_CONTENT_TYPE_INVALID",
+  "UPSTREAM_RESPONSE_TOO_LARGE",
+  "UPSTREAM_JSON_INVALID",
+  "UPSTREAM_RECEIPT_INVALID",
+] as const;
+
+export type ReceiptErrorCode = (typeof RECEIPT_ERROR_CODES)[number];
+export type ReceiptStage = "request_reading" | "turnstile_verification" | "upstream_forward" | "upstream_signing" | "upstream_fetch" | "upstream_body" | "upstream_receipt";
+
+export class ReceiptFailure extends Error {
+  constructor(readonly code: ReceiptErrorCode, readonly stage: ReceiptStage) {
+    super(code);
+  }
+}
+
+// No exception messages, response bodies, URLs, identities or submitted fields.
+export function logReceiptDiagnostic(requestId: string, errorCode: ReceiptErrorCode, stage: ReceiptStage, durationMs: number): void {
+  console.warn({ event: "intake_receipt_failure", requestId, errorCode, stage, durationMs });
+}

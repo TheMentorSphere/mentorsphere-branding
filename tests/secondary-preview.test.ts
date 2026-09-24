@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import preview from "../src/preview/secondary-preview";
+import { PREVIEW_BROWSER_TIMEOUT_DELAY_MS } from "../src/preview/intake-preview";
 import { validSecondaryRequest } from "./secondary-fixtures";
 import { readFile } from "node:fs/promises";
 const assets = { fetch: vi.fn(async () => new Response("preview asset")) };
@@ -42,6 +43,19 @@ describe("isolated owner preview", () => {
         const response = await preview.fetch(new Request(base + api, { method: "POST", headers: { Origin: base, "Content-Type": "application/json" }, body: "{}" }), env);
         expect(response.status).toBe(400);
         expect(fetchMock).not.toHaveBeenCalled();
+    });
+    it("keeps the browser timeout simulation beyond the 70s browser deadline", async () => {
+        vi.useFakeTimers();
+        const fetchMock = vi.fn(async () => Response.json({ success: true }));
+        vi.stubGlobal("fetch", fetchMock);
+        let settled = false;
+        const pending = preview.fetch(request("timeout"), env).then(response => { settled = true; return response; });
+        await vi.advanceTimersByTimeAsync(70_000);
+        expect(settled).toBe(false);
+        await vi.advanceTimersByTimeAsync(PREVIEW_BROWSER_TIMEOUT_DELAY_MS - 70_000);
+        expect((await pending).status).toBe(503);
+        expect(fetchMock).toHaveBeenCalledOnce();
+        expect(vi.getTimerCount()).toBe(0);
     });
     it("keeps deployment configuration isolated with invocation logging disabled", async () => {
         const config = JSON.parse(await readFile("wrangler.secondary-preview.jsonc", "utf8"));

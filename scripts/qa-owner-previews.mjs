@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { SUBMISSION_TIMEOUT_MS } from '../docs/assets/js/intake-submission-contract.js';
 
 // Real owner-preview browser smoke tests: public test Turnstile and simulated
 // upstream scenarios. Only the explicitly isolated workers.dev hosts are allowed.
@@ -89,7 +90,7 @@ try {
       await ready(page);
       const start = Date.now();
       await submit.click();
-      await page.waitForFunction(() => !document.querySelector('[data-submit-status]').hidden && document.querySelector('[data-submit-status]').classList.contains('is-error') && !document.querySelector('[data-intake-form]').hasAttribute('aria-busy'), null, { timeout: 40_000 });
+      await page.waitForFunction(() => !document.querySelector('[data-submit-status]').hidden && document.querySelector('[data-submit-status]').classList.contains('is-error') && !document.querySelector('[data-intake-form]').hasAttribute('aria-busy'), null, { timeout: SUBMISSION_TIMEOUT_MS + 10_000 });
       assert.equal(await named(page, 'respondent_first_name').inputValue(), 'Fictional');
       assert.equal(await submit.isEnabled(), true);
       assert.equal(new Set(state.ids).size, 1);

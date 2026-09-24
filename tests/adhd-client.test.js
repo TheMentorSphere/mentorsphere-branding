@@ -153,11 +153,11 @@ describe('ADHD client contract and safeguards', () => {
     expect(html).not.toMatch(/tabindex="[1-9]/u);
   });
 
-  it('uses the unchanged proven submission contract with a stable retry identity', () => {
+  it('uses the shared submission contract with a stable retry identity', () => {
     expect(client).toContain("from './intake-submission-contract.js'");
     expect(client.match(/submissionId = crypto.randomUUID\(\)/gu)).toHaveLength(1);
     expect(client).toContain('requestSubmission(fetch, API_ENDPOINT, payload)');
-    expect(contract).toContain('SUBMISSION_TIMEOUT_MS = 30_000');
+    expect(contract).toContain('SUBMISSION_TIMEOUT_MS = 70_000');
     expect(client).toContain("ui.buttonText = 'Submit optional intake form'");
     expect(client).toContain('reference.textContent = referenceText');
   });

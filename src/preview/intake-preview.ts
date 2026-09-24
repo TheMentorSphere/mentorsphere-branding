@@ -8,6 +8,9 @@ export interface PreviewBindings {
 }
 const scenarios = new Set(["created", "duplicate", "failure", "malformed", "timeout", "stale-duplicate"]);
 const created: IntakeCreatedResponse = { success: true, stored: true, status: "created", notificationSent: false };
+// Preview-only browser timeout simulation. Production ends its Worker path at
+// 55s; this adds transport delay outside that handler to exceed the 70s browser.
+export const PREVIEW_BROWSER_TIMEOUT_DELAY_MS = 75_000;
 function secure(response: Response): Response {
     const headers = new Headers(response.headers);
     headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
@@ -48,13 +51,14 @@ export function createPreview(definition: IntakeDefinition) {
                     if (scenario === "failure")
                         throw new Error("Simulated upstream failure");
                     if (scenario === "timeout") {
-                        await new Promise(resolve => setTimeout(resolve, 35000));
                         throw new Error("Simulated upstream timeout");
                     }
                     if (scenario === "duplicate")
                         return { success: true, stored: false, status: "duplicate", existingRecordVerified: true };
                     return created;
                 });
+                if (reachedSimulation && scenario === "timeout")
+                    await new Promise(resolve => setTimeout(resolve, PREVIEW_BROWSER_TIMEOUT_DELAY_MS));
                 if (reachedSimulation && scenario === "malformed")
                     return secure(new Response("{invalid preview JSON", { status: 201, headers: { "Content-Type": "application/json" } }));
                 if (reachedSimulation && scenario === "stale-duplicate")

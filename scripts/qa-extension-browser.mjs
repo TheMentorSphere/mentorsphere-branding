@@ -3,6 +3,7 @@ import { createServer } from 'node:http';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { SUBMISSION_TIMEOUT_MS } from '../docs/assets/js/intake-submission-contract.js';
 
 // Local, fictional browser QA only. All APIs and Turnstile are intercepted.
 // No production hostname, Sheet, Apps Script or notification is contacted.
@@ -185,11 +186,11 @@ async function secondary() {
   await page.clock.install();
   state.outcome = 'timeout';
   await submit.click();
-  await page.clock.fastForward(31_000);
+  await page.clock.fastForward(SUBMISSION_TIMEOUT_MS + 1_000);
   await page.waitForFunction(() => !document.querySelector('[data-submit-status]').hidden && document.querySelector('[data-submit-status]').classList.contains('is-error') && !document.querySelector('[data-intake-form]').hasAttribute('aria-busy'));
   assert.equal(await submit.isEnabled(), true);
   assert.equal(state.submissions.length, 4);
-  ok('Secondary: 30-second timeout has no automatic retry');
+  ok(`Secondary: ${SUBMISSION_TIMEOUT_MS / 1_000}-second timeout has no automatic retry`);
   state.outcome = 'duplicate';
   await submit.click();
   await page.waitForFunction(() => document.querySelector('[data-submit-button]').textContent === 'Already received');
@@ -301,7 +302,7 @@ async function adhd(branch, consent = true) {
     await page.clock.install();
     state.outcome = 'timeout';
     await submit.click();
-    await page.clock.fastForward(31_000);
+    await page.clock.fastForward(SUBMISSION_TIMEOUT_MS + 1_000);
     await page.waitForFunction(() => !document.querySelector('[data-submit-status]').hidden && document.querySelector('[data-submit-status]').classList.contains('is-error') && !document.querySelector('[data-intake-form]').hasAttribute('aria-busy'));
     assert.equal(state.submissions.length, 4);
     assert.equal(new Set(state.submissions.map((item) => item.submissionId)).size, 1);

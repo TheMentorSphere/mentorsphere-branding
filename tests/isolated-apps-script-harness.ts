@@ -97,7 +97,7 @@ export function createDiskBackedScript(slug: string, initialProperties: Record<s
             MailApp: { sendEmail: (message: Record<string, unknown>) => { events.push("mail"); if (properties.MAIL_FAILURE === "true")
                     throw new Error("Fictional mail failure"); mail.push(message); } },
         };
-        vm.runInNewContext(source + "\nglobalThis.__exports={SHEET_COLUMNS,doPost,hasValidShape_,rowFor_,verifyStoredRow_,verifyStoredPayload_};", sandbox);
+        vm.runInNewContext(source + "\nglobalThis.__exports={SHEET_COLUMNS,doPost,hasValidShape_,rowFor_,verifyStoredRow_,verifyStoredPayload_:typeof verifyStoredPayload_==='function'?verifyStoredPayload_:()=>{throw new Error('Receiver has no payload verifier');}};", sandbox);
         return sandbox.__exports as ScriptExports;
     }
     function cleanup() {
