@@ -31,7 +31,7 @@
     "SECONDARY_FORM_PAGE_ENABLED": "true",
     "SECONDARY_FORM_SUBMISSIONS_ENABLED": "true",
     "ADHD_INTAKE_PAGE_ENABLED": "true",
-    "ADHD_INTAKE_SUBMISSIONS_ENABLED": "false"
+    "ADHD_INTAKE_SUBMISSIONS_ENABLED": "true"
   },
   "secrets": {
     "required": [
