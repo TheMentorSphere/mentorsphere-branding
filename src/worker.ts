@@ -1,9 +1,13 @@
 import { sendToAppsScript, turnstileAction, verifyTurnstile, type IntakeBindings } from "./intake/submission";
 import {
   logPreForwardDiagnostic,
+  logReceiptDiagnostic,
+  ReceiptFailure,
+  type ReceiptStage,
   type PreForwardErrorCode,
   type PreForwardStage,
 } from "./intake/diagnostics";
+import { Deadline, DeadlineExceeded, WORKER_RECEIPT_TIMEOUT_MS } from "./intake/deadline";
 import { FORM_VERSION, validateIntakeRequest } from "./intake/validation";
 
 import { secondaryDefinition, secondaryBindings } from "./intake/secondary";
@@ -71,7 +75,7 @@ function jsonResponse(body: unknown, status: number, requestId: string): Respons
   return new Response(JSON.stringify(responseBody), { status, headers: apiHeaders(requestId) });
 }
 
-async function readLimitedJson(request: Request): Promise<unknown> {
+async function readLimitedJson(request: Request, deadline: Deadline): Promise<unknown> {
   const declaredLength = Number(request.headers.get("Content-Length") ?? "0");
   if (declaredLength > MAX_REQUEST_BYTES) throw new BodyReadError("REQUEST_TOO_LARGE", 413);
   if (!request.body) throw new BodyReadError("REQUEST_BODY_UNREADABLE", 400);
@@ -82,7 +86,7 @@ async function readLimitedJson(request: Request): Promise<unknown> {
   let text = "";
   try {
     while (true) {
-      const result = await reader.read();
+      const result = await deadline.wait(reader.read());
       if (result.done) break;
       size += result.value.byteLength;
       if (size > MAX_REQUEST_BYTES) throw new BodyReadError("REQUEST_TOO_LARGE", 413);
@@ -90,6 +94,8 @@ async function readLimitedJson(request: Request): Promise<unknown> {
     }
     text += decoder.decode();
   } catch (error) {
+    void reader.cancel().catch(() => undefined);
+    if (error instanceof DeadlineExceeded) throw error;
     if (error instanceof BodyReadError) throw error;
     throw new BodyReadError("REQUEST_BODY_UNREADABLE", 400);
   } finally {
@@ -252,10 +258,47 @@ export async function handleIntakeApi(request: Request, env: IntakeBindings, def
     );
   }
 
+  const startedAt = Date.now();
+  const deadline = new Deadline(WORKER_RECEIPT_TIMEOUT_MS, "WORKER_RECEIPT_TIMEOUT");
+  const progress: { stage: ReceiptStage } = { stage: "request_reading" };
+  try {
+    return await deadline.wait(handleIntakeSubmission(request, env, definition, forward, requestId, deadline, progress));
+  } catch (error) {
+    const failure = error instanceof ReceiptFailure ? error : new ReceiptFailure(
+      error instanceof DeadlineExceeded ? "WORKER_RECEIPT_TIMEOUT" : "UPSTREAM_TRANSPORT_FAILURE",
+      progress.stage,
+    );
+    logReceiptDiagnostic(requestId, failure.code, failure.stage, Date.now() - startedAt);
+    return jsonResponse(
+      {
+        success: false,
+        stored: false,
+        status: "upstream_failure",
+        errorCode: failure.code,
+        error: "We could not confirm that your profile was received. Your answers remain on this page. Please try again or contact Luke.",
+      },
+      503,
+      requestId,
+    );
+  } finally {
+    deadline.dispose();
+  }
+}
+
+async function handleIntakeSubmission(
+  request: Request,
+  env: IntakeBindings,
+  definition: IntakeDefinition,
+  forward: typeof sendToAppsScript,
+  requestId: string,
+  deadline: Deadline,
+  progress: { stage: ReceiptStage },
+): Promise<Response> {
   let body: unknown;
   try {
-    body = await readLimitedJson(request);
+    body = await readLimitedJson(request, deadline);
   } catch (error) {
+    if (error instanceof DeadlineExceeded) throw error;
     if (error instanceof BodyReadError) {
       return preForwardRejection(
         requestId,
@@ -319,13 +362,17 @@ export async function handleIntakeApi(request: Request, env: IntakeBindings, def
     );
   }
 
+  deadline.check();
+  progress.stage = "turnstile_verification";
   const turnstileResult = await verifyTurnstile(
     validation.request.turnstileToken,
     validation.request.submission.submissionId,
     request.headers.get("CF-Connecting-IP") ?? "",
     env,
     definition.action,
+    deadline.signal,
   );
+  deadline.check();
   if (!turnstileResult.ok) {
     const stage: PreForwardStage = turnstileResult.errorCode === "TURNSTILE_ACTION_MISMATCH"
       ? "turnstile_action_validation"
@@ -352,21 +399,9 @@ export async function handleIntakeApi(request: Request, env: IntakeBindings, def
     );
   }
 
-  try {
-    const accepted = await forward(validation.request.submission, env);
-    return jsonResponse(accepted, accepted.status === "created" ? 201 : 200, requestId);
-  } catch {
-    return jsonResponse(
-      {
-        success: false,
-        stored: false,
-        status: "upstream_failure",
-        error: "We could not confirm that your profile was received. Your answers remain on this page. Please try again or contact Luke.",
-      },
-      503,
-      requestId,
-    );
-  }
+  progress.stage = "upstream_forward";
+  const accepted = await deadline.wait(forward(validation.request.submission, env, deadline.signal));
+  return jsonResponse(accepted, accepted.status === "created" ? 201 : 200, requestId);
 }
 
 export async function handleWorkerRequest(request: Request, env: WorkerBindings): Promise<Response> {

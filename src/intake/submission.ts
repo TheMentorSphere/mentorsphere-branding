@@ -1,3 +1,6 @@
+import { APPS_SCRIPT_RECEIPT_TIMEOUT_MS, Deadline, DeadlineExceeded, TURNSTILE_VERIFY_TIMEOUT_MS } from "./deadline";
+import { ReceiptFailure, type ReceiptStage } from "./diagnostics";
+
 const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 const TURNSTILE_ACTION = "primary_learner_profile";
 const UPSTREAM_RESPONSE_LIMIT = 16_384;
@@ -74,20 +77,22 @@ function base64Url(bytes: Uint8Array): string {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/u, "");
 }
 
-async function signBody(body: string, secret: string): Promise<string> {
+async function signBody(body: string, secret: string, deadline: Deadline): Promise<string> {
   const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
+  deadline.check();
+  const key = await deadline.wait(crypto.subtle.importKey(
     "raw",
     encoder.encode(secret),
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"],
-  );
-  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
+  ));
+  const signature = await deadline.wait(crypto.subtle.sign("HMAC", key, encoder.encode(body)));
   return base64Url(new Uint8Array(signature));
 }
 
-async function readLimitedText(body: ReadableStream<Uint8Array> | null, limit: number): Promise<string> {
+async function readLimitedText(body: ReadableStream<Uint8Array> | null, limit: number, deadline: Deadline): Promise<string> {
+  deadline.check();
   if (!body) return "";
   const reader = body.getReader();
   const decoder = new TextDecoder();
@@ -95,13 +100,17 @@ async function readLimitedText(body: ReadableStream<Uint8Array> | null, limit: n
   let text = "";
   try {
     while (true) {
-      const result = await reader.read();
+      const result = await deadline.wait(reader.read());
       if (result.done) break;
       size += result.value.byteLength;
-      if (size > limit) throw new Error("Response too large");
+      if (size > limit) throw new ReceiptFailure("UPSTREAM_RESPONSE_TOO_LARGE", "upstream_body");
       text += decoder.decode(result.value, { stream: true });
     }
     return text + decoder.decode();
+  } catch (error) {
+    // Cancellation is best effort; a misbehaving source cannot extend the budget.
+    void reader.cancel().catch(() => undefined);
+    throw error;
   } finally {
     reader.releaseLock();
   }
@@ -122,6 +131,35 @@ export async function verifyTurnstile(
   remoteIp: string,
   env: IntakeBindings,
   expectedAction: string = TURNSTILE_ACTION,
+  parentSignal?: AbortSignal,
+): Promise<TurnstileVerificationResult> {
+  const deadline = new Deadline(TURNSTILE_VERIFY_TIMEOUT_MS, "TURNSTILE_TIMEOUT", parentSignal);
+  try {
+    return await verifyTurnstileWithinDeadline(token, submissionId, remoteIp, env, expectedAction, deadline);
+  } finally {
+    deadline.dispose();
+  }
+}
+
+async function fetchWithinDeadline(url: string, init: RequestInit, deadline: Deadline): Promise<Response> {
+  deadline.check();
+  return deadline.wait(fetch(url, { ...init, signal: deadline.signal }).then(response => {
+    // Also dispose of a late response from a transport that ignored cancellation.
+    if (deadline.signal.aborted) {
+      void response.body?.cancel().catch(() => undefined);
+      deadline.check();
+    }
+    return response;
+  }));
+}
+
+async function verifyTurnstileWithinDeadline(
+  token: string,
+  submissionId: string,
+  remoteIp: string,
+  env: IntakeBindings,
+  expectedAction: string,
+  deadline: Deadline,
 ): Promise<TurnstileVerificationResult> {
   const body = new URLSearchParams({
     secret: env.TURNSTILE_SECRET_KEY,
@@ -132,12 +170,12 @@ export async function verifyTurnstile(
 
   let response: Response;
   try {
-    response = await fetch(TURNSTILE_VERIFY_URL, {
+    deadline.check();
+    response = await fetchWithinDeadline(TURNSTILE_VERIFY_URL, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body,
-      signal: AbortSignal.timeout(10_000),
-    });
+    }, deadline);
   } catch {
     return {
       ok: false,
@@ -149,6 +187,7 @@ export async function verifyTurnstile(
     };
   }
   if (!response.ok) {
+    void response.body?.cancel().catch(() => undefined);
     return {
       ok: false,
       errorCode: "TURNSTILE_VERIFICATION_FAILED",
@@ -161,7 +200,7 @@ export async function verifyTurnstile(
 
   let result: unknown;
   try {
-    result = await response.json();
+    result = JSON.parse(await readLimitedText(response.body, UPSTREAM_RESPONSE_LIMIT, deadline)) as unknown;
   } catch {
     return {
       ok: false,
@@ -256,57 +295,77 @@ export async function verifyTurnstile(
 export async function sendToAppsScript(
   submission: { formVersion: string; submissionId: string },
   env: IntakeBindings,
+  parentSignal?: AbortSignal,
 ): Promise<IntakeAcceptedResponse> {
-  const body = JSON.stringify({
-    issuedAt: new Date().toISOString(),
-    payload: submission,
-  });
-  const signature = await signBody(body, env.INTAKE_HMAC_SECRET);
-  const response = await fetch(env.INTAKE_APPS_SCRIPT_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json; charset=utf-8" },
-    body: JSON.stringify({ body, signature }),
-    redirect: "follow",
-    signal: AbortSignal.timeout(12_000),
-  });
-  if (!response.ok) throw new Error("Submission destination returned an HTTP error");
-  const contentType = response.headers.get("Content-Type")?.toLowerCase() ?? "";
-  if (!JSON_CONTENT_TYPE.test(contentType)) throw new Error("Submission destination returned an unexpected content type");
-  const responseText = await readLimitedText(response.body, UPSTREAM_RESPONSE_LIMIT);
-  let result: unknown;
+  const deadline = new Deadline(APPS_SCRIPT_RECEIPT_TIMEOUT_MS, "UPSTREAM_TIMEOUT", parentSignal);
+  let stage: ReceiptStage = "upstream_signing";
+  let response: Response | undefined;
   try {
-    result = JSON.parse(responseText) as unknown;
-  } catch {
-    throw new Error("Submission destination returned invalid JSON");
+    deadline.check();
+    const body = JSON.stringify({
+      issuedAt: new Date().toISOString(),
+      payload: submission,
+    });
+    const signature = await signBody(body, env.INTAKE_HMAC_SECRET, deadline);
+    deadline.check();
+    stage = "upstream_fetch";
+    response = await fetchWithinDeadline(env.INTAKE_APPS_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({ body, signature }),
+      redirect: "follow",
+    }, deadline);
+    if (!response.ok) throw new ReceiptFailure("UPSTREAM_HTTP_FAILURE", stage);
+    const contentType = response.headers.get("Content-Type")?.toLowerCase() ?? "";
+    if (!JSON_CONTENT_TYPE.test(contentType)) throw new ReceiptFailure("UPSTREAM_CONTENT_TYPE_INVALID", stage);
+    stage = "upstream_body";
+    const responseText = await readLimitedText(response.body, UPSTREAM_RESPONSE_LIMIT, deadline);
+    let result: unknown;
+    try {
+      result = JSON.parse(responseText) as unknown;
+    } catch {
+      throw new ReceiptFailure("UPSTREAM_JSON_INVALID", stage);
+    }
+    stage = "upstream_receipt";
+    deadline.check();
+    if (!isRecord(result)) throw new ReceiptFailure("UPSTREAM_RECEIPT_INVALID", stage);
+    if (
+      result.success === true &&
+      result.stored === true &&
+      result.status === "created" &&
+      typeof result.notificationSent === "boolean"
+    ) {
+      return {
+        success: true,
+        stored: true,
+        status: "created",
+        notificationSent: result.notificationSent,
+      };
+    }
+    if (
+      result.success === true &&
+      result.stored === false &&
+      result.status === "duplicate" &&
+      result.existingRecordVerified === true
+    ) {
+      return {
+        success: true,
+        stored: false,
+        status: "duplicate",
+        existingRecordVerified: true,
+      };
+    }
+    throw new ReceiptFailure("UPSTREAM_RECEIPT_INVALID", stage);
+  } catch (error) {
+    if (error instanceof ReceiptFailure) throw error;
+    if (error instanceof DeadlineExceeded) {
+      throw new ReceiptFailure(error.code === "WORKER_RECEIPT_TIMEOUT" ? error.code : "UPSTREAM_TIMEOUT", stage);
+    }
+    throw new ReceiptFailure(stage === "upstream_signing" ? "UPSTREAM_SIGNING_FAILURE" : "UPSTREAM_TRANSPORT_FAILURE", stage);
+  } finally {
+    deadline.dispose();
+    if (response?.body && !response.body.locked) void response.body.cancel().catch(() => undefined);
   }
-  if (!isRecord(result)) throw new Error("Submission destination returned an invalid response");
-  if (
-    result.success === true &&
-    result.stored === true &&
-    result.status === "created" &&
-    typeof result.notificationSent === "boolean"
-  ) {
-    return {
-      success: true,
-      stored: true,
-      status: "created",
-      notificationSent: result.notificationSent,
-    };
-  }
-  if (
-    result.success === true &&
-    result.stored === false &&
-    result.status === "duplicate" &&
-    result.existingRecordVerified === true
-  ) {
-    return {
-      success: true,
-      stored: false,
-      status: "duplicate",
-      existingRecordVerified: true,
-    };
-  }
-  throw new Error("Submission destination did not confirm durable storage");
 }
 
 export const turnstileAction = TURNSTILE_ACTION;

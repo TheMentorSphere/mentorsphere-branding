@@ -50,14 +50,14 @@ export function isolatedStorageTests(slug: string, fixture: () => Record<string,
             await expect(sendToAppsScript(changed as {
                 formVersion: string;
                 submissionId: string;
-            }, env)).rejects.toThrow("durable storage");
+            }, env)).rejects.toMatchObject({ code: "UPSTREAM_RECEIPT_INVALID", stage: "upstream_receipt" });
             expect(outcomes.at(-1)).toBe("duplicate_conflict");
             const declined = fixture();
             declined.respondent = input.respondent;
             await expect(sendToAppsScript(declined as {
                 formVersion: string;
                 submissionId: string;
-            }, env)).rejects.toThrow("durable storage");
+            }, env)).rejects.toMatchObject({ code: "UPSTREAM_RECEIPT_INVALID", stage: "upstream_receipt" });
             expect(outcomes.at(-1)).toBe("duplicate_conflict");
             expect(harness.state().rows).toHaveLength(2);
             expect(harness.state().rows[1]).toEqual(persisted.rows[1]);
@@ -69,18 +69,18 @@ export function isolatedStorageTests(slug: string, fixture: () => Record<string,
             await expect(sendToAppsScript(input as {
                 formVersion: string;
                 submissionId: string;
-            }, env)).rejects.toThrow("durable storage");
+            }, env)).rejects.toMatchObject({ code: "UPSTREAM_RECEIPT_INVALID", stage: "upstream_receipt" });
             corrupt.rows[1] = [String(input.submissionId)];
             writeFileSync(harness.storagePath, JSON.stringify(corrupt));
             await expect(sendToAppsScript(input as {
                 formVersion: string;
                 submissionId: string;
-            }, env)).rejects.toThrow("durable storage");
+            }, env)).rejects.toMatchObject({ code: "UPSTREAM_RECEIPT_INVALID", stage: "upstream_receipt" });
             harness.removeStoredRows();
             await expect(sendToAppsScript(input as {
                 formVersion: string;
                 submissionId: string;
-            }, env)).rejects.toThrow("durable storage");
+            }, env)).rejects.toMatchObject({ code: "UPSTREAM_RECEIPT_INVALID", stage: "upstream_receipt" });
             persisted = harness.state();
             expect(persisted.rows).toHaveLength(1);
         }

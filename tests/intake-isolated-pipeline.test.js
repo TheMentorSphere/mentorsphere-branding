@@ -7,6 +7,7 @@ import { adhdDefinition } from '../src/intake/adhd';
 import { validSecondaryRequest } from './secondary-fixtures';
 import { validAdhdRequest } from './adhd-fixtures';
 import { createDiskBackedScript, FICTIONAL_HMAC_SECRET } from './isolated-apps-script-harness';
+import { APPS_SCRIPT_RECEIPT_TIMEOUT_MS } from '../src/intake/deadline';
 
 // Runs the real browser contract, Worker validation, signing/transport and generated
 // receiver in sequence. Only Google services/network are substituted; no live mail.
@@ -18,6 +19,7 @@ for (const [slug, definition, fixture] of [
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+    vi.useRealTimers();
     harness?.cleanup();
     if (harness) expect(existsSync(harness.directory)).toBe(false);
   });
@@ -32,11 +34,7 @@ for (const [slug, definition, fixture] of [
       INTAKE_HMAC_SECRET: FICTIONAL_HMAC_SECRET,
     };
     const contracts = [], httpStatuses = [];
-    if (upstream === 'timeout') {
-      const originalTimeout = AbortSignal.timeout.bind(AbortSignal);
-      vi.spyOn(AbortSignal, 'timeout').mockImplementation(milliseconds =>
-        originalTimeout(milliseconds === 12_000 ? 1 : milliseconds));
-    }
+    const upstreamStarted = Promise.withResolvers();
     vi.stubGlobal('fetch', vi.fn(async (url, options) => {
       if (String(url) === 'https://challenges.cloudflare.com/turnstile/v0/siteverify') {
         return Response.json({ success: true, hostname: 'www.thementorsphere.co.uk', action: definition.action });
@@ -44,7 +42,8 @@ for (const [slug, definition, fixture] of [
       expect(url).toBe(env.INTAKE_APPS_SCRIPT_URL);
       if (upstream === 'malformed') return new Response('{', { headers: { 'Content-Type': 'application/json' } });
       if (upstream === 'timeout') {
-        // The real transport's 12-second signal expires after one millisecond here.
+        upstreamStarted.resolve();
+        // Fake timers exercise the actual bounded transport signal below.
         return new Promise((_resolve, reject) => {
           const rejectTimeout = () => reject(options.signal.reason);
           if (options.signal.aborted) rejectTimeout();
@@ -63,7 +62,7 @@ for (const [slug, definition, fixture] of [
       return response;
     };
     const input = fixture();
-    return { submit: () => requestSubmission(browserFetch, definition.apiPath, input), contracts, httpStatuses };
+    return { submit: () => requestSubmission(browserFetch, definition.apiPath, input), contracts, httpStatuses, upstreamStarted: upstreamStarted.promise };
   }
   it.each(['normal', 'mail-failure', 'forced-notification-failure', 'cache-failure', 'status-failure'])(
     '%s reaches Submitted after verified storage, then Already received without more mail', async scenario => {
@@ -102,8 +101,14 @@ for (const [slug, definition, fixture] of [
     expect(harness.mail).toHaveLength(1);
   });
   it.each(['malformed', 'timeout'])('%s upstream never produces a false browser receipt', async upstream => {
+    if (upstream === 'timeout') vi.useFakeTimers();
     const pipeline = setup({}, upstream);
-    const outcome = await pipeline.submit();
+    const pending = pipeline.submit();
+    if (upstream === 'timeout') {
+      await pipeline.upstreamStarted;
+      await vi.advanceTimersByTimeAsync(APPS_SCRIPT_RECEIPT_TIMEOUT_MS);
+    }
+    const outcome = await pending;
     expect(outcome.kind).toBe('failure');
     expect(submissionUiState(outcome)).toMatchObject({ completed: false, buttonDisabled: false });
     expect(pipeline.httpStatuses).toEqual([503]);
