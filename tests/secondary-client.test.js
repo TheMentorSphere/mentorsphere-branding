@@ -47,7 +47,7 @@ describe("Secondary client privacy and content invariants", () => {
     it("retains Primary submission/token helpers without persistence or answer interpolation", () => {
         expect(script).toContain("from './intake-submission-contract.js'");
         expect(script).not.toMatch(/localStorage|sessionStorage|document\.cookie|console\.|\.innerHTML/u);
-        for (const callback of ['expired-callback', 'timeout-callback', 'error-callback', 'turnstileTokenIsStale', 'isExpired'])
+        for (const callback of ["from './intake-turnstile.js'", 'security.ensureReady()', 'security.beginSubmission()', 'security.finishSubmission(submissionCompleted)'])
             expect(script).toContain(callback);
         expect(script.match(/submissionId = crypto\.randomUUID\(\)/gu)).toHaveLength(1);
     });

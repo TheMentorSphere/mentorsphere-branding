@@ -155,14 +155,11 @@ describe("primary learner profile client controls", () => {
   it("refreshes expired or failed Turnstile challenges without losing the submission identity", async () => {
     const script = await readFile(path.join(process.cwd(), "docs", "assets", "js", "intake-form.js"), "utf8");
 
-    expect(script).toContain("let turnstileTokenIssuedAt = null");
-    expect(script).toContain("turnstileTokenIssuedAt = Date.now()");
-    expect(script).toContain("window.turnstile.isExpired(turnstileWidgetId)");
-    expect(script).toContain("'timeout-callback': () =>");
-    expect(script).toContain("resetTurnstile('The security check expired. Please complete it again.')");
-    expect(script).toContain("resetTurnstile('The security check timed out. Please complete it again.')");
-    expect(script).toContain("const expiredMessage = 'The security check has expired. Please complete it again before submitting.'");
-    expect(script).toContain("if (ui.resetTurnstile) resetTurnstile()");
+    expect(script).toContain("from './intake-turnstile.js'");
+    expect(script).toContain('security.setReview(currentStep === 5)');
+    expect(script).toContain('if (!security.ensureReady()) return');
+    expect(script).toContain('security.beginSubmission()');
+    expect(script).toContain('security.finishSubmission(submissionCompleted)');
     expect(script.match(/submissionId = crypto\.randomUUID\(\)/gu)).toHaveLength(1);
   });
 });

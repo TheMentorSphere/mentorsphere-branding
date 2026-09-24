@@ -46,7 +46,6 @@ async function prepare(form, origin) {
   assert.match(response.headers()['cache-control'], /no-store/u);
   assert.match(response.headers()['content-security-policy'], /frame-src https:\/\/challenges.cloudflare.com/u);
   assert.ok((await page.locator('a[href*="privacy-policy"]').first().getAttribute('href')).startsWith('https://www.thementorsphere.co.uk/'));
-  await ready(page);
   await named(page, 'respondent_email').fill('fictional@example.test');
   await named(page, 'respondent_first_name').fill('Fictional');
   await named(page, 'respondent_surname').fill('Preview');
@@ -76,6 +75,7 @@ async function prepare(form, origin) {
   }
   await named(page, 'authority_privacy_confirmation').check();
   assert.equal(await page.locator('[data-step="5"]').isVisible(), true);
+  await ready(page);
   return { page, state };
 }
 

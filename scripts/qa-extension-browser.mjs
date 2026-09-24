@@ -30,7 +30,7 @@ const browser = await chromium.launch({ headless: true, channel: process.env.QA_
 const results = [];
 const errors = [];
 const ok = (name, detail = '') => { results.push({ name, result: 'passed', detail }); console.log(`PASS ${name}`); };
-const turnstileScript = `window.turnstile={render:(element,options)=>{window.__challenge=options;queueMicrotask(()=>options.callback('fictional-test-token'));return 'qa-widget';},reset:()=>queueMicrotask(()=>window.__challenge.callback('fresh-fictional-test-token')),isExpired:()=>Boolean(window.__expired)};`;
+const turnstileScript = `window.turnstile={render:(element,options)=>{window.__challenge=options;return 'qa-widget';},execute:()=>queueMicrotask(()=>window.__challenge.callback('fresh-fictional-test-token')),reset:()=>{window.__expired=false;},remove:()=>{},isExpired:()=>Boolean(window.__expired)};`;
 
 async function newPage(form) {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
@@ -57,7 +57,7 @@ async function newPage(form) {
     return route.continue();
   });
   await page.goto(`${base}/forms/${form}/`);
-  await page.waitForFunction(() => Boolean(window.__challenge));
+  await page.waitForFunction(() => Boolean(window.turnstile));
   return { page, state };
 }
 const named = (page, name) => page.locator(`[name="${name}"]`);
@@ -169,7 +169,8 @@ async function secondary() {
   await page.evaluate(() => { window.__expired = true; });
   await submit.click();
   assert.equal(state.submissions.length, 0);
-  assert.match(await page.locator('[data-submit-status]').innerText(), /security check has expired/u);
+  await page.waitForFunction(() => document.querySelector('[data-turnstile-status]').textContent.includes('Security check complete'));
+  assert.equal(await page.locator('[data-submit-status]').isVisible(), false);
   await page.evaluate(() => { window.__expired = false; });
   ok('Secondary: widget isExpired blocks forwarding and requests a fresh token');
   for (const outcome of ['failure', 'malformed', 'stale-duplicate']) {
