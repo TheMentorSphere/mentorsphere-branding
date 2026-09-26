@@ -6,7 +6,7 @@ Assessment date: 25 September 2026
 
 Controller and owner: Luke Turner, The MentorSphere
 
-Status: current assessment prepared for owner review. The form is already live. This record does not assert that the assessment was completed before launch or replace the historical Primary DPIA.
+Status: owner-approved on 26 September 2026, subject to the safeguards and follow-ups in section 10. The form was already live when this assessment began. This is not a claim of pre-launch completion and does not replace the historical Primary DPIA.
 
 ## 1. Screening, purpose and scope
 

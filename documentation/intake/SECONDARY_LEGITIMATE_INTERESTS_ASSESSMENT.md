@@ -6,7 +6,7 @@ Assessment date: 25 September 2026
 
 Controller and owner: Luke Turner, The MentorSphere
 
-Status: completed assessment proposed for owner adoption. Residual-risk acceptance and operational confirmations are pending. This is a review of an already-live form, not evidence that this assessment preceded launch.
+Status: owner-approved on 26 September 2026, subject to the limits and follow-ups in section 8. This reviews an already-live form and is not evidence that the assessment preceded launch.
 
 ## 1. Scope and basis boundaries
 
