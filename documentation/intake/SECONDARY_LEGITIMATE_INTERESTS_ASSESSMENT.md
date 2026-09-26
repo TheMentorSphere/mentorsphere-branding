@@ -88,3 +88,9 @@ The proposed owner decision is to retain exact date of birth temporarily for cur
 The ICO three-part test, current children's lawful-basis/rights guidance, contract guidance, right to object and storage limitation sources were checked on 25 September 2026 and are linked with current-law caveats in [the source register](CROSS_FORM_DATA_PROTECTION_DECISION_NOTE.md#7-authoritative-sources-checked-on-25-september-2026).
 
 Owner decision: **pending**. Decision date: **pending**. Evidence of operational actions: **pending**.
+
+## 8. Final owner sign-off, 26 September 2026
+
+Luke Turner approved the limited Article 6(1)(f) conclusion on 26 September 2026 for necessary, proportionate ordinary learner and third-party information, subject to this assessment's balancing test and individual objections. The earlier pending entries are the pre-sign-off record. Respondent-own pre-contract information and optional personalisation keep their separate bases in the [final cross-form decision](CROSS_FORM_DATA_PROTECTION_DECISION_NOTE.md#9-final-owner-decision-and-operational-close-out-26-september-2026). Historic collection evidence is preserved without relabelling.
+
+The owner accepts the low and medium residual balance only with the assessed safeguards operating. Owner-only production permission metadata, immutable receiver/source and 52-column matches, the new retention instructions and blank review log, the private recurring monthly prompt, child early-contact procedure and corroborated secret-binding evidence support current operation. Actual reviews and child discussions must be recorded when performed; supplier/log retention and account-level access remain verified with limitation. Exact Secondary date of birth is accepted temporarily for current operation, with a minimisation review before the next substantive intake-form revision. A specific objection or failed safeguard requires a fresh balance.

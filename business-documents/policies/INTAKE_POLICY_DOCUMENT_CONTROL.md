@@ -1,13 +1,13 @@
 # Intake policy document control
 
-Prepared: 25 September 2026. Owner: Luke Turner. Status: awaiting owner review and separate publication approval.
+Prepared: 25 September 2026. Owner approval: Luke Turner, 26 September 2026. Status: approved current policy versions for publication through PR #62. Production publication is verified in the release close-out.
 
-| Policy | Prepared version and effective date | Published version at preparation | Editable copy | Matching export |
+| Policy | Approved current version and effective date | Superseded published version | Editable copy | Matching export |
 |---|---|---|---|---|
 | Privacy Policy | V1.6, 25 September 2026 | V1.5, 31 July 2026 | [DOCX](current/docx/Privacy_Policy_V1.6.docx) | [PDF](current/pdf/Privacy_Policy_V1.6.pdf) |
 | ADHD Coaching Policy | V1.4, 25 September 2026 | V1.3, 28 July 2026 | [DOCX](current/docx/ADHD_Coaching_Policy_V1.4.docx) | [PDF](current/pdf/ADHD_Coaching_Policy_V1.4.pdf) |
 
-The new files are review candidates in the established `current/docx`, `current/pdf` and `source-snapshots` folders. Their presence does not mark the wording approved, merged or published. The website changes in this branch are matching review candidates. Public policy URLs continue serving the previous versions until the owner approves publication.
+Luke approved Privacy Policy V1.6 and ADHD Coaching Policy V1.4 for publication on 26 September 2026. Both retain the 25 September 2026 effective date. The DOCX and PDF document controls now record approval without changing substantive policy wording. The website and source snapshots carry the matching versions. PR #62 controls publication; the final release record must confirm the live URLs after merge.
 
 ## Sources and local mirror
 
@@ -23,10 +23,10 @@ The four verified candidate files are mirrored into `C:/Users/luke9/Documents/Gi
 
 Privacy V1.5 remains unchanged in the data-protection archive worktree and its Git commit `6f51eba53656d7e2ce6a6ee6bded84e10dccd7af`. ADHD V1.3 remains unchanged at its original local DOCX/PDF paths. Privacy V1.4 in the original local archive is explicitly superseded by published V1.5. Old paths and historical source snapshots are retained to avoid breaking possible links.
 
-V1.5 Privacy and V1.3 ADHD remain the published versions until approval and publication. The local README and CSV/XLSX register distinguish this status from the prepared replacements. After approval, the owner can confirm whether old paths may be moved into the established `superseded` folders; no move is performed now.
+Privacy V1.5 and ADHD V1.3 are superseded by the owner-approved versions when PR #62 publishes. Their original files and source evidence are preserved at their existing paths, including the separate Privacy V1.5 archive. They are not overwritten or deleted. The local README and CSV/XLSX register record the final current and superseded states after publication.
 
 Starting main held only EDI and Complaints PDFs in the policy asset directory. This update adds the two requested policy families without importing the unrelated local archive or changing its structure. No new public download route is introduced.
 
-## Approval needed
+## Governance sign-off
 
-Review both policy texts and the new Secondary/ADHD DPIA and LIA records, including the proposed Article 6 consent clarification, pre-update record review and remaining operational confirmations in the [cross-form decision note](../../documentation/intake/CROSS_FORM_DATA_PROTECTION_DECISION_NOTE.md). No historical consent record is relabelled by this documentation update. Merge and publication require a separate owner decision.
+The [cross-form decision note](../../documentation/intake/CROSS_FORM_DATA_PROTECTION_DECISION_NOTE.md#9-final-owner-decision-and-operational-close-out-26-september-2026) records Luke's 26 September approval, limits, evidence and follow-ups. No historic consent record is relabelled. No intake form, receiver, schema, release flag or production response is changed by this policy release.

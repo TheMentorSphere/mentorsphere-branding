@@ -3,7 +3,7 @@
 - Policy title: ADHD Coaching Policy
 - Version: 1.4
 - Effective/update date: 25 September 2026
-- Status: Prepared for owner review; not published by this task
+- Status: Owner-approved current policy; owner sign-off 26 September 2026. Publication through PR #62 is verified separately after deployment.
 - Policy owner: Luke Turner, Founder of The MentorSphere
 - Source repository file: docs/adhd-coaching-policy/index.html
 - Source URL: https://www.thementorsphere.co.uk/adhd-coaching-policy/
@@ -14,7 +14,7 @@
 - Extraction scope: div.narrow.prose, excluding presentation header and duplicated policy-control metadata
 - Retained editable template: C:/Users/luke9/Documents/GitHub/mentorsphere-branding/business-documents/policies/current/docx/ADHD_Coaching_Policy_V1.3.docx
 
-## Exact candidate source content used
+## Exact approved source content used
 
 ### 1. Introduction and purpose
 

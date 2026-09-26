@@ -65,3 +65,20 @@ The candidate Privacy V1.6 and ADHD Coaching V1.4 statements remain consistent w
 | Runtime and production scope | No form functionality, schema, Apps Script, Worker, release flag, secret, production response, deployment or integration change |
 
 Final owner sign-off remains pending. The proposed lawful-basis, existing-record, conditional residual-risk and temporary Secondary DOB decisions must not be recorded as already approved. Complete the monthly retention process and evidence, child early-contact/authority practice, log access/retention, supplier controls and any safe private endpoint mapping check before accepting risks that rely on those safeguards. No unmitigated high risk was established by this read-only verification.
+
+## Final owner sign-off and pre-merge validation, 26 September 2026
+
+Luke Turner approved the purpose-specific lawful-basis framework, the no-retrospective-relabelling transition and conditional acceptance of documented low and medium residual risks on 26 September 2026. Exact Secondary date of birth is accepted for current operation, with a minimisation review before the next substantive form revision. The [cross-form decision note](CROSS_FORM_DATA_PROTECTION_DECISION_NOTE.md#9-final-owner-decision-and-operational-close-out-26-september-2026) records the operational checks and their limits. The earlier pending wording above is the pre-sign-off record.
+
+Secondary and ADHD now have non-response retention instruction tabs and blank review evidence areas, matching Primary's owner-managed process. A private first-Monday monthly Calendar reminder begins 5 October 2026. The child early-contact checklist is an operational procedure. No past review, deletion or child conversation is fabricated. Supplier log access/retention are verified with limitation; private endpoint mapping is corroborated without secret-value exposure.
+
+| Final local gate | Result |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Passed; lockfile unchanged |
+| `pnpm run check` | Passed: generated types, TypeScript, 525 tests in 19 files, content validation of 40 HTML files |
+| `pnpm run deploy:dry-run` | Passed; exited without deployment; all three configured page and submission flags remain `true` |
+| `git diff --check` | Passed; line-ending conversion notices only |
+| Policy copies | Exact website/DOCX/PDF full-body parity for both policies; only the DOCX/PDF approval control changed after the earlier candidate QA |
+| Release scope | Policy HTML, document copies, source snapshots, governance and four coaching-policy link labels only; no form, Worker, client, schema, Apps Script, secret or release-flag edit |
+
+This table records local pre-merge checks. CI, squash merge and public deployment must be separately confirmed in the final handover. No production form was submitted and no existing production response was changed or deleted.

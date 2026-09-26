@@ -3,7 +3,7 @@
 - Policy title: Privacy Policy
 - Version: 1.6
 - Effective/update date: 25 September 2026
-- Status: Prepared for owner review; not published by this task
+- Status: Owner-approved current policy; owner sign-off 26 September 2026. Publication through PR #62 is verified separately after deployment.
 - Policy owner: Luke Turner, Founder of The MentorSphere
 - Source repository file: docs/privacy-policy/index.html
 - Source URL: https://www.thementorsphere.co.uk/privacy-policy/
@@ -14,7 +14,7 @@
 - Extraction scope: div.narrow.prose, excluding presentation header and duplicated policy-control metadata
 - Retained editable template: C:/Users/luke9/Documents/GitHub/mentorsphere-branding-archive-data-protection/business-documents/policies/current/docx/Privacy_Policy_V1.5.docx
 
-## Exact candidate source content used
+## Exact approved source content used
 
 ### 1. Introduction
 

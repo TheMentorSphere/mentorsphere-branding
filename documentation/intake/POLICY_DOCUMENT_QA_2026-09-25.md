@@ -56,3 +56,18 @@ The six new versioned files below were copied into the original checkout's estab
 | `C:/Users/luke9/Documents/GitHub/mentorsphere-branding/business-documents/policies/current/pdf/ADHD_Coaching_Policy_V1.4.pdf` | `e2e2d8e65db1ab1c7fc22d8309c5994565e286a6d01d1584881f7439d1a9fa37` |
 | `C:/Users/luke9/Documents/GitHub/mentorsphere-branding/business-documents/policies/source-snapshots/Privacy_Policy_V1.6.md` | `c16073d7ab7710d409c786d978a73d2795a2115b5f9c423ae0445e286c7f12ef` |
 | `C:/Users/luke9/Documents/GitHub/mentorsphere-branding/business-documents/policies/source-snapshots/ADHD_Coaching_Policy_V1.4.md` | `d458113d8946404d53d144dfb9358d0d371937c2bdfaac8b1705c4c9977a8c9e` |
+
+## Final approved copies, 26 September 2026
+
+The candidate checks above remain the historical 25 September record. Luke approved both policy versions on 26 September. Each current DOCX control line now reads `Approved and current. Owner sign-off: 26 September 2026.` in place of the candidate status; no other DOCX paragraph changed. Embedded DOCX subject, description and modified date now record the approval. Word exported matching PDFs with tagged structure and heading bookmarks. Privacy remains eight pages and ADHD remains six. All 14 pages were rendered and visually checked after regeneration.
+
+The full policy body in each website page, DOCX and PDF is exactly equal after the documented layout-only normalisation. The normalised body SHA-256 values remain `daf433d84c5e4d9e30b39c37fda5de5ba9426ec8ca433a88c5fdea69a3b8bb59` for Privacy V1.6 and `5244bb57e09f741b0ca49912ca9ce0561a55447ddb8cc13c679639d6d8031614` for ADHD V1.4. The current website Git blobs retain the HTML hashes in the original table; checkout line endings produce different working-copy byte hashes without changing the Git content or rendered policy wording.
+
+| Approved asset | SHA-256 |
+| --- | --- |
+| Privacy V1.6 DOCX | `6c7266dcde8f3d99f8df53a0d6fc2a5a7e0e10c1bd637850491611f7e5ef6923` |
+| Privacy V1.6 PDF | `dfbfd20912e35f971261277dcee596bd49f2ece6ba295ab263c8ba6b9e9f3fca` |
+| ADHD V1.4 DOCX | `62facdf16d9971bfa1241e251acbd2379fbbf4ea3bc7ff6d3376723e4664fb91` |
+| ADHD V1.4 PDF | `02ec6f9e365beb9541e40de6e95070e713f7e84b171e6c8df22cdfeacc9b8668` |
+
+The local archive mirrors and register still show their pre-publication candidate state in the historical table above. They are updated to approved current and superseded status as part of final publication close-out, without overwriting older versioned files.
