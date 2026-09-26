@@ -107,6 +107,14 @@ Required owner evidence before policy publication approval: adopt the lawful-bas
 
 ## 10. Sources, review and sign-off
 
+### Owner-review verification, 26 September 2026
+
+The [cross-form verification record](CROSS_FORM_DATA_PROTECTION_DECISION_NOTE.md#6a-read-only-owner-review-verification-26-september-2026) is incorporated here. Drive permission metadata for the ADHD production Sheet and containing folder lists only the owner and no public/link permission: VERIFIED WITH LIMITATION because account security and access beyond that metadata were not audited. All 54 live header columns match the reviewed schema, and the active immutable Apps Script version 3 `Code.gs` exactly matches reviewed source after line-ending normalisation. The private Worker secret-to-endpoint mapping remains unverified because secret values are not exposed. The live Cloudflare Worker metadata confirms dedicated ADHD bindings and enabled flags.
+
+The Sheet has the five review fields but no retention-instructions tab. Reviewed receiver source does not delete automatically. Monthly due-record review, a reliable reminder or saved view, withdrawal/redaction execution and actual deletion history are FOLLOW-UP REQUIRED. Source inspection verifies the answer-free application diagnostic design; live log access and retention are UNVERIFIED. The child/combined route needs the early-contact privacy and authority checklist; neither adult form completion nor ages 10 to 17 establish the young person's understanding or capacity.
+
+The owner's brief proposes the lawful-basis framework, no-retrospective-relabelling transition and conditional acceptance of low/medium residual risks for final sign-off. No risk acceptance is recorded where the safeguard is unverified. These read-only checks did not establish a new high residual risk, but any missing essential safeguard requires reassessment before relying on its residual score.
+
 The [cross-form source register](CROSS_FORM_DATA_PROTECTION_DECISION_NOTE.md#7-authoritative-sources-checked-on-25-september-2026) records authoritative ICO/UK sources checked on 25 September 2026 and current DUAA caveats. The [child/third-party LIA](ADHD_CHILD_THIRD_PARTY_LEGITIMATE_INTERESTS_ASSESSMENT.md) contains purpose, necessity, balancing and objection analysis for the limited Article 6(1)(f) use.
 
 Review annually and whenever routes, consent, fields, ages/audiences, decisions, recipients, retention, suppliers or purposes change, or following an incident/objection. Owner decision/date and action evidence: **pending**.

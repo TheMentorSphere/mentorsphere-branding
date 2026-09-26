@@ -47,3 +47,21 @@ The scoped local register changes are not imported into Git because the broader 
 The [cross-form decision note](CROSS_FORM_DATA_PROTECTION_DECISION_NOTE.md) records the authoritative sources and specific outstanding decisions. Both new DPIAs identify no high residual risk with the assessed safeguards operating, with medium risks and private operational assumptions requiring owner review. Both LIAs conditionally support the limited ordinary child/third-party use. No approval or signature is fabricated, and no historical consent is retrospectively relabelled.
 
 No merge, live deployment, Pages/DNS/domain setting, Sheet, secret, release flag or production integration is changed by this task. The PR and exact final head are reported in the final handover.
+
+## Owner-review verification update, 26 September 2026
+
+Starting draft PR #62 head: `2c08351cc42e0e29d77da6fa5c1f0076c82946be`. GitHub reported it open and draft with one expected commit and 24 policy/governance files. The update changes only this validation record and six other governance Markdown files. The [cross-form record](CROSS_FORM_DATA_PROTECTION_DECISION_NOTE.md#6a-read-only-owner-review-verification-26-september-2026) contains the evidence statuses, proposed owner decisions and remaining operational actions without private identifiers.
+
+Read-only Drive metadata lists one owner permission on each production Sheet and both containing folders, with no public/link permission returned. All three live headers match the reviewed 48/52/54-column layouts. The active Secondary and ADHD Apps Script web apps use immutable version 3; read-only copies of both deployed `Code.gs` files have the same normalised SHA-256 hashes as the reviewed repository source. Private Worker secret values were not read, so endpoint mapping is not independently proved. Primary has monthly retention instructions; Secondary and ADHD have retention fields but no corresponding instruction tab. No reliable monthly reminder, completed review or deletion history was verified. Google project sharing is owner-only; Cloudflare/Google log access and retention remain incomplete owner/supplier checks.
+
+The candidate Privacy V1.6 and ADHD Coaching V1.4 statements remain consistent with these findings and were not edited. Website HTML, source snapshots, DOCX and PDF assets are unchanged from the first review. Their previous full-body parity/visual QA therefore remains applicable. The four binary hashes match [document QA](POLICY_DOCUMENT_QA_2026-09-25.md). The two repository source snapshots match the retained local archive copies after CRLF/LF normalisation; Git checkout line endings account for their differing raw file hashes. Policy page titles, descriptions, Open Graph, JSON-LD, effective dates, index cards and coaching-policy link labels show the intended V1.6/V1.4 dates. No binary regeneration was needed.
+
+| Local gate | 26 September result |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Passed; lockfile unchanged |
+| `pnpm run check` | Passed: generated types, TypeScript, 525 tests in 19 files, 40 HTML pages and intake safeguards |
+| `pnpm run deploy:dry-run` | Passed; exited without deployment |
+| `git diff --check` | Passed after governance edits |
+| Runtime and production scope | No form functionality, schema, Apps Script, Worker, release flag, secret, production response, deployment or integration change |
+
+Final owner sign-off remains pending. The proposed lawful-basis, existing-record, conditional residual-risk and temporary Secondary DOB decisions must not be recorded as already approved. Complete the monthly retention process and evidence, child early-contact/authority practice, log access/retention, supplier controls and any safe private endpoint mapping check before accepting risks that rely on those safeguards. No unmitigated high risk was established by this read-only verification.

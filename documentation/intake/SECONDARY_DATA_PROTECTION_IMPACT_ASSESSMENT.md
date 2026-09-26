@@ -85,6 +85,14 @@ Luke must record: acceptance/revision of risk and lawful-basis conclusions; curr
 
 ## 9. Sources and review
 
+### Owner-review verification, 26 September 2026
+
+The [cross-form verification record](CROSS_FORM_DATA_PROTECTION_DECISION_NOTE.md#6a-read-only-owner-review-verification-26-september-2026) is incorporated into this assessment. Drive permission metadata for the live Secondary Sheet and containing folder lists only the owner and no public/link permission: VERIFIED WITH LIMITATION because account security and access beyond that metadata were not audited. The live header matches all 52 schema columns exactly. The active immutable Apps Script version 3 `Code.gs` exactly matches the reviewed source after line-ending normalisation. The private Worker secret-to-endpoint mapping remains unverified because secret values are not exposed.
+
+The live Sheet has the five retention fields, and reviewed source has no automatic deletion. Unlike Primary, no separate retention-instructions tab was present. Actual monthly review, a saved due-record view or reliable reminder, withdrawal/redaction execution and deletion history are FOLLOW-UP REQUIRED. The application diagnostic allowlist is source-verified; current log access and retention are UNVERIFIED. The early-contact child checklist is proposed for practice; form attestations alone do not verify learner transparency or authority.
+
+The owner's 26 September brief proposes temporary retention of exact Secondary date of birth for current operation, with a separate minimisation review before the next substantive intake-form revision. This is PROPOSED FOR FINAL SIGN-OFF and does not settle the necessity question permanently. The documented medium residual estimates remain conditional; no owner risk acceptance is recorded for safeguards whose operation is still unverified. No new high residual risk was established by these read-only checks, but a missing essential safeguard requires reassessment.
+
 The [cross-form source register](CROSS_FORM_DATA_PROTECTION_DECISION_NOTE.md#7-authoritative-sources-checked-on-25-september-2026) records authoritative ICO/UK sources checked on 25 September 2026 and DUAA update caveats. This DPIA applies those sources to the Secondary implementation; it does not copy or replace the Primary assessment.
 
 Review at least annually and on changes to fields, audience, use, recipients, consent, retention, technology or after an incident/objection. Owner decision and date: **pending**.

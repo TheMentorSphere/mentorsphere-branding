@@ -81,6 +81,10 @@ Review annually or sooner for a complaint, authority dispute, breach, new recipi
 
 ## 7. Sources and sign-off
 
+Owner-review update, 26 September 2026: the owner's brief proposes the limited Article 6(1)(f) conclusion and wider purpose-specific framework for final sign-off; it is not past approval or a basis for every optional field. The live Secondary Sheet and folder returned owner-only permission metadata and no public/link access: VERIFIED WITH LIMITATION. All 52 live headers exactly match the reviewed schema, and the active immutable Apps Script version 3 source exactly matches reviewed `Code.gs`. The private Worker secret-to-endpoint mapping remains unverified. Child information and authority still need the early-contact procedure in the [cross-form note](CROSS_FORM_DATA_PROTECTION_DECISION_NOTE.md#6a-read-only-owner-review-verification-26-september-2026); a respondent's selection alone does not prove the learner was informed.
+
+The proposed owner decision is to retain exact date of birth temporarily for current Secondary intake to distinguish learners and understand age, stage and safeguarding context where these differ. Necessity at first intake remains an explicit minimisation follow-up before the next substantive form revision. This is PROPOSED FOR FINAL SIGN-OFF, not a permanent LIA finding. The lawful-basis conclusion and medium residual balancing result remain conditional on the outstanding monthly retention, child-transparency, private endpoint-mapping and log/supplier checks; final owner adoption is pending.
+
 The ICO three-part test, current children's lawful-basis/rights guidance, contract guidance, right to object and storage limitation sources were checked on 25 September 2026 and are linked with current-law caveats in [the source register](CROSS_FORM_DATA_PROTECTION_DECISION_NOTE.md#7-authoritative-sources-checked-on-25-september-2026).
 
 Owner decision: **pending**. Decision date: **pending**. Evidence of operational actions: **pending**.
