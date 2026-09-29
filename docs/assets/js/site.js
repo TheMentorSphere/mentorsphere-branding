@@ -324,6 +324,17 @@
     const submitButton = contactForm.querySelector('[data-submit-button]');
     const subjectInput = contactForm.querySelector('[data-enquiry-subject]');
     const sourceInput = contactForm.querySelector('[data-source-page]');
+    // Identify the page without its query string or fragment, so advertising
+    // click identifiers, campaign tags and search terms are never forwarded.
+    const canonicalLink = document.querySelector('link[rel="canonical"]');
+    const sourcePage = (() => {
+      try {
+        const url = new URL(canonicalLink?.href || window.location.href);
+        return `${url.origin}${url.pathname}`;
+      } catch {
+        return `${window.location.origin}${window.location.pathname}`;
+      }
+    })();
     const whatsappUrl = 'https://wa.me/447955723133?text=Hi%20Luke%2C%20I%20found%20The%20MentorSphere%20through%20your%20website%20and%20would%20like%20to%20enquire%20about%20support.';
     const errorElements = new Map(
       Array.from(contactForm.querySelectorAll('[data-error-for]')).map((element) => [element.dataset.errorFor, element]),
@@ -442,9 +453,9 @@
       const subject = `Website enquiry: ${service}`;
 
       if (subjectInput) subjectInput.value = subject;
-      if (sourceInput) sourceInput.value = window.location.href;
+      if (sourceInput) sourceInput.value = sourcePage;
       data.set('subject', subject);
-      data.set('source_page', window.location.href);
+      data.set('source_page', sourcePage);
 
       try {
         const response = await fetch(contactForm.action, {
