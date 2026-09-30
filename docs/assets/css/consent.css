@@ -1,0 +1,222 @@
+/* Consent choice for optional website purposes. Both choices share one style
+   so that rejecting is exactly as easy and as prominent as accepting. */
+
+.consent-banner {
+  position: fixed;
+  z-index: 45;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  max-height: min(70vh, 34rem);
+  overflow-y: auto;
+  border-top: 0.25rem solid var(--deep-blue);
+  background: var(--paper);
+  color: var(--charcoal);
+  box-shadow: var(--shadow-lg);
+}
+
+.consent-banner[hidden],
+.consent-banner [hidden],
+[data-consent-open][hidden] {
+  display: none !important;
+}
+
+.consent-banner-inner {
+  padding-block: 1rem 1.1rem;
+}
+
+.consent-banner-title {
+  margin: 0 0 0.4rem;
+  font-size: var(--step-1);
+}
+
+.consent-banner-title:focus {
+  outline: none;
+}
+
+.consent-banner-title:focus-visible {
+  outline: 0.2rem solid var(--focus);
+  outline-offset: 0.2rem;
+}
+
+.consent-banner p {
+  max-width: 62rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.consent-banner-current {
+  font-weight: 700;
+}
+
+.consent-banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.consent-button {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.15rem;
+  border: 2px solid var(--deep-blue);
+  border-radius: var(--radius-pill);
+  background: var(--deep-blue);
+  color: #fff;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+}
+
+.consent-button:hover {
+  border-color: var(--deep-blue-ink);
+  background: var(--deep-blue-ink);
+}
+
+.consent-link-button {
+  min-height: 2.75rem;
+  padding: 0.4rem 0.2rem;
+  border: 0;
+  background: none;
+  color: var(--deep-blue-dark);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 0.1em;
+  text-underline-offset: 0.16em;
+  cursor: pointer;
+}
+
+.consent-link-button:hover {
+  color: var(--warm-red-dark);
+}
+
+.consent-banner-confirmation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1rem;
+}
+
+.consent-banner-confirmation p {
+  margin: 0;
+}
+
+.consent-banner-confirmation:focus {
+  outline: none;
+}
+
+.consent-banner-confirmation:focus-visible {
+  outline: 0.2rem solid var(--focus);
+  outline-offset: 0.2rem;
+}
+
+/* Keep all page content reachable above the banner while it is open. */
+.consent-banner-open body {
+  padding-bottom: var(--consent-banner-space, 0px);
+}
+
+.consent-banner-open .back-to-top {
+  bottom: calc(var(--consent-banner-space, 0px) + 1rem);
+}
+
+.consent-settings-link {
+  min-height: 1.5rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #dbe8ee;
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgba(219, 232, 238, 0.68);
+  text-decoration-thickness: 0.08em;
+  cursor: pointer;
+}
+
+.consent-settings-link:hover {
+  color: #fff2c8;
+  text-decoration-color: currentColor;
+}
+
+@media (min-width: 64rem) {
+  .consent-banner-question {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 2.5rem;
+    align-items: center;
+  }
+
+  .consent-banner-question > * {
+    grid-column: 1;
+  }
+
+  .consent-banner-question > .consent-banner-actions {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    flex-direction: column;
+    align-items: stretch;
+    margin: 0;
+  }
+}
+
+/* Small screens: the same information in less height. Accept and Reject sit
+   side by side at equal width, each still at least 44px tall, with the purpose
+   kept in their accessible names. Nothing scrolls inside the banner at
+   ordinary phone sizes. */
+@media (max-width: 36rem) {
+  .consent-banner-inner {
+    padding-block: 0.75rem 0.8rem;
+  }
+
+  .consent-banner-title {
+    margin-bottom: 0.2rem;
+    font-size: 1.1rem;
+  }
+
+  .consent-banner p {
+    margin-bottom: 0.55rem;
+    font-size: 0.93rem;
+    line-height: 1.45;
+  }
+
+  .consent-banner-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 0;
+  }
+
+  .consent-banner-actions .consent-link-button {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .consent-button-context {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+}
+
+@media (forced-colors: active) {
+  .consent-button {
+    border-color: ButtonText;
+  }
+}
+
+@media print {
+  .consent-banner {
+    display: none !important;
+  }
+}

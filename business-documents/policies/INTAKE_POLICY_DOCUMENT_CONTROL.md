@@ -30,3 +30,7 @@ Starting main held only EDI and Complaints PDFs in the policy asset directory. T
 ## Governance sign-off
 
 The [cross-form decision note](../../documentation/intake/CROSS_FORM_DATA_PROTECTION_DECISION_NOTE.md#9-final-owner-decision-and-operational-close-out-26-september-2026) records Luke's 26 September approval, limits, evidence and follow-ups. No historic consent record is relabelled. No intake form, receiver, schema, release flag or production response is changed by this policy release.
+
+## Later versions
+
+Privacy Policy V1.7 and ADHD Coaching Policy V1.5 were prepared on 29 September 2026 and adopted by the owner with effect from 30 September 2026. They supersede V1.6 and V1.4. See the [V1.7 and V1.5 document-control note](PRIVACY_V1.7_ADHD_V1.5_DOCUMENT_CONTROL.md). The V1.6 and V1.4 records above are unchanged.

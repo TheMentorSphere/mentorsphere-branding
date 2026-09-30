@@ -80,8 +80,14 @@ describe('young people ADHD coaching landing page', () => {
     expect(sectionById('introduction')).toContain('does not commit you to paid coaching');
   });
 
-  it('treats booking links as ordinary outbound links, not confirmed appointments', () => {
-    expect(page).not.toMatch(/<a\b[^>]*calendar\.google\.com[^>]*\s(?:onclick|data-event|data-track)/i);
+  it('marks booking links only as click observations, never as confirmed bookings', () => {
+    const calendarLinks = [...page.matchAll(/<a\b[^>]*calendar\.google\.com[^>]*>/g)].map((match) => match[0]);
+    expect(calendarLinks.length).toBeGreaterThanOrEqual(4);
+    for (const link of calendarLinks) {
+      expect(link).toContain('data-measure-event="adhd_young_people_booking_click"');
+      expect(link).not.toMatch(/\sonclick=/i);
+    }
+    expect(page).not.toMatch(/booking_confirmed|appointment_confirmed/i);
     expect(siteScript).not.toContain('calendar.google.com');
   });
 
@@ -141,9 +147,13 @@ describe('young people ADHD coaching landing page', () => {
     expect(form).toContain('Do not include medical records, diagnosis details');
   });
 
-  it('adds no advertising or analytics tracking', () => {
+  it('adds advertising measurement only through the consent-gated scripts, with no analytics', () => {
     const scriptSources = [...page.matchAll(/<script\b[^>]*\ssrc="([^"]+)"/g)].map((match) => match[1]);
-    expect(scriptSources).toEqual(['../../assets/js/site.js?v=20260804-home-education-v2']);
+    expect(scriptSources).toEqual([
+      '../../assets/js/site.js?v=20260804-home-education-v2',
+      '../../assets/js/consent.js?v=20260929-consent-v1',
+      '../../assets/js/ads-measurement.js?v=20260929-consent-v1',
+    ]);
     for (const source of [page, siteScript]) {
       expect(source).not.toMatch(/gtag|googletagmanager|google-analytics|dataLayer|fbq|remarketing|sendBeacon|<iframe/i);
     }

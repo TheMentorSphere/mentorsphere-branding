@@ -56,6 +56,12 @@ const footerServices = [
 const organizationServices = ["Tutoring", "ADHD Coaching", "Education & SEND Support", "Home Education Support"];
 const sharedStylesVersion = "styles.css?v=20260804-home-education-v2";
 const sharedScriptVersion = "site.js?v=20260804-home-education-v2";
+const consentStylesVersion = "consent.css?v=20260929-consent-v1";
+const consentScriptVersion = "consent.js?v=20260929-consent-v1";
+const adsMeasurementScriptVersion = "ads-measurement.js?v=20260929-consent-v1";
+// Cookie settings are available on every public page, but Google Ads
+// measurement is limited to the approved advertising landing page.
+const adsMeasurementPages = new Set([path.join(docsRoot, "adhd-coaching", "young-people", "index.html")]);
 
 for (const htmlFile of htmlFiles) {
   const relative = path.relative(workspace, htmlFile);
@@ -107,6 +113,45 @@ for (const htmlFile of htmlFiles) {
     );
     record(matches(content, /<link rel="canonical" href="https:\/\/www\.thementorsphere\.co\.uk\/[^"]*">/giu).length === 1, `${relative}: expected one canonical URL`);
     record(!/(?:Ã‚|Ã¢â‚¬|Ã¢â€ |Ã¯Â¿Â½|�)/u.test(content), `${relative}: mojibake or replacement character found`);
+  }
+  const consentStylesReferences = matches(content, /consent\.css\?v=[^"']+/giu).map((match) => match[0]);
+  const consentScriptReferences = matches(content, /consent\.js\?v=[^"']+/giu).map((match) => match[0]);
+  const adsMeasurementReferences = matches(content, /ads-measurement\.js(?:\?v=[^"']+)?/giu).map((match) => match[0]);
+  const adsMeasurementConfigs = matches(content, /<script type="application\/json" data-ads-measurement-config>/giu);
+  if (intakePaths.has(htmlFile)) {
+    record(
+      consentScriptReferences.length === 0 && adsMeasurementReferences.length === 0 && adsMeasurementConfigs.length === 0,
+      `${relative}: intake forms must not load consent or advertising measurement scripts`,
+    );
+  } else {
+    record(
+      consentStylesReferences.length === 1 && consentStylesReferences[0] === consentStylesVersion,
+      `${relative}: expected exactly one current consent.css reference for site-wide Cookie settings`,
+    );
+    record(
+      consentScriptReferences.length === 1 && consentScriptReferences[0] === consentScriptVersion,
+      `${relative}: expected exactly one current consent.js reference for site-wide Cookie settings`,
+    );
+    record(
+      content.indexOf(consentScriptVersion) > content.indexOf(sharedScriptVersion),
+      `${relative}: consent.js must load after the shared site.js`,
+    );
+  }
+  if (adsMeasurementPages.has(htmlFile)) {
+    record(
+      adsMeasurementReferences.length === 1 && adsMeasurementReferences[0] === adsMeasurementScriptVersion,
+      `${relative}: expected exactly one current ads-measurement.js reference`,
+    );
+    record(adsMeasurementConfigs.length === 1, `${relative}: expected exactly one advertising measurement configuration`);
+    record(
+      content.indexOf(adsMeasurementScriptVersion) > content.indexOf(consentScriptVersion),
+      `${relative}: ads-measurement.js must load after consent.js`,
+    );
+  } else {
+    record(
+      adsMeasurementReferences.length === 0 && adsMeasurementConfigs.length === 0,
+      `${relative}: Google Ads measurement is not approved for this page`,
+    );
   }
   record(!/\b(TODO|FIXME|lorem ipsum)\b/iu.test(content), `${relative}: placeholder text found`);
 
