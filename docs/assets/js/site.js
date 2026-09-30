@@ -449,6 +449,7 @@
       });
 
       const data = new FormData(contactForm);
+      const honeypotFilled = String(data.get('_gotcha') || '').trim() !== '';
       const service = String(data.get('area_of_support') || 'General enquiry').trim();
       const subject = `Website enquiry: ${service}`;
 
@@ -477,6 +478,15 @@
             message: 'Thank you. Your message has been sent to The MentorSphere. Enquiries are normally acknowledged within 48 hours, although responses may take longer during illness, annual leave or unusually busy periods.',
             focus: true,
           });
+          // Let page scripts react to an enquiry the provider has confirmed. The
+          // event carries no form data, and spam-trap submissions never raise it.
+          if (!honeypotFilled) {
+            try {
+              contactForm.dispatchEvent(new CustomEvent('mentorsphere:enquiry-success'));
+            } catch {
+              // A page script must never turn a sent enquiry into an error.
+            }
+          }
           return;
         }
 
