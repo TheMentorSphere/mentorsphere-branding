@@ -669,13 +669,76 @@ describe('adhd_young_people_booking_click', () => {
 
 describe('the landing page as shipped', () => {
   const shippedConfig = landingPage.match(/<script type="application\/json" data-ads-measurement-config>(.*?)<\/script>/)[1];
+  const approvedConfig = {
+    googleAdsId: 'AW-18485496875',
+    conversionLabels: {
+      adhd_young_people_enquiry_success: '7zLXCPz_lowdEKuYye5E',
+      adhd_young_people_booking_click: 'bi_lCP__lowdEKuYye5E',
+    },
+  };
 
-  it('ships with empty Google Ads identifiers, so measurement stays inactive and no banner appears', () => {
-    expect(JSON.parse(shippedConfig)).toEqual({
+  it('ships the exact approved identifiers while sending nothing before consent or after rejection', async () => {
+    expect(JSON.parse(shippedConfig)).toEqual(approvedConfig);
+    const page = buildPage({ config: shippedConfig });
+    expect(page.banner().hidden).toBe(false);
+    expect(page.googleScripts()).toHaveLength(0);
+    expect(page.ctx.gtag).toBeUndefined();
+    expect(page.ctx.dataLayer).toBeUndefined();
+    expect(page.jar.names()).toEqual([]);
+    expect([...page.storage.items.keys()]).toEqual([]);
+    page.choice('denied').click();
+    expect(page.links[0].click().defaultPrevented).toBe(false);
+    await page.submit();
+    expect(page.status.children[0].textContent).toBe('Enquiry sent');
+    expect(page.network[0].fields.source_page).toBe(CANONICAL);
+    expect(page.googleScripts()).toHaveLength(0);
+    expect(page.ctx.gtag).toBeUndefined();
+    expect(page.ctx.dataLayer).toBeUndefined();
+    expect(page.jar.names()).toEqual([]);
+    expect([...page.storage.items.keys()]).toEqual(['mentorsphere-consent']);
+  });
+
+  it('uses the two approved conversion targets after acceptance and stops both after withdrawal', async () => {
+    const page = buildPage({ config: shippedConfig, href: `${CANONICAL}?gclid=TESTCLICK&utm_term=private+search#enquiry` });
+    page.choice('granted').click();
+    expect(page.googleScripts()[0].src).toBe(`https://www.googletagmanager.com/gtag/js?id=${approvedConfig.googleAdsId}`);
+    const config = page.calls().find(([command]) => command === 'config');
+    expect(config).toEqual(['config', approvedConfig.googleAdsId, {
+      send_page_view: false,
+      allow_ad_personalization_signals: false,
+      allow_google_signals: false,
+      page_location: `${CANONICAL}?gclid=TESTCLICK`,
+      page_referrer: '',
+    }]);
+    expect(page.conversions()).toHaveLength(0);
+    await page.submit();
+    expect(page.links[0].click().defaultPrevented).toBe(false);
+    expect(page.conversions()).toEqual([
+      { send_to: `${approvedConfig.googleAdsId}/${approvedConfig.conversionLabels.adhd_young_people_enquiry_success}` },
+      { send_to: `${approvedConfig.googleAdsId}/${approvedConfig.conversionLabels.adhd_young_people_booking_click}`, transport_type: 'beacon' },
+    ]);
+    const sentToGoogle = JSON.stringify(page.calls());
+    for (const value of [...Object.values(FIELDS), 'source_page', 'utm_', 'private+search', '#enquiry']) {
+      expect(sentToGoogle).not.toContain(value);
+    }
+    expect(page.network[0].fields.source_page).toBe(CANONICAL);
+    page.settingsButton().click();
+    page.choice('denied').click();
+    expect(page.calls().at(-1)).toEqual(['consent', 'update', {
+      ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied',
+    }]);
+    const beforeWithdrawal = page.conversions();
+    page.links[0].click();
+    await page.submit();
+    expect(page.conversions()).toEqual(beforeWithdrawal);
+  });
+
+  it('keeps an empty configuration inert, with no Google code or automatic banner', () => {
+    const emptyConfig = {
       googleAdsId: '',
       conversionLabels: { adhd_young_people_enquiry_success: '', adhd_young_people_booking_click: '' },
-    });
-    const page = buildPage({ config: shippedConfig, consent: 'granted' });
+    };
+    const page = buildPage({ config: emptyConfig, consent: 'granted' });
     expect(page.googleScripts()).toHaveLength(0);
     expect(page.ctx.dataLayer).toBeUndefined();
     expect(page.banner()).toBeNull();
@@ -689,7 +752,7 @@ describe('the landing page as shipped', () => {
     calendarLinks.forEach((link) => expect(link).toContain('data-measure-event="adhd_young_people_booking_click"'));
   });
 
-  it('has no invented identifiers, no booking_confirmed event and Google code only in the gated script', () => {
+  it('confines the real identifiers to the approved configuration and keeps the measurement script generic', () => {
     const files = (directory) => readdirSync(directory).flatMap((entry) => {
       const target = path.join(directory, entry);
       return statSync(target).isDirectory() ? files(target) : [target];
@@ -697,10 +760,22 @@ describe('the landing page as shipped', () => {
     const textFiles = files('docs').filter((file) => /\.(?:html|js|css|json|xml|txt)$/.test(file));
     for (const file of textFiles) {
       const content = read(file);
-      expect(content, file).not.toMatch(/AW-\d{6,}|booking_confirmed|googleadservices|fbq\(|google-analytics/);
+      expect(content, file).not.toMatch(/GT-[A-Z0-9]+|booking_confirmed|googleadservices|fbq\(|google-analytics/);
+      const isLanding = file.split(path.sep).join('/') === 'docs/adhd-coaching/young-people/index.html';
+      expect(content.match(/AW-\d{6,}/g) ?? [], file).toEqual(isLanding ? [approvedConfig.googleAdsId] : []);
+      for (const label of Object.values(approvedConfig.conversionLabels)) {
+        expect(content.split(label).length - 1, file).toBe(isLanding ? 1 : 0);
+      }
       if (!file.endsWith(path.join('js', 'ads-measurement.js'))) {
         expect(content, file).not.toMatch(/googletagmanager|gtag\(|dataLayer/);
       }
+    }
+    expect(landingPage.replace(shippedConfig, '')).not.toMatch(/AW-\d{6,}/);
+    for (const file of files('docs')) {
+      expect(read(file), file).not.toMatch(/GT-[A-Z0-9]{6,}/);
+    }
+    for (const value of [approvedConfig.googleAdsId, ...Object.values(approvedConfig.conversionLabels)]) {
+      expect(measurementScript).not.toContain(value);
     }
     expect(siteScript).toContain("new CustomEvent('mentorsphere:enquiry-success')");
     expect(siteScript).not.toMatch(/gtag|googletagmanager|dataLayer|conversion/i);

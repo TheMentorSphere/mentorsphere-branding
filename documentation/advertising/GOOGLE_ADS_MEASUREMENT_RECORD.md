@@ -1,15 +1,17 @@
 # Google Ads measurement record
 
-Branch: `adhd-google-ads-measurement`, based on `origin/main` `7d9270ca8fc5b95dd80eb21c75a2c6d4a198e2ec` (PR #63).
-Prepared: 29 and 30 September 2026. Status: implementation approved by the owner; Privacy Policy V1.7 and ADHD Coaching Policy V1.5 adopted with effect from 30 September 2026. Submitted for review by pull request. Not merged or deployed.
+Implementation prepared: 29 and 30 September 2026 on `adhd-google-ads-measurement` (PR #64).
+PR #64 was merged and deployed on 30 September 2026 at commit `2a843db8231ec923e1161f37b524c59f89fa0874`. Its GitHub Pages build and deployment and CI both succeeded. Fresh browser loads confirmed Privacy Policy V1.7 and ADHD Coaching Policy V1.5 are live, effective from 30 September 2026.
+
+Activation branch: `adhd-google-ads-activation`, based on that current `origin/main` commit. The Google Ads account was hardened and checked before the website configuration was populated. This activation change is for pull-request review only; it has not been merged or manually deployed. No campaign has been launched.
 
 ## 1. Owner decisions recorded for this implementation
 
 | Decision | Implementation |
 |---|---|
 | Consent is asked again after six months | `CHOICE_LIFETIME_DAYS = 182` in `docs/assets/js/consent.js` |
-| Google Ads Conversion ID and labels stay empty | The young people page ships `{"googleAdsId":"","conversionLabels":{...:""}}`; measurement is inert and no banner is shown until real values are added |
-| Enquiry success is the proposed Primary conversion | `adhd_young_people_enquiry_success`, raised only after Formspree confirms receipt |
+| Activate the approved Google Ads Conversion ID and two labels | `AW-18485496875` and the two owner-supplied labels are configured only in the existing young people page JSON block; `ads-measurement.js` stays generic and unchanged |
+| Enquiry success is the Primary conversion | `adhd_young_people_enquiry_success`, raised only after Formspree confirms receipt |
 | Calendar booking click is a Secondary observation only | `adhd_young_people_booking_click`; a click is never treated as a booking and no `booking_confirmed` event exists |
 | Not used | Enhanced conversions, remarketing, Customer Match, Google Analytics, Meta Pixel |
 | Measurement scope | Only `docs/adhd-coaching/young-people/index.html` loads `ads-measurement.js` and its configuration |
@@ -90,14 +92,61 @@ The panel opened from Cookie settings is taller because it adds the current choi
 
 ## 7. Accessibility checks
 
+These are the pre-activation checks from 29 September 2026, when the shipped IDs were empty. The activated page's browser checks are recorded in section 9.
+
 - Keyboard order at 320 x 568 and 1366 x 800: skip link, "How advertising measurement works", Accept, Reject, then the page. Each shows a 3px solid focus outline. Enter on Accept records the choice and moves focus to the confirmation (`role="alert"`).
 - Cookie settings on an ordinary page at 375 x 812: the button is 89 x 24px (WCAG 2.2 target size minimum); Enter opens the panel with focus on its heading; Escape closes it and returns focus to the button.
 - The banner is a labelled region ("Advertising measurement"). Both choices are found by their full accessible names.
 - Reduced motion: with `prefers-reduced-motion: reduce`, the banner has no animation and all transitions resolve to effectively zero through the site-wide rule. The banner adds no motion of its own.
 - All 38 public pages show a visible Cookie settings control, with no Google script, no `dataLayer`, no automatic banner and no page errors, including after acceptance.
 
-## 8. Still required before measurement can be switched on
+## 8. Google Ads privacy hardening and action verification
 
-- From Google Ads: the Conversion ID (`AW-` followed by digits), the enquiry conversion label (Primary) and the booking-click conversion label (Secondary).
-- Publication of Privacy Policy V1.7 (adopted with effect from 30 September 2026) on the live website, by merging and deploying this change, before real IDs are added: see `business-documents/policies/PRIVACY_V1.7_ADHD_V1.5_DOCUMENT_CONTROL.md`.
-- The site's security headers set no global Content Security Policy for public pages, so no header change is needed for the Google tag. If one is added later, it must allow the Google Ads tag hosts on the young people page only.
+Checked and saved through Google's browser interface on 30 September 2026, before repository activation. The embedded settings panel could be read but its click controls failed, so its displayed settings URL was opened directly. No interface restriction was bypassed and no Google Tag Manager container or new tracking implementation was installed.
+
+| Tag control | Verified final state |
+|---|---|
+| Allow user-provided data capabilities | Off, saved and reopened to confirm |
+| Automatic detection of email, phone, name and address | No longer active: these controls disappear when the capability is off; Google states no product or account using the tag can receive data from this feature |
+| Page views on browser history change | Off, saved and reopened to confirm |
+| Scrolls | Off, saved and reopened to confirm |
+| Outbound clicks | Off, saved and reopened to confirm |
+| Form interactions | Off, saved and reopened to confirm |
+| Video engagement | Off, saved and reopened to confirm |
+| File downloads | Off, saved and reopened to confirm |
+| Ordinary page views | Checked and disabled in Google's interface: cannot be turned off there. Left unchanged. The website retains `send_page_view: false` and queues no automatic page-view event. Google's loaded vendor script nevertheless attempts `page_view`-labelled requests after consent; see section 9 |
+| Customer Data Terms | Unaccepted: the acceptance checkbox is unchecked; exited without accepting or saving |
+| Enhanced conversions | Off at account level; Not configured on both conversion actions |
+| Enhanced conversions for leads | Off and not configured: the account-level switch is unchecked |
+
+| Conversion action | Category | Role | Count | Nominal Google Ads value |
+|---|---|---|---|---|
+| ADHD Young People - Enquiry Submitted | Submit lead form (shown as Submit lead forms) | Primary | One | £1 |
+| ADHD Young People - Booking Page Click | Outbound click (shown as Outbound clicks) | Secondary | One | £1 |
+
+The £1 values are reporting defaults in Google Ads only. The website sends no conversion value or currency and no value-based bidding was enabled. Neither action was edited, no action was created and no completed-booking action exists. The Outbound click goal's Misconfigured warning was left alone; no Primary outbound-click action was added.
+
+The campaign view showed zero campaigns and zero drafts. Audience manager showed no data segments and no audiences. No remarketing, audience-building, Customer Match, conversion-based customer lists, Google Analytics, automatic conversions, gateway or site-wide installation was enabled. No personal contact, health, diagnosis, intake or form data is supplied to Google Ads by the website. Consented click identifiers and technical information Google may collect are described separately in Privacy Policy V1.7 section 13.
+
+The site's security headers set no global Content Security Policy for public pages, so no header change is needed for the Google tag. If one is added later, it must allow the Google Ads tag hosts on the young people page only.
+
+## 9. Activation validation
+
+The activation tests pin the exact approved configuration in the young people page, including the booking label's double underscore. They check that no account ID appears on unrelated pages, no Google tag ID appears anywhere in `docs`, and neither the account ID nor either label is hard-coded in the generic measurement script. Existing consent, enquiry-success, booking-click, withdrawal, no-user-data and Formspree canonical `source_page` tests remain in place. Tests also exercise the shipped real configuration before consent, after rejection, after acceptance and after withdrawal.
+
+Automated checks passed: Wrangler type generation, TypeScript `--noEmit`, the full Vitest suite (23 files, 601 tests), content validation (41 HTML files, local links/assets, metadata and intake privacy controls), JavaScript syntax checks (29 files), Worker dry build and `git diff --check`.
+
+Environment note: `pnpm run check` stopped before running checks because the runtime pnpm wrapper attempted dependency installation and encountered an ignored `sharp` build. Its automatic workspace-file addition was reverted. The repository's installed Wrangler, TypeScript and Vitest commands were then run directly from `node_modules`, with the same arguments as the package scripts. No package, lockfile, Wrangler, deployment or workspace configuration change is included.
+
+Local Chrome verification passed 15 checks with no page errors. It used the real Google `gtag.js` asset fetched without browser cookies, referrer or form data. Every collection/conversion endpoint was intercepted and aborted. Calendar navigation was inspected with its request blocked, and enquiry success was simulated through `mentorsphere:enquiry-success`; no real Formspree enquiry or Calendar booking was submitted.
+
+- Before consent: no Google script, request, `gtag`, `dataLayer`, `_gcl` cookie or storage, or conversion.
+- Rejection: no Google measurement; enquiry and booking controls remain usable.
+- Acceptance: the tag loads with the approved AW ID. Defaults are all denied; acceptance grants only `ad_storage` and `ad_user_data`. Personalisation and analytics remain denied. `send_page_view` is false and the website queues no `page_view` event.
+- Enquiry and booking: real, blocked Google conversion requests use the exact approved account and respective labels. Enquiry payload is only `send_to`; booking adds only `transport_type: 'beacon'`. No value, currency or completed-booking event is supplied by the website. Measurement does not prevent or delay booking navigation.
+- Payload privacy: synthetic name, email, phone, message, health, diagnosis, ADHD and intake text entered in the unsubmitted form never appears in the command queue or intercepted request URLs/bodies. There is no user-data/enhanced-conversion command. Google page-location handling excludes UTM values, search terms, arbitrary query values and fragments; only `gclid`, `gbraid` and `wbraid` are permitted. Formspree's hidden `source_page` is the clean canonical URL; existing mocked-provider tests verify the same value in its submission payload.
+- Withdrawal: all four signals become denied, further enquiry and click signals create no conversion, first-party Google Ads cookies/storage are removed, and reload leaves Google code absent.
+- Layout/accessibility: 1366px, 375px and 320px views have no horizontal overflow, equal consent choices at least 44px tall, the expected keyboard order and reduced-motion support. Touch/no-hover rejection works.
+- Scope: ordinary pages and all three intake pages have no Google measurement implementation, even after acceptance elsewhere. No browser page errors occurred.
+
+**Observed Google limitation:** after acceptance, the real vendor script attempted requests with `en=page_view` at Google's `/ccm/collect` and `/pagead/set_partitioned_cookie` endpoints despite `send_page_view: false` in the website configuration. These requests were blocked during QA and carried no tested excluded URL or form values. The ordinary page-view control is locked in Google's interface. Therefore the validation does not claim an absence of all vendor-generated page-view-labelled requests after consent. The website queues only the two deliberate conversion events. In accordance with the owner's instruction, no interface restriction was bypassed and the website implementation was not changed merely to address this locked control. This limitation is disclosed for review before merge.
