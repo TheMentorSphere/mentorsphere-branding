@@ -25,6 +25,12 @@
     return;
   }
 
+  // Only an absent property means legacy scope 1. A present but malformed
+  // requirement disables measurement rather than weakening consent protection.
+  const requiredConsentScopeVersion = Object.prototype.hasOwnProperty.call(config || {}, 'requiredConsentScopeVersion')
+    ? config.requiredConsentScopeVersion : 1;
+  if (requiredConsentScopeVersion !== 1 && requiredConsentScopeVersion !== 2) return;
+
   const googleAdsId = typeof config?.googleAdsId === 'string' ? config.googleAdsId.trim() : '';
   const labels = new Map(
     Object.entries(config?.conversionLabels || {})
@@ -117,7 +123,7 @@
   };
 
   const record = (eventName) => {
-    if (consent.get(PURPOSE) !== 'granted') return;
+    if (consent.get(PURPOSE, requiredConsentScopeVersion) !== 'granted') return;
     const label = labels.get(eventName);
     if (!label) return;
     try {
@@ -132,7 +138,7 @@
     if (purpose !== PURPOSE) return;
     if (value === 'granted') loadTag();
     else if (gtag) gtag('consent', 'update', measurementConsent('denied'));
-  });
+  }, requiredConsentScopeVersion);
 
   // site.js dispatches this only after Formspree confirms a genuine enquiry.
   // The event carries no form data.
@@ -145,6 +151,6 @@
     link.addEventListener('click', () => record(link.dataset.measureEvent));
   });
 
-  if (consent.get(PURPOSE) === 'granted') loadTag();
-  else consent.request(PURPOSE);
+  if (consent.get(PURPOSE, requiredConsentScopeVersion) === 'granted') loadTag();
+  else consent.request(PURPOSE, requiredConsentScopeVersion);
 })();

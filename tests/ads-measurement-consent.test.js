@@ -266,11 +266,13 @@ class FakeFormData {
 // the same browser cookies and storage to the next page, as navigation would.
 function buildPage({
   href = CANONICAL,
+  canonical = CANONICAL,
   kind = 'landing',
   shared = null,
   config = CONFIGURED,
   consent = null,
   consentDate = today(),
+  scopeVersion,
   cookies = [],
   storageItems = {},
   storageAvailable = true,
@@ -284,7 +286,7 @@ function buildPage({
   cookies.forEach((cookie) => jar.write(cookie));
   const storage = shared?.storage ?? new FakeStorage(storageItems);
   if (consent) {
-    storage.setItem('mentorsphere-consent', JSON.stringify({ version: 1, choices: { advertising: { value: consent, date: consentDate } } }));
+    storage.setItem('mentorsphere-consent', JSON.stringify({ version: 1, choices: { advertising: { value: consent, date: consentDate, ...(scopeVersion === undefined ? {} : { scopeVersion }) } } }));
   }
 
   const document = {
@@ -313,7 +315,7 @@ function buildPage({
   document.head = head;
   document.body = body;
   html.append(head, body);
-  head.append(el('link', { rel: 'canonical', href: landing ? CANONICAL : `${location.origin}${location.pathname}` }));
+  head.append(el('link', { rel: 'canonical', href: landing ? canonical : `${location.origin}${location.pathname}` }));
 
   const skipLink = el('a', { class: 'skip-link', href: '#main-content' }, 'Skip to main content');
   const main = el('main', { id: 'main-content' });
@@ -569,7 +571,7 @@ describe('changing or withdrawing consent', () => {
     });
     expect(page.googleScripts()).toHaveLength(1);
     page.settingsButton().click();
-    expect(page.banner().textContent).toContain('Your current choice: accepted.');
+    expect(page.banner().textContent).toContain('Your previous acceptance covers the young people and parents page.');
     page.choice('denied').click();
     expect(page.storedConsent()).toBe('denied');
     expect(page.calls().at(-1)).toEqual(['consent', 'update', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied' }]);
@@ -779,7 +781,8 @@ describe('the landing page as shipped', () => {
       const content = read(file);
       expect(content, file).not.toMatch(/GT-[A-Z0-9]+|booking_confirmed|googleadservices|fbq\(|google-analytics/);
       const isLanding = file.split(path.sep).join('/') === 'docs/adhd-coaching/young-people/index.html';
-      expect(content.match(/AW-\d{6,}/g) ?? [], file).toEqual(isLanding ? [approvedConfig.googleAdsId] : []);
+      const isAdult = file.split(path.sep).join('/') === 'docs/adhd-coaching/adults/index.html';
+      expect(content.match(/AW-\d{6,}/g) ?? [], file).toEqual(isLanding || isAdult ? [approvedConfig.googleAdsId] : []);
       for (const label of Object.values(approvedConfig.conversionLabels)) {
         expect(content.split(label).length - 1, file).toBe(isLanding ? 1 : 0);
       }
@@ -820,7 +823,7 @@ describe('site-wide Cookie settings', () => {
   it('loads the shared consent manager on every public page, after site.js, and never on the unlisted intake forms', () => {
     expect(publicPages.length).toBeGreaterThanOrEqual(38);
     for (const { file, html } of publicPages) {
-      const consentScripts = [...html.matchAll(/<script src="[^"]*assets\/js\/consent\.js\?v=20260929-consent-v1" defer><\/script>/g)];
+      const consentScripts = [...html.matchAll(/<script src="[^"]*assets\/js\/consent\.js\?v=20261003-consent-scope-v2" defer><\/script>/g)];
       const consentStyles = [...html.matchAll(/<link rel="stylesheet" href="[^"]*assets\/css\/consent\.css\?v=20260929-consent-v1">/g)];
       expect(consentScripts, file).toHaveLength(1);
       expect(consentStyles, file).toHaveLength(1);
@@ -867,9 +870,9 @@ describe('site-wide Cookie settings', () => {
 });
 
 describe('Google Ads measurement stays on the advertising landing page', () => {
-  it('ships the measurement script and configuration only on the young people page', () => {
+  it('ships measurement only on the two approved landing pages', () => {
     const withMeasurement = htmlPages.filter(({ html }) => /ads-measurement\.js|data-ads-measurement-config/.test(html)).map(({ file }) => file);
-    expect(withMeasurement).toEqual([LANDING_FILE]);
+    expect(withMeasurement).toEqual(['docs/adhd-coaching/adults/index.html', LANDING_FILE]);
     const landing = htmlPages.find(({ file }) => file === LANDING_FILE).html;
     expect(landing.indexOf('assets/js/ads-measurement.js')).toBeGreaterThan(landing.indexOf('assets/js/consent.js'));
     expect(consentScript).not.toMatch(/googletagmanager|gtag|dataLayer|createElement\('script'\)/);
@@ -1050,6 +1053,264 @@ describe('source_page protection with measurement active', () => {
     expect(siteScript).toContain('return `${url.origin}${url.pathname}`;');
     expect(siteScript).toContain("data.set('source_page', sourcePage);");
     expect(landingPage).toContain(`<input type="hidden" name="source_page" value="${CANONICAL}" data-source-page>`);
+  });
+});
+
+describe('Phase 9 scope-aware measurement integration', () => {
+  const adultUrl = 'https://www.thementorsphere.co.uk/adhd-coaching/adults/';
+  const adultHTML = read('docs/adhd-coaching/adults/index.html');
+  const config = JSON.parse(adultHTML.match(/data-ads-measurement-config>(.*?)<\/script>/)[1]);
+  const youngConfig = JSON.parse(landingPage.match(/data-ads-measurement-config>(.*?)<\/script>/)[1]);
+  const adult = (options = {}) => buildPage({ href: adultUrl, canonical: adultUrl, config, formEvent: 'adhd_adults_enquiry_success', linkEvents: Array(7).fill('adhd_adults_booking_click'), ...options });
+  const young = (options = {}) => buildPage({ config: youngConfig, ...options });
+  const matrix = [
+    ['no choice', {}, false, false, true],
+    ['legacy grant', { consent: 'granted' }, true, false, true],
+    ['legacy refusal', { consent: 'denied' }, false, false, false],
+    ['scope-2 grant', { consent: 'granted', scopeVersion: 2 }, true, true, false],
+    ['scope-2 refusal', { consent: 'denied', scopeVersion: 2 }, false, false, false],
+    ['expired grant', { consent: 'granted', scopeVersion: 2, consentDate: '2000-01-01' }, false, false, true],
+    ['malformed storage', { storageItems: { 'mentorsphere-consent': '{broken' } }, false, false, true],
+    ['malformed scope', { consent: 'granted', scopeVersion: '2' }, false, false, true],
+  ];
+  it.each(matrix)('%s honours both page scopes through the actual runtime', async (_, options, youngAllowed, adultAllowed, adultPrompt) => {
+    for (const [create, allowed] of [[young, youngAllowed], [adult, adultAllowed]]) {
+      const page = create(options);
+      expect(page.googleScripts()).toHaveLength(allowed ? 1 : 0);
+      if (create === adult) expect(Boolean(page.banner() && !page.banner().hidden)).toBe(adultPrompt);
+      page.links.forEach(link => expect(link.click().defaultPrevented).toBe(false));
+      await page.submit();
+      expect(page.conversions()).toHaveLength(allowed ? page.links.length + 1 : 0);
+      if (!allowed) expect(page.ctx.dataLayer).toBeUndefined();
+    }
+  });
+  it.each([0, -1, '2', null, 3, 1.5, true, {}, [], NaN])('invalid present configured scope %j disables the runtime even with a grant', scope => {
+    const page = adult({ consent: 'granted', scopeVersion: 2, config: { ...config, requiredConsentScopeVersion: scope } });
+    expect(page.googleScripts()).toHaveLength(0);
+    expect(page.ctx.dataLayer).toBeUndefined();
+    page.ctx.MentorSphereConsent.set('advertising', 'granted');
+    page.links.forEach(link => link.click());
+    expect(page.ctx.dataLayer).toBeUndefined();
+  });
+  it('malformed NaN JSON fails closed', () => {
+    const page = adult({ consent: 'granted', scopeVersion: 2, config: JSON.stringify(config).replace('"requiredConsentScopeVersion":2', '"requiredConsentScopeVersion":NaN') });
+    expect(page.googleScripts()).toHaveLength(0);
+  });
+  it('keeps legacy young grants and upgrades adult only after explicit acceptance, without replaying earlier clicks', () => {
+    const first = young({ consent: 'granted' });
+    const next = adult({ shared: first.shared });
+    expect(first.googleScripts()).toHaveLength(1);
+    expect(next.googleScripts()).toHaveLength(0);
+    expect(next.banner().textContent).toContain('The scope now includes the adults page.');
+    next.links[0].click();
+    next.choice('granted').click();
+    expect(next.googleScripts()).toHaveLength(1);
+    expect(next.conversions()).toHaveLength(0);
+    expect(young({ shared: next.shared }).googleScripts()).toHaveLength(1);
+  });
+  it.each([['adult', adult, config, youngConfig], ['young', young, youngConfig, config]])('%s only dispatches its own configured labels, with exact minimal payloads', async (_, create, own, other) => {
+    const page = create({ consent: 'granted', scopeVersion: 2 });
+    page.links.forEach(link => link.click());
+    await page.submit();
+    const ownLabels = Object.values(own.conversionLabels);
+    page.conversions().forEach(call => {
+      expect(Object.keys(call)).toEqual(['send_to']);
+      expect(ownLabels.map(label => `AW-18485496875/${label}`)).toContain(call.send_to);
+    });
+    // A foreign marker or hook never gains a listener on this page.
+    const foreign = create({ consent: 'granted', scopeVersion: 2, formEvent: Object.keys(other.conversionLabels)[0], linkEvents: [Object.keys(other.conversionLabels)[1]] });
+    foreign.links[0].click(); await foreign.submit();
+    expect(foreign.conversions()).toHaveLength(0);
+    Object.values(other.conversionLabels).forEach(label => expect(JSON.stringify(page.calls())).not.toContain(label));
+    Object.values(FIELDS).forEach(value => expect(JSON.stringify(page.calls())).not.toContain(value));
+  });
+  it.each(['storage', 'pageshow'])('%s uses the latest scope for upgrades, downgrades and withdrawal', async event => {
+    const page = adult({ consent: 'granted' });
+    const update = (value, scopeVersion) => {
+      page.storage.setItem('mentorsphere-consent', JSON.stringify({ version: 1, choices: { advertising: { value, date: today(), scopeVersion } } }));
+      page.fireWindow(event, { key: 'mentorsphere-consent', persisted: true });
+    };
+    update('granted', 1);
+    expect(page.googleScripts()).toHaveLength(0);
+    update('granted', 2);
+    expect(page.googleScripts()).toHaveLength(1);
+    page.links[0].click();
+    const count = page.conversions().length;
+    update('granted', 1);
+    page.links[0].click();
+    expect(page.conversions()).toHaveLength(count);
+    expect(page.calls().at(-1)).toEqual(['consent', 'update', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied' }]);
+    update('granted', 2);
+    page.jar.write('_gcl_aw=QA; path=/'); page.storage.setItem('_gcl_ls', 'QA');
+    update('denied', 2);
+    await page.submit(); page.links[0].click();
+    expect(page.conversions()).toHaveLength(count);
+    expect(page.jar.names()).not.toContain('_gcl_aw');
+    expect(page.storage.getItem('_gcl_ls')).toBeNull();
+    expect(young({ shared: page.shared }).googleScripts()).toHaveLength(0);
+  });
+  it('sanitises adult page context and retains only Google click identifiers', () => {
+    const page = adult({ consent: 'granted', scopeVersion: 2, href: `${adultUrl}?gclid=QA1&gbraid=QA2&wbraid=QA3&utm_source=private&utm_medium=private&utm_campaign=private&utm_term=private&utm_content=private&q=private&email=private#private`, referrer: 'https://referrer.example/private?search=private#private' });
+    const params = page.calls().find(call => call[0] === 'config')[2];
+    expect(params.page_location).toBe(`${adultUrl}?gclid=QA1&gbraid=QA2&wbraid=QA3`);
+    expect(params.page_referrer).toBe('https://referrer.example/');
+    expect(JSON.stringify(page.calls())).not.toContain('private');
+  });
+});
+
+describe('advertising purpose scope migration', () => {
+  const stored = (page) => JSON.parse(page.storage.getItem('mentorsphere-consent'));
+  const cases = [
+    ['no record', {}, null, null],
+    ['legacy grant', { consent: 'granted' }, 'granted', null],
+    ['legacy refusal', { consent: 'denied' }, 'denied', 'denied'],
+    ['explicit scope-1 grant', { consent: 'granted', scopeVersion: 1 }, 'granted', null],
+    ['scope-2 grant', { consent: 'granted', scopeVersion: 2 }, 'granted', 'granted'],
+    ['scope-2 refusal', { consent: 'denied', scopeVersion: 2 }, 'denied', 'denied'],
+    ['expired legacy grant', { consent: 'granted', consentDate: '2000-01-01' }, null, null],
+    ['expired scope-2 grant', { consent: 'granted', scopeVersion: 2, consentDate: '2000-01-01' }, null, null],
+    ['expired refusal', { consent: 'denied', consentDate: '2000-01-01' }, null, null],
+  ];
+  it.each(cases)('%s: preserves the young-person decision and requests only when needed', (_, options, scope1) => {
+    const page = buildPage(options);
+    expect(page.ctx.MentorSphereConsent.get('advertising')).toBe(scope1);
+    expect(page.googleScripts()).toHaveLength(scope1 === 'granted' ? 1 : 0);
+    expect(Boolean(page.banner() && !page.banner().hidden)).toBe(scope1 === null);
+  });
+  it.each(cases)('%s: future scope-2 consumer stays gated', (_, options, scope1, scope2) => {
+    const page = buildPage({ ...options, kind: 'ordinary', href: 'https://www.thementorsphere.co.uk/adhd-coaching/adults/' });
+    const consent = page.ctx.MentorSphereConsent;
+    expect(consent.get('advertising')).toBe(scope1);
+    expect(consent.get('advertising', 2)).toBe(scope2);
+    const before = page.storage.getItem('mentorsphere-consent');
+    consent.request('advertising', 2);
+    expect(Boolean(page.banner() && !page.banner().hidden)).toBe(scope2 === null);
+    expect(page.storage.getItem('mentorsphere-consent')).toBe(before);
+    expect(page.googleScripts()).toHaveLength(0);
+    if (scope1 === 'granted' && scope2 === null) {
+      const notice = page.banner().querySelector('.consent-banner-current');
+      expect(notice.hidden).toBe(false);
+      expect(notice.textContent).toContain('Please accept again before measurement can be used there');
+    }
+  });
+
+  it('accepting expansion updates only the purpose entry, retains version 1 and renews the date', () => {
+    const page = buildPage({ kind: 'ordinary', consent: 'granted', consentDate: new Date(Date.now() - 86400000).toISOString().slice(0, 10) });
+    const consent = page.ctx.MentorSphereConsent;
+    const notifications = [];
+    consent.subscribe((purpose, value) => notifications.push([purpose, value]), 2);
+    consent.request('advertising', 2);
+    page.choice('granted').click();
+    expect(stored(page)).toEqual({ version: 1, choices: { advertising: { value: 'granted', date: today(), scopeVersion: 2 } } });
+    expect(consent.get('advertising')).toBe('granted');
+    expect(consent.get('advertising', 2)).toBe('granted');
+    expect(notifications).toEqual([['advertising', 'granted']]);
+    expect(page.banner().querySelector('[role="alert"]').textContent).toContain('You have accepted advertising measurement.');
+    expect(page.googleScripts()).toHaveLength(0);
+  });
+
+  it('rejecting expansion stops dispatch on the live young-person consumer and clears accessible storage', () => {
+    const page = buildPage({ consent: 'granted', cookies: ['_gcl_aw=test; path=/'], storageItems: { _gcl_ls: 'test' } });
+    page.ctx.MentorSphereConsent.request('advertising', 2);
+    page.choice('denied').click();
+    expect(page.ctx.MentorSphereConsent.get('advertising', 2)).toBe('denied');
+    expect(page.ctx.MentorSphereConsent.get('advertising')).toBe('denied');
+    page.links[0].click();
+    expect(page.conversions()).toEqual([]);
+    expect(page.jar.names()).toEqual([]);
+    expect(page.storage.getItem('_gcl_ls')).toBeNull();
+    expect(page.calls().at(-1)).toEqual(['consent', 'update', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied' }]);
+  });
+
+  it('Cookie settings explain legacy scope everywhere; close and Escape leave it unchanged and return focus', () => {
+    const page = buildPage({ kind: 'ordinary', consent: 'granted' });
+    const before = page.storage.getItem('mentorsphere-consent');
+    page.ctx.MentorSphereConsent.request('advertising', 2);
+    page.banner().dispatchEvent(new FakeEvent('keydown', { key: 'Escape' }));
+    expect(page.banner().hidden).toBe(false);
+    page.settingsButton().click();
+    expect(page.document.activeElement.id).toBe('consent-banner-title');
+    expect(page.banner().textContent).toContain('The scope now includes the adults page.');
+    expect(page.banner().textContent).not.toContain('Your current choice: accepted.');
+    page.banner().querySelector('[data-consent-close]').click();
+    expect(page.document.activeElement).toBe(page.settingsButton());
+    page.settingsButton().click();
+    page.banner().dispatchEvent(new FakeEvent('keydown', { key: 'Escape' }));
+    expect(page.banner().hidden).toBe(true);
+    expect(page.document.activeElement).toBe(page.settingsButton());
+    expect(page.storage.getItem('mentorsphere-consent')).toBe(before);
+    expect(page.ctx.MentorSphereConsent.get('advertising', 2)).toBeNull();
+  });
+
+  it.each(['storage', 'pageshow'])('%s resynchronises scope-aware subscribers and visible settings', (event) => {
+    const first = buildPage({ kind: 'ordinary', consent: 'granted' });
+    const second = buildPage({ kind: 'ordinary', shared: first.shared });
+    const legacy = [], expanded = [];
+    second.ctx.MentorSphereConsent.subscribe((_, value) => legacy.push(value));
+    second.ctx.MentorSphereConsent.subscribe((_, value) => expanded.push(value), 2);
+    second.settingsButton().click();
+    const sync = () => second.fireWindow(event, event === 'storage' ? { key: 'mentorsphere-consent' } : { persisted: true });
+    sync();
+    expect(legacy.at(-1)).toBe('granted');
+    expect(expanded.at(-1)).toBeNull();
+    first.ctx.MentorSphereConsent.set('advertising', 'granted');
+    // Source of truth is storage, even before delivery of a browser event.
+    expect(second.ctx.MentorSphereConsent.get('advertising', 2)).toBe('granted');
+    sync();
+    expect(expanded.at(-1)).toBe('granted');
+    expect(second.banner().textContent).toContain('Your current choice: accepted.');
+    first.ctx.MentorSphereConsent.set('advertising', 'denied');
+    sync();
+    expect(legacy.at(-1)).toBe('denied');
+    expect(expanded.at(-1)).toBe('denied');
+    expect(second.banner().textContent).toContain('Your current choice: rejected.');
+  });
+
+  it('storage.clear propagates and expiry is checked afresh on dispatch and history restoration', () => {
+    const page = buildPage({ consent: 'granted', scopeVersion: 2 });
+    page.storage.setItem('mentorsphere-consent', JSON.stringify({ version: 1, choices: { advertising: { value: 'granted', date: '2000-01-01', scopeVersion: 2 } } }));
+    page.links[0].click();
+    expect(page.conversions()).toEqual([]);
+    page.fireWindow('pageshow', { persisted: true });
+    expect(page.ctx.MentorSphereConsent.get('advertising', 2)).toBeNull();
+    page.ctx.MentorSphereConsent.set('advertising', 'granted');
+    page.storage.removeItem('mentorsphere-consent');
+    page.fireWindow('storage', { key: null });
+    expect(page.calls().at(-1)[2].ad_storage).toBe('denied');
+  });
+
+  it('unavailable storage retains expanded choices in memory for this page only', () => {
+    const page = buildPage({ kind: 'ordinary', storageAvailable: false });
+    page.ctx.MentorSphereConsent.request('advertising', 2);
+    page.choice('granted').click();
+    page.fireWindow('pageshow', { persisted: true });
+    expect(page.ctx.MentorSphereConsent.get('advertising', 2)).toBe('granted');
+    page.settingsButton().click();
+    page.choice('denied').click();
+    expect(page.ctx.MentorSphereConsent.get('advertising', 2)).toBe('denied');
+    expect(page.storage.getItem('mentorsphere-consent')).toBeNull();
+    expect(buildPage({ kind: 'ordinary', storageAvailable: false }).ctx.MentorSphereConsent.get('advertising', 2)).toBeNull();
+  });
+
+  it.each(['{broken', 'null', '[]', '{"version":1,"choices":null}', '{"version":1,"choices":[]}', '{"version":2,"choices":{}}', ...[
+    { value: 'granted', date: 'bad' }, { value: 'other', date: today() }, { value: 'granted', date: '2999-01-01' },
+    ...[null, 0, -1, '2', 1.5, 3, {}].map(scopeVersion => ({ value: 'granted', date: today(), scopeVersion })),
+  ].map(entry => JSON.stringify({ version: 1, choices: { advertising: entry } }))])('malformed record %s fails safely', (record) => {
+    const page = buildPage({ storageItems: { 'mentorsphere-consent': record } });
+    expect(page.ctx.MentorSphereConsent.get('advertising')).toBeNull();
+    expect(page.ctx.MentorSphereConsent.get('advertising', 2)).toBeNull();
+    expect(page.googleScripts()).toHaveLength(0);
+    page.choice('denied').click();
+    expect(page.ctx.MentorSphereConsent.get('advertising', 2)).toBe('denied');
+  });
+
+  it('invalid required scopes fail closed without showing a misleading banner', () => {
+    const page = buildPage({ kind: 'ordinary', consent: 'granted', scopeVersion: 2 });
+    for (const scope of [null, 0, -1, '2', 3, NaN]) {
+      expect(page.ctx.MentorSphereConsent.get('advertising', scope)).toBeNull();
+      page.ctx.MentorSphereConsent.request('advertising', scope);
+    }
+    expect(page.banner()).toBeNull();
   });
 });
 

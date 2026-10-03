@@ -11,8 +11,10 @@
 
   const PURPOSES = {
     advertising: {
+      scopeVersion: 2,
       title: 'Advertising measurement',
-      description: 'Can The MentorSphere use Google Ads cookies to measure whether its adverts lead to enquiries or booking-page visits? Nothing is sent to Google unless you accept, and your enquiry details are never shared.',
+      description: 'Can The MentorSphere use Google Ads cookies on its ADHD coaching landing pages for young people and parents and for adults to measure whether adverts lead to enquiries or booking-page visits? Nothing is sent to Google unless you accept, and your enquiry details are never shared.',
+      renewalMessage: 'Your previous acceptance covers the young people and parents page. The scope now includes the adults page. Please accept again before measurement can be used there, or reject measurement on both pages.',
       moreLabel: 'How advertising measurement works',
       // Both buttons show a short verb on small screens. The purpose stays in
       // each button's accessible name, and is visible on wider screens.
@@ -29,7 +31,8 @@
   };
 
   const CHOICES = ['granted', 'denied'];
-  const listeners = new Set();
+  const listeners = new Map();
+  const requiredScopes = {};
   let memoryRecord = null;
 
   const storage = (() => {
@@ -51,7 +54,7 @@
     if (!storage) return null;
     try {
       const record = JSON.parse(storage.getItem(STORAGE_KEY) || 'null');
-      return record && record.version === STORAGE_VERSION && typeof record.choices === 'object' ? record : null;
+      return record && record.version === STORAGE_VERSION && record.choices && typeof record.choices === 'object' && !Array.isArray(record.choices) ? record : null;
     } catch {
       return null;
     }
@@ -68,13 +71,21 @@
     }
   };
 
-  const get = (purpose) => {
-    if (!PURPOSES[purpose]) return null;
+  const validScope = (purpose, scope) => Boolean(PURPOSES[purpose]) && Number.isInteger(scope) && scope >= 1 && scope <= PURPOSES[purpose].scopeVersion;
+
+  // Missing scope is the original disclosure, not a malformed record. A
+  // refusal applies to every scope; only grants need scope renewal.
+  const get = (purpose, requiredScopeVersion = 1) => {
+    if (!validScope(purpose, requiredScopeVersion)) return null;
     const entry = readRecord()?.choices?.[purpose];
     if (!entry || !CHOICES.includes(entry.value)) return null;
+    if (typeof entry.date !== 'string') return null;
     const decidedAt = Date.parse(entry.date);
     if (!Number.isFinite(decidedAt)) return null;
-    if (Date.now() - decidedAt > CHOICE_LIFETIME_DAYS * 24 * 60 * 60 * 1000) return null;
+    if (decidedAt > Date.now() || Date.now() - decidedAt > CHOICE_LIFETIME_DAYS * 24 * 60 * 60 * 1000) return null;
+    if (entry.value === 'denied') return 'denied';
+    const scope = entry.scopeVersion === undefined ? 1 : entry.scopeVersion;
+    if (!validScope(purpose, scope) || scope < requiredScopeVersion) return null;
     return entry.value;
   };
 
@@ -107,10 +118,10 @@
     }
   };
 
-  const notify = (purpose, value) => {
-    listeners.forEach((listener) => {
+  const notify = (purpose) => {
+    listeners.forEach((requiredScopeVersion, listener) => {
       try {
-        listener(purpose, value);
+        listener(purpose, get(purpose, requiredScopeVersion));
       } catch {
         // One page script must not stop another from hearing the choice.
       }
@@ -122,15 +133,15 @@
     const record = readRecord() || { version: STORAGE_VERSION, choices: {} };
     writeRecord({
       version: STORAGE_VERSION,
-      choices: { ...record.choices, [purpose]: { value, date: new Date().toISOString().slice(0, 10) } },
+      choices: { ...record.choices, [purpose]: { value, date: new Date().toISOString().slice(0, 10), scopeVersion: PURPOSES[purpose].scopeVersion } },
     });
     // Tell page scripts first, so they stop before their storage is removed.
-    notify(purpose, value);
+    notify(purpose);
     if (value !== 'granted') clearPurposeStorage(purpose);
   };
 
-  const subscribe = (listener) => {
-    if (typeof listener === 'function') listeners.add(listener);
+  const subscribe = (listener, requiredScopeVersion = 1) => {
+    if (typeof listener === 'function' && validScope('advertising', requiredScopeVersion)) listeners.set(listener, requiredScopeVersion);
   };
 
   // Remove leftover storage for any purpose that is not currently accepted,
@@ -146,13 +157,18 @@
   const resync = () => {
     Object.keys(PURPOSES).forEach((purpose) => {
       const value = get(purpose);
-      notify(purpose, value);
+      notify(purpose);
       if (value !== 'granted') clearPurposeStorage(purpose);
     });
+    if (banner && !banner.hidden) {
+      const confirmationHadFocus = bannerParts.confirmation.contains(document.activeElement);
+      showBanner(bannerPurpose, { trigger: settingsTrigger, focus: false });
+      if (confirmationHadFocus) bannerParts.title.focus();
+    }
   };
 
   window.addEventListener('storage', (event) => {
-    if (event.key !== STORAGE_KEY) return;
+    if (event.key !== STORAGE_KEY && event.key !== null) return;
     memoryRecord = null;
     resync();
   });
@@ -247,10 +263,11 @@
     else window.addEventListener('resize', updateBannerSpace, { passive: true });
   };
 
-  const showBanner = (purpose, { trigger = null } = {}) => {
+  const showBanner = (purpose, { trigger = null, focus = true } = {}) => {
     if (!banner) buildBanner();
     const details = PURPOSES[purpose];
     const value = get(purpose);
+    const renewal = value === 'granted' && get(purpose, details.scopeVersion) !== 'granted';
     bannerPurpose = purpose;
     settingsTrigger = trigger;
     bannerParts.title.textContent = details.title;
@@ -263,22 +280,23 @@
       wrapper.append(label, element('span', { class: 'consent-button-context' }, details.labelContext));
       button.replaceChildren(wrapper);
     });
-    bannerParts.current.textContent = value === 'granted'
+    bannerParts.current.textContent = renewal ? details.renewalMessage : value === 'granted'
       ? 'Your current choice: accepted.'
       : value === 'denied' ? 'Your current choice: rejected.' : 'You have not made a choice yet.';
-    bannerParts.current.hidden = !trigger;
+    bannerParts.current.hidden = !trigger && !renewal;
     bannerParts.close.hidden = !trigger;
     bannerParts.question.hidden = false;
     bannerParts.confirmation.hidden = true;
     banner.hidden = false;
     updateBannerSpace();
-    if (trigger) bannerParts.title.focus();
+    if (trigger && focus) bannerParts.title.focus();
   };
 
-  const request = (purpose) => {
-    if (!PURPOSES[purpose] || get(purpose)) return;
-    if (banner && !banner.hidden) return;
-    showBanner(purpose);
+  const request = (purpose, requiredScopeVersion = 1) => {
+    if (!validScope(purpose, requiredScopeVersion)) return;
+    requiredScopes[purpose] = Math.max(requiredScopes[purpose] || 1, requiredScopeVersion);
+    if (get(purpose, requiredScopes[purpose])) return;
+    showBanner(purpose, { trigger: settingsTrigger, focus: false });
   };
 
   const open = (trigger = null, purpose = 'advertising') => {

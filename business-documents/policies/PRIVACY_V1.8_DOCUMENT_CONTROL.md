@@ -1,5 +1,7 @@
 # Privacy Policy V1.8 document control
 
+Publication status correction, 3 October 2026: Luke's Phase 8 brief confirms V1.8 is live. The preparation-time publication-pending references below are historical, not the current status. V1.9 is now adopted locally with publication pending; V1.8 remains published until that deployment. Exact V1.8 publication identifiers were not supplied. See [V1.9 document control](PRIVACY_V1.9_DOCUMENT_CONTROL.md).
+
 Prepared and adopted with effect from **3 October 2026**, as instructed by Luke Turner in the conversion-measurement hardening brief. Website publication awaits review, merge and deployment. Branch: `google-ads-conversion-hardening`, based on `origin/main` `7535d62917d60e1dff7c94369919f8c079fa3eb4`.
 
 | Policy | Version | Effective date | Supersedes | Editable copy | Export | Source snapshot |
