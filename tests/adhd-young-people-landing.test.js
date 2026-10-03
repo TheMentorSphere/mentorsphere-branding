@@ -152,7 +152,7 @@ describe('young people ADHD coaching landing page', () => {
     expect(scriptSources).toEqual([
       '../../assets/js/site.js?v=20260804-home-education-v2',
       '../../assets/js/consent.js?v=20260929-consent-v1',
-      '../../assets/js/ads-measurement.js?v=20260929-consent-v1',
+      '../../assets/js/ads-measurement.js?v=20261003-privacy-v2',
     ]);
     for (const source of [page, siteScript]) {
       expect(source).not.toMatch(/gtag|googletagmanager|google-analytics|dataLayer|fbq|remarketing|sendBeacon|<iframe/i);

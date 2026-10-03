@@ -58,7 +58,7 @@ const sharedStylesVersion = "styles.css?v=20260804-home-education-v2";
 const sharedScriptVersion = "site.js?v=20260804-home-education-v2";
 const consentStylesVersion = "consent.css?v=20260929-consent-v1";
 const consentScriptVersion = "consent.js?v=20260929-consent-v1";
-const adsMeasurementScriptVersion = "ads-measurement.js?v=20260929-consent-v1";
+const adsMeasurementScriptVersion = "ads-measurement.js?v=20261003-privacy-v2";
 // Cookie settings are available on every public page, but Google Ads
 // measurement is limited to the approved advertising landing page.
 const adsMeasurementPages = new Set([path.join(docsRoot, "adhd-coaching", "young-people", "index.html")]);

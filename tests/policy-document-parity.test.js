@@ -207,18 +207,19 @@ describe(`Privacy Policy V${privacy.version} across formats`, () => {
     checkDocumentControl(privacy, 'Privacy Policy');
   });
 
-  it(`keeps every V${privacy.previousVersion} provision, changing only section numbers and the closing note`, () => {
+  it(`retains V${privacy.previousVersion} provisions while distinguishing page context from supplied individual health information`, () => {
     const previous = docx(privacy.previousDocx).body;
     const current = webBlocks(privacy.html);
     const notRetained = previous.filter((block) => !current.includes(block));
     expect(notRetained).toEqual([
-      '13. Policy updates',
-      '14. Contact information',
-      'By engaging with The MentorSphere, you acknowledge that you have been given access to this Privacy Policy. Specific consent is requested separately where required, including for optional session recording.',
+      'health, disability, diagnosis, SEND or neurodiversity information;',
     ]);
-    expect(current).toContain('14. Policy updates');
-    expect(current).toContain('15. Contact information');
-    expect(current).toContain(notRetained[2].replace('optional session recording.', 'optional session recording and advertising measurement.'));
+    expect(current.filter((block) => !previous.includes(block))).toEqual([
+      'the page title and the address of the referring page, where available;',
+      'Google may send page-view measurement when its code loads after you accept, even if you do not send an enquiry or open the booking page. Page addresses and titles may indicate that the page relates to ADHD coaching. This page or service context is separate from personal information you enter into a form and does not establish that you have ADHD or another condition.',
+      'individual health, disability, diagnosis, SEND or neurodiversity information supplied through enquiries, ADHD Coaching Intake or learner profiles;',
+      current.find((block) => block.startsWith(`V${privacy.version}, ${privacy.effectiveDate}:`)),
+    ]);
     // Retained provisions stay in their original order.
     const retained = previous.filter((block) => current.includes(block));
     expect(retained.map((block) => current.indexOf(block))).toEqual([...retained.map((block) => current.indexOf(block))].sort((a, b) => a - b));
@@ -226,6 +227,12 @@ describe(`Privacy Policy V${privacy.version} across formats`, () => {
 
   it(`leaves the V${privacy.previousVersion} editable copy and PDF unchanged`, () => {
     checkHistoricalCopies(privacy);
+  });
+
+  it('also preserves the previously pinned V1.6 historical copies', () => {
+    expect(sha256(readFileSync('business-documents/policies/current/docx/Privacy_Policy_V1.6.docx'))).toBe('6c7266dcde8f3d99f8df53a0d6fc2a5a7e0e10c1bd637850491611f7e5ef6923');
+    expect(sha256(readFileSync('business-documents/policies/current/pdf/Privacy_Policy_V1.6.pdf'))).toBe('dfbfd20912e35f971261277dcee596bd49f2ece6ba295ab263c8ba6b9e9f3fca');
+    expect(existsSync('business-documents/policies/source-snapshots/Privacy_Policy_V1.6.md')).toBe(true);
   });
 });
 

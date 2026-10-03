@@ -427,6 +427,8 @@ describe('consent before any advertising measurement', () => {
     expect(page.ctx.dataLayer).toBeUndefined();
     expect(page.ctx.gtag).toBeUndefined();
     expect(page.network).toHaveLength(0);
+    expect(page.jar.names()).toEqual([]);
+    expect([...page.storage.items.keys()]).toEqual([]);
     expect(page.banner().hidden).toBe(false);
     expect(page.ctx.MentorSphereConsent.get('advertising')).toBeNull();
   });
@@ -493,7 +495,7 @@ describe('consent before any advertising measurement', () => {
     expect(page.banner().hidden).toBe(true);
   });
 
-  it('loads the approved Google tag only after acceptance, with personalisation off and no page view', () => {
+  it('loads the approved Google tag only after acceptance, with personalisation off and automatic page views disabled in our configuration', () => {
     const page = buildPage({ href: `${CANONICAL}?gclid=TESTCLICK&utm_term=adhd+coach+for+my+son#enquiry`, referrer: 'https://www.google.com/search?q=adhd+coach' });
     page.choice('granted').click();
     const scripts = page.googleScripts();
@@ -507,6 +509,7 @@ describe('consent before any advertising measurement', () => {
     expect(config[1]).toBe(TEST_ADS_ID);
     expect(config[2]).toEqual({
       send_page_view: false,
+      page_title: 'The MentorSphere',
       allow_ad_personalization_signals: false,
       allow_google_signals: false,
       page_location: `${CANONICAL}?gclid=TESTCLICK`,
@@ -647,7 +650,7 @@ describe('adhd_young_people_booking_click', () => {
     page.choice('granted').click();
     const click = page.links[1].click();
     expect(click.defaultPrevented).toBe(false);
-    expect(page.conversions()).toEqual([{ send_to: `${TEST_ADS_ID}/${BOOKING_LABEL}`, transport_type: 'beacon' }]);
+    expect(page.conversions()).toEqual([{ send_to: `${TEST_ADS_ID}/${BOOKING_LABEL}` }]);
     expect(BOOKING_LABEL).not.toBe(ENQUIRY_LABEL);
   });
 
@@ -677,6 +680,19 @@ describe('the landing page as shipped', () => {
     },
   };
 
+  it('queues one minimal conversion for each marked link without cancelling normal navigation', () => {
+    const markers = [...landingPage.matchAll(/<a\b[^>]*data-measure-event="([^"]+)"[^>]*>/g)];
+    expect(markers).toHaveLength(6);
+    const page = buildPage({ config: shippedConfig, consent: 'granted', linkEvents: markers.map((match) => match[1]) });
+    page.links.forEach((link, index) => {
+      expect(link.click().defaultPrevented).toBe(false);
+      expect(page.conversions()).toHaveLength(index + 1);
+      expect(page.conversions().at(-1)).toEqual({ send_to: 'AW-18485496875/bi_lCP__lowdEKuYye5E' });
+      expect(markers[index][0]).toContain('target="_blank"');
+      expect(markers[index][0]).toContain('rel="noopener"');
+    });
+  });
+
   it('ships the exact approved identifiers while sending nothing before consent or after rejection', async () => {
     expect(JSON.parse(shippedConfig)).toEqual(approvedConfig);
     const page = buildPage({ config: shippedConfig });
@@ -705,6 +721,7 @@ describe('the landing page as shipped', () => {
     const config = page.calls().find(([command]) => command === 'config');
     expect(config).toEqual(['config', approvedConfig.googleAdsId, {
       send_page_view: false,
+      page_title: 'The MentorSphere',
       allow_ad_personalization_signals: false,
       allow_google_signals: false,
       page_location: `${CANONICAL}?gclid=TESTCLICK`,
@@ -715,7 +732,7 @@ describe('the landing page as shipped', () => {
     expect(page.links[0].click().defaultPrevented).toBe(false);
     expect(page.conversions()).toEqual([
       { send_to: `${approvedConfig.googleAdsId}/${approvedConfig.conversionLabels.adhd_young_people_enquiry_success}` },
-      { send_to: `${approvedConfig.googleAdsId}/${approvedConfig.conversionLabels.adhd_young_people_booking_click}`, transport_type: 'beacon' },
+      { send_to: `${approvedConfig.googleAdsId}/${approvedConfig.conversionLabels.adhd_young_people_booking_click}` },
     ]);
     const sentToGoogle = JSON.stringify(page.calls());
     for (const value of [...Object.values(FIELDS), 'source_page', 'utm_', 'private+search', '#enquiry']) {

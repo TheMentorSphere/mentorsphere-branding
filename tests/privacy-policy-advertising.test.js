@@ -16,27 +16,27 @@ const textOf = (html) => html.replace(/<script[\s\S]*?<\/script>/g, ' ').replace
 const text = textOf(policy);
 const section13 = textOf(policy.match(/<h2 id="advertising-measurement">([\s\S]*?)<h2>14\./)[1]);
 
-describe('Privacy Policy V1.7', () => {
+describe('Privacy Policy V1.8', () => {
   it('uses one version and effective date across metadata, controls and structured data', () => {
-    expect(policy).toContain('<title>Privacy Policy V1.7 | The MentorSphere</title>');
-    expect(policy).toContain(`content="Privacy Policy V1.7, effective ${EFFECTIVE},`);
-    expect(policy).toContain(`<meta property="og:description" content="Privacy Policy V1.7, effective ${EFFECTIVE},`);
-    expect(policy).toContain('<meta property="og:title" content="Privacy Policy V1.7 | The MentorSphere">');
-    expect(text).toContain(`This web version reflects Privacy Policy V1.7, effective from ${EFFECTIVE}.`);
-    expect(policy).toContain(`<span class="policy-version">V1.7, effective ${EFFECTIVE}</span>`);
-    expect(policy).toContain('<div><dt>Version</dt><dd>1.7</dd></div>');
+    expect(policy).toContain('<title>Privacy Policy V1.8 | The MentorSphere</title>');
+    expect(policy).toContain(`content="Privacy Policy V1.8, effective ${EFFECTIVE},`);
+    expect(policy).toContain(`<meta property="og:description" content="Privacy Policy V1.8, effective ${EFFECTIVE},`);
+    expect(policy).toContain('<meta property="og:title" content="Privacy Policy V1.8 | The MentorSphere">');
+    expect(text).toContain(`This web version reflects Privacy Policy V1.8, effective from ${EFFECTIVE}.`);
+    expect(policy).toContain(`<span class="policy-version">V1.8, effective ${EFFECTIVE}</span>`);
+    expect(policy).toContain('<div><dt>Version</dt><dd>1.8</dd></div>');
     expect(policy).toContain(`<div><dt>Effective date</dt><dd>${EFFECTIVE}</dd></div>`);
     const structuredData = JSON.parse(policy.match(/<script type="application\/ld\+json">(.*?)<\/script>/)[1]);
-    expect(structuredData).toMatchObject({ name: 'Privacy Policy V1.7', version: '1.7', datePublished: EFFECTIVE_ISO, dateModified: EFFECTIVE_ISO });
+    expect(structuredData).toMatchObject({ name: 'Privacy Policy V1.8', version: '1.8', datePublished: EFFECTIVE_ISO, dateModified: EFFECTIVE_ISO });
     const privacyCard = policies.match(/<article class="policy-card">\s*<span class="policy-version">([^<]+)<\/span>\s*<h2>Privacy Policy<\/h2>([\s\S]*?)<\/article>/);
-    expect(privacyCard[1]).toBe('Version 1.7');
+    expect(privacyCard[1]).toBe('Version 1.8');
     expect(privacyCard[2]).toContain(`Effective from ${EFFECTIVE}`);
     expect(policy).not.toMatch(/V1\.6, effective|<dd>1\.6<\/dd>|"version":"1\.6"/);
   });
 
   it('keeps the full change log, newest first', () => {
     const entries = [...policy.matchAll(/<p><strong>(V1\.\d), (\d+ \w+ 2026):<\/strong>/g)].map((match) => `${match[1]} ${match[2]}`);
-    expect(entries).toEqual([`V1.7 ${EFFECTIVE}`, 'V1.6 25 September 2026', 'V1.5 31 July 2026', 'V1.4 28 July 2026']);
+    expect(entries).toEqual([`V1.8 ${EFFECTIVE}`, 'V1.7 30 September 2026', 'V1.6 25 September 2026', 'V1.5 31 July 2026', 'V1.4 28 July 2026']);
   });
 
   it('keeps every V1.6 section, in order, with the new section added before policy updates', () => {
@@ -88,7 +88,7 @@ describe('Privacy Policy V1.7', () => {
     for (const item of ['mentorsphere-consent', '_gcl_au', '_gcl_aw', '_gcl_gb', '_gcl_dc', '_gcl_gs', '_gcl_ls']) {
       expect(section13).toContain(item);
     }
-    for (const neverSent of ['names, email addresses, telephone numbers and messages', 'health, disability, diagnosis, SEND or neurodiversity information', 'ADHD Coaching Intake or learner-profile responses']) {
+    for (const neverSent of ['names, email addresses, telephone numbers and messages', 'individual health, disability, diagnosis, SEND or neurodiversity information supplied through enquiries', 'ADHD Coaching Intake or learner-profile responses']) {
       expect(section13).toContain(neverSent);
     }
     expect(policy).toContain('<button class="button button-secondary" type="button" data-consent-open hidden>Change your advertising measurement choice</button>');
@@ -101,5 +101,14 @@ describe('Privacy Policy V1.7', () => {
     expect(section13).not.toMatch(/fully compliant|guarantee|complies with/i);
     const enOrEmDash = new RegExp(`[${String.fromCharCode(0x2013, 0x2014)}]`, 'u');
     expect(policy).not.toMatch(enOrEmDash);
+  });
+
+  it('distinguishes consented page context from personal form and health information', () => {
+    expect(section13).toContain('the page title and the address of the referring page, where available');
+    expect(section13).toContain('Google may send page-view measurement when its code loads after you accept');
+    expect(section13).toContain('Page addresses and titles may indicate that the page relates to ADHD coaching');
+    expect(section13).toContain('separate from personal information you enter into a form');
+    expect(section13).toContain('does not establish that you have ADHD or another condition');
+    expect(policy).not.toContain('<li>health, disability, diagnosis, SEND or neurodiversity information;</li>');
   });
 });
