@@ -150,3 +150,97 @@ Local Chrome verification passed 15 checks with no page errors. It used the real
 - Scope: ordinary pages and all three intake pages have no Google measurement implementation, even after acceptance elsewhere. No browser page errors occurred.
 
 **Observed Google limitation:** after acceptance, the real vendor script attempted requests with `en=page_view` at Google's `/ccm/collect` and `/pagead/set_partitioned_cookie` endpoints despite `send_page_view: false` in the website configuration. These requests were blocked during QA and carried no tested excluded URL or form values. The ordinary page-view control is locked in Google's interface. Therefore the validation does not claim an absence of all vendor-generated page-view-labelled requests after consent. The website queues only the two deliberate conversion events. In accordance with the owner's instruction, no interface restriction was bypassed and the website implementation was not changed merely to address this locked control. This limitation is disclosed for review before merge.
+
+## 10. Conversion and privacy investigation, 3 October 2026
+
+This section records the hardening branch; sections 1 to 9 retain the historical implementation and activation evidence. The live campaign is now enabled according to the owner's brief, superseding the earlier zero-campaign observation. No campaign or account control was changed in this investigation.
+
+### Standalone Tag Assistant observation
+
+The preceding standalone session connected after advertising consent and detected `AW-18485496875` (alias `GT-MBNSN8SX`). Consent granted `ad_storage` and `ad_user_data`, with `ad_personalization` and `analytics_storage` denied. One booking link opened Google Calendar, but the expected conversion was not displayed in that session. The owner skipped the proposed synthetic enquiry test. No enquiry was submitted or appointment booked. Both conversion actions were reported as Misconfigured / never received data despite the tag reporting healthy data flow.
+
+**The cause of that missing Tag Assistant display is not established.** The following tests reproduce the shipped code successfully; they cannot establish what happened in that earlier live session or confirm Google's ingestion/attribution. No additional production event was generated to resolve it.
+
+### Official guidance and implementation decisions
+
+Current first-party guidance was read before changing code:
+
+| Guidance | Relevant finding and application |
+|---|---|
+| [Google Ads click conversion snippet](https://support.google.com/google-ads/answer/6331304?hl=en) | Google's example sends `conversion` with `send_to` and uses `event_callback` to navigate the current window. That is a navigation-control example, not evidence that a new-tab link needs a delay. |
+| [gtag control parameters](https://developers.google.com/tag-platform/gtagjs/reference/parameters) | Documents `send_to`, `event_callback` and `event_timeout`. Callback marks event processing, not proof of ingestion. The reviewed Ads/control guidance does not establish `transport_type` as an Ads delivery control. |
+| [Website conversions](https://support.google.com/google-ads/answer/7548399?hl=en) | Describes Google tag plus conversion event and first-party click information. Preserve the approved ID/labels and attribution identifiers. |
+| [Google tag automatic event detection](https://support.google.com/tagmanager/answer/12131703?hl=en) | Ordinary page views cannot be disabled; optional history, scroll, click, form and other detection are separate controls. Existing off settings were not changed. |
+| [Page configuration reference](https://developers.google.com/analytics/devguides/collection/ga4/reference/config) | Documents `page_title`, `page_location`, `page_referrer` and `send_page_view`. This reference is Analytics-scoped, so it is not a guarantee about every Ads request. Actual Ads vendor behaviour was tested separately. No GA destination was added. |
+| [Consent Mode implementation](https://developers.google.com/tag-platform/security/guides/consent) | Keep consent defaults before configuration/events and update on the user's choice. This site uses basic gating: no Google code before active acceptance. |
+| [Google tag privacy controls](https://developers.google.com/tag-platform/security/guides/privacy) | Personalisation controls are distinct from conversion measurement. Keep `allow_ad_personalization_signals: false`, and deny personalisation/analytics storage; do not claim these suppress every Ads page-context request. |
+
+The original implementation reliably queued one exact booking conversion and caused both Google conversion endpoints to be attempted for each click. Mouse and keyboard activation of all six marked links kept the originating page alive while opening a new tab. A delayed tag flushed queued events once loaded. A completely blocked tag did not prevent booking navigation. There is no demonstrated navigation race to fix: **no callback, timeout, `preventDefault`, new delay or changed target** was added.
+
+`transport_type: 'beacon'` was removed as unnecessary custom payload. In the original and no-beacon tests, the conversion requests both used GET/fetch to the same endpoints. The original parameter appeared as `data=event=conversion;transport_type=beacon`; removing it left `data=event=conversion`, with correct counts/targets and unchanged navigation. This is a supported-pattern simplification backed by observed payload reduction, not a claimed repair of the inconclusive Tag Assistant result.
+
+Final website event calls after consent:
+
+```js
+gtag('event', 'conversion', { send_to: 'AW-18485496875/bi_lCP__lowdEKuYye5E' });
+gtag('event', 'conversion', { send_to: 'AW-18485496875/7zLXCPz_lowdEKuYye5E' });
+```
+
+The first is one signal per marked booking-link activation, still a Secondary outbound-click observation. It does not mean a booking was made. The second follows the existing provider-confirmed enquiry success hook. No value, currency, personal fields, new event type or confirmed-booking signal is supplied. IDs remain configured in the landing page, not hard-coded in the generic script.
+
+### Vendor requests and privacy limits
+
+All requests below were intercepted before transmission in isolated local fixtures. “Observed” means attempted request, not received or attributed conversion. [Representative exact URLs, query maps, methods, bodies, headers, command queues and storage snapshots](GOOGLE_ADS_NETWORK_EVIDENCE_2026-10-03.json) are committed for review. Test click IDs are literal dummy strings; no personal data was entered.
+
+| Field | Original | Final configuration and observed result |
+|---|---|---|
+| Automatic endpoints | `https://www.google.com/ccm/collect` and `https://www.googleadservices.com/pagead/set_partitioned_cookie` | Both still attempted after consent with `en=page_view`; no website `page_view` command |
+| Method/body | CCM POST/fetch; partitioned-cookie GET/fetch, plus GET/image fallbacks after abort | Same observed forms, all with null/empty body; data in query parameters |
+| Page address | `dl` or `url`: `https://www.thementorsphere.co.uk/adhd-coaching/young-people/` | Same real canonical path, including ADHD context; no query or fragment on these automatic requests |
+| Automatic page title | `dt=Online ADHD Coaching for Young People and Parents | The MentorSphere` | `dt=The MentorSphere` after explicit measurement configuration `page_title: 'The MentorSphere'` |
+| Automatic referring page | `dr` or `ref`: fixture `https://www.thementorsphere.co.uk/referrer-path` | Path remains, query excluded. The vendor derives this despite configured origin-only `page_referrer`; do not promise origin-only referrer on every vendor request. HTTP Referer header was origin-only. |
+| Click identifiers | `gclid=TESTCLICK`, `gclaw=TESTCLICK` | Preserved; conversion `url` retains the allowed `gclid`, `gbraid`, `wbraid` query values |
+| Consent/privacy | `gcs=G110`, `gcd=13r3q3r3q7l1`, `npa=1` | Same observed values after acceptance; command queue confirms exactly the four intended consent states |
+| Other automatic query fields | `rcb`, `frm`, `apvc`, `auid`, `tid`, `scrsrc`, `lps`, `rnd`, `navt`, `_tu`, `gtm`, `dma`, `tag_exp`, `tft`, `tfd`, `tids`, `fmt` | Tag/account, identifiers, timing, navigation, version and vendor flags remain; exact values in evidence. Unspecified vendor flags are not assigned an undocumented meaning. |
+| Browser headers | User-Agent and client hints (browser/version, platform, mobile state); Accept, Origin where applicable, Referer | Still present. Interception cannot capture Google server-side processing or an IP address received by Google. |
+| First-party storage | `_gcl_au`, `_gcl_aw` cookies; `_gcl_ls` local storage with test click ID, counters and join identifier; site's `mentorsphere-consent` | Created only after consent in the fixture; accessible `_gcl` items removed on withdrawal. No `_ga` observed. No Google-domain response cookies can be assessed because requests are aborted. |
+
+Conversion requests go to `https://www.googleadservices.com/pagead/conversion/18485496875/` and `https://www.google.com/pagead/1p-conversion/18485496875/`. Each event attempted one request at each endpoint. These two vendor requests are not duplicate website events. Conversion `url` is canonical plus the three allowed click IDs, `ref` is origin-only and `top` is the public canonical path. **Conversion `tiba` remains the public ADHD page title even with the neutral measurement title.** Other query fields include label, browser/device dimensions and client hints, identifiers, consent flags, timestamps and vendor flags, as captured in the evidence.
+
+No tested UTM value, search term, arbitrary query value, referrer query or fragment reached a Google URL/body. Existing adversarial unit tests also verify that form/personal/intake information is not put into Google commands. Formspree `source_page` remains canonical origin plus pathname with no identifiers/query/fragment. No Formspree request was made in browser QA.
+
+Neutral title configuration was tested independently and then together with beacon removal. It reduces the automatic title field without changing the public title, canonical path, conversion target, consent or click IDs. This is limited measured minimisation, not complete anonymisation or removal of ADHD context. A fabricated root-only `page_location` was considered and rejected without a browser experiment: it would misrepresent the viewed page and was not established as a safe Ads attribution technique. Existing canonical sanitisation is retained. No undocumented vendor patch, locked-control workaround, account setting or public-title change was made.
+
+Ordinary automatic page views remain a Google-side limitation after acceptance. A URL or public title indicating an ADHD service is page context; it does not establish a visitor's diagnosis, but it is still relevant to privacy disclosure. **Privacy Policy V1.8**, adopted/effective **3 October 2026**, makes that context, the title/referrer and automatic page views explicit while preserving the exclusion of individual information supplied through forms and all consent protections. See [document control](../../business-documents/policies/PRIVACY_V1.8_DOCUMENT_CONTROL.md).
+
+### Reproducible browser validation
+
+`scripts/verify-ads-measurement.mjs` accepts an installed Playwright module path and an output directory outside `docs`. It uses fresh Chrome contexts, serves local repository files through routing under the site origin, disables service workers and never continues a remote browser request. The only real external request is a separate cookie/referrer-free Node download of the exact `gtag.js` asset, with redirects rejected. Google collectors, Calendar and Formspree are always blocked. It never connects to a signed-in browser or touches Ads settings.
+
+Final run: 3 October 2026, baseline `7535d62917d60e1dff7c94369919f8c079fa3eb4`, vendor SHA-256 `f717548bb4544b39ad2fcd9a1f520b54498a95c89f4f6900c35ead893a558fe4`.
+
+| Mode | Booking links exercised | Conversion requests intercepted | Result |
+|---|---:|---:|---|
+| Original shipped implementation | 6 | 14 | PASS |
+| Original without beacon parameter | 6 | 14 | PASS |
+| Original with neutral measurement title | 6 | 14 | PASS |
+| Final implementation, desktop 1366 x 800 | 6 | 14 | PASS |
+| Final implementation, mobile 375 x 812 | 5 visible controls | 12 | PASS |
+| Final implementation, tag delayed until after clicks | 6 | 14 | PASS |
+| Final implementation, tag blocked | 6 | 0 | PASS: queue and navigation survive; transmission cannot occur |
+
+Counts include one locally simulated enquiry success per mode, with two conversion endpoint attempts per event when the tag loads. Desktop mouse/keyboard covers every marked link; mobile touch covers five visible controls (the sixth is inside collapsed navigation). All seven modes check first visit, rejection, acceptance, exact consent/configuration/targets, enquiry hook, URL sanitisation, withdrawal, storage cleanup, reload and no horizontal overflow/page errors. Desktop/mobile screenshots were inspected; reduced-motion mode and mobile no-hover/touch were used. All collector attempts were aborted, including fallback image requests. These tests do not establish server acceptance, reporting delay, production ad-blocker behaviour or future vendor behaviour.
+
+Full machine report, downloaded vendor asset and screenshots are retained outside Git in `C:/Users/luke9/AppData/Local/Temp/mentorsphere-ads-hardening-20261003/final`. To reproduce from repository root:
+
+```text
+node scripts/verify-ads-measurement.mjs <absolute installed playwright/index.mjs> <absolute private QA output directory>
+```
+
+No live test conversion, real enquiry, Calendar appointment, Ads action edit, campaign edit, merge or deployment was performed. Live Ads “Misconfigured” status and the earlier missing Tag Assistant display remain unverified; no claim is made that this branch clears them.
+
+### Repository and document checks
+
+Passed on the hardening branch: Wrangler type generation; TypeScript `--noEmit`; full Vitest suite, **23 files and 604 tests** including policy parity; content validation of **41 HTML files**, local references and intake privacy controls; syntax checks of **30 JavaScript files**; Worker `deploy --dry-run --env=`; and `git diff --check`. Installed commands were invoked directly from `node_modules`, matching the package scripts and avoiding the previously observed pnpm wrapper dependency-install behaviour. No dependency/configuration change was made.
+
+The first full check found two old measurement-script cache-version pins in the landing-page test and content validator. Both were updated to the actual new version, keeping their exact-reference and ordering assertions; the full suite and content validator then passed. Privacy V1.8 passes website/DOCX/PDF/snapshot equality and all ten exported pages were inspected. Its website section was also inspected at 1366px and 375px, with no horizontal overflow or external requests. The historical policies and ADHD Coaching Policy V1.5 are unchanged.

@@ -102,6 +102,9 @@
     gtag('js', new Date());
     gtag('config', googleAdsId, {
       send_page_view: false,
+      // Minimises the title in Google's automatic page-view request. Google
+      // Ads conversion requests can still use document.title; see the record.
+      page_title: 'The MentorSphere',
       allow_ad_personalization_signals: false,
       allow_google_signals: false,
       page_location: pageLocation(),
@@ -113,13 +116,13 @@
     document.head.append(script);
   };
 
-  const record = (eventName, options = {}) => {
+  const record = (eventName) => {
     if (consent.get(PURPOSE) !== 'granted') return;
     const label = labels.get(eventName);
     if (!label) return;
     try {
       loadTag();
-      gtag('event', 'conversion', { send_to: `${googleAdsId}/${label}`, ...options });
+      gtag('event', 'conversion', { send_to: `${googleAdsId}/${label}` });
     } catch {
       // Measurement must never affect the visitor's enquiry or booking journey.
     }
@@ -139,7 +142,7 @@
 
   // Recorded without delaying or preventing the normal link behaviour.
   links.forEach((link) => {
-    link.addEventListener('click', () => record(link.dataset.measureEvent, { transport_type: 'beacon' }));
+    link.addEventListener('click', () => record(link.dataset.measureEvent));
   });
 
   if (consent.get(PURPOSE) === 'granted') loadTag();
