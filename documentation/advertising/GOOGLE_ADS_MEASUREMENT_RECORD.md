@@ -1,5 +1,7 @@
 # Google Ads measurement record
 
+Current local implementation: [Phase 9 adult measurement wiring](ADULT_ADHD_PHASE9_MEASUREMENT.md). That record supersedes the historical one-page scope and browser QA commands below. The current QA harness mocks the Google asset locally and makes no live external requests. Deployment of Phase 9 remains pending.
+
 Implementation prepared: 29 and 30 September 2026 on `adhd-google-ads-measurement` (PR #64).
 PR #64 was merged and deployed on 30 September 2026 at commit `2a843db8231ec923e1161f37b524c59f89fa0874`. Its GitHub Pages build and deployment and CI both succeeded. Fresh browser loads confirmed Privacy Policy V1.7 and ADHD Coaching Policy V1.5 are live, effective from 30 September 2026.
 

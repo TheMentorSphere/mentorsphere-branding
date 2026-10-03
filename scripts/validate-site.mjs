@@ -55,13 +55,20 @@ const footerServices = [
 ];
 const organizationServices = ["Tutoring", "ADHD Coaching", "Education & SEND Support", "Home Education Support"];
 const sharedStylesVersion = "styles.css?v=20260804-home-education-v2";
+// Adult-only CSS revision: leave protected campaign HTML and its cache key intact.
+const adultLandingPage = path.join(docsRoot, "adhd-coaching", "adults", "index.html");
+const adultStylesVersion = "styles.css?v=20261003-adult-phase4";
 const sharedScriptVersion = "site.js?v=20260804-home-education-v2";
 const consentStylesVersion = "consent.css?v=20260929-consent-v1";
-const consentScriptVersion = "consent.js?v=20260929-consent-v1";
-const adsMeasurementScriptVersion = "ads-measurement.js?v=20261003-privacy-v2";
+const consentScriptVersion = "consent.js?v=20261003-consent-scope-v2";
+const adsMeasurementScriptVersion = "ads-measurement.js?v=20261003-ads-scope-v3";
 // Cookie settings are available on every public page, but Google Ads
-// measurement is limited to the approved advertising landing page.
-const adsMeasurementPages = new Set([path.join(docsRoot, "adhd-coaching", "young-people", "index.html")]);
+// measurement is limited to these two exact advertising landing pages.
+const adsMeasurementPages = new Set([
+  path.join(docsRoot, "adhd-coaching", "young-people", "index.html"),
+  path.join(docsRoot, "adhd-coaching", "adults", "index.html"),
+]);
+const approvedCalendar = "https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ2ViGgA98iq2gb-3Xn3TdTTqfAdWXE2XN5SpS6PBaaZzRc5DXacuud78LNwUEHlSSk5VPAYTcB-";
 
 for (const htmlFile of htmlFiles) {
   const relative = path.relative(workspace, htmlFile);
@@ -69,7 +76,8 @@ for (const htmlFile of htmlFiles) {
   const sharedStylesReferences = matches(content, /styles\.css\?v=[^"']+/giu).map((match) => match[0]);
   const sharedScriptReferences = matches(content, /site\.js\?v=[^"']+/giu).map((match) => match[0]);
   record(sharedStylesReferences.length === 1, `${relative}: expected exactly one shared styles.css reference`);
-  record(sharedStylesReferences.every((reference) => reference === sharedStylesVersion), `${relative}: stale shared styles.css cache key found`);
+  const expectedStylesVersion = htmlFile === adultLandingPage ? adultStylesVersion : sharedStylesVersion;
+  record(sharedStylesReferences.every((reference) => reference === expectedStylesVersion), `${relative}: stale shared styles.css cache key found`);
   if (sharedScriptReferences.length > 0) {
     record(sharedScriptReferences.length === 1, `${relative}: expected exactly one shared site.js reference`);
     record(sharedScriptReferences.every((reference) => reference === sharedScriptVersion), `${relative}: stale shared site.js cache key found`);
@@ -117,7 +125,7 @@ for (const htmlFile of htmlFiles) {
   const consentStylesReferences = matches(content, /consent\.css\?v=[^"']+/giu).map((match) => match[0]);
   const consentScriptReferences = matches(content, /consent\.js\?v=[^"']+/giu).map((match) => match[0]);
   const adsMeasurementReferences = matches(content, /ads-measurement\.js(?:\?v=[^"']+)?/giu).map((match) => match[0]);
-  const adsMeasurementConfigs = matches(content, /<script type="application\/json" data-ads-measurement-config>/giu);
+  const adsMeasurementConfigs = matches(content, /<script\b[^>]*\bdata-ads-measurement-config\b[^>]*>([\s\S]*?)<\/script>/giu);
   if (intakePaths.has(htmlFile)) {
     record(
       consentScriptReferences.length === 0 && adsMeasurementReferences.length === 0 && adsMeasurementConfigs.length === 0,
@@ -147,9 +155,35 @@ for (const htmlFile of htmlFiles) {
       content.indexOf(adsMeasurementScriptVersion) > content.indexOf(consentScriptVersion),
       `${relative}: ads-measurement.js must load after consent.js`,
     );
+    const adult = htmlFile === adultLandingPage;
+    const prefix = adult ? "adhd_adults" : "adhd_young_people";
+    const expectedLabels = adult
+      ? { adhd_adults_enquiry_success: "zVkyCOb3tI8dEKuYye5E", adhd_adults_booking_click: "zp7QCOn3tI8dEKuYye5E" }
+      : { adhd_young_people_enquiry_success: "7zLXCPz_lowdEKuYye5E", adhd_young_people_booking_click: "bi_lCP__lowdEKuYye5E" };
+    try {
+      const config = JSON.parse(adsMeasurementConfigs[0]?.[1] || "null");
+      const scope = Object.prototype.hasOwnProperty.call(config || {}, "requiredConsentScopeVersion") ? config.requiredConsentScopeVersion : 1;
+      record(config?.googleAdsId === "AW-18485496875", `${relative}: incorrect Google Ads ID`);
+      record(scope === (adult ? 2 : 1), `${relative}: incorrect required advertising consent scope`);
+      const labels = config?.conversionLabels || {};
+      record(Object.keys(labels).length === 2 && Object.entries(expectedLabels).every(([event, label]) => labels[event] === label), `${relative}: incorrect page-specific conversion mappings`);
+      record(Object.keys(config || {}).every(key => ["googleAdsId", "requiredConsentScopeVersion", "conversionLabels"].includes(key)), `${relative}: unexpected measurement configuration fields`);
+    } catch {
+      record(false, `${relative}: malformed advertising measurement JSON`);
+    }
+    record(adsMeasurementConfigs[0]?.[0].includes('type="application/json"') && adsMeasurementConfigs[0].index < content.indexOf(adsMeasurementScriptVersion), `${relative}: configuration must be JSON before the measurement runtime`);
+    for (const version of [sharedScriptVersion, consentScriptVersion, adsMeasurementScriptVersion]) {
+      record(matches(content, /<script\b[^>]+>/giu).some(([tag]) => tag.includes(version) && /\sdefer(?:\s|>)/u.test(tag)), `${relative}: ${version} must be deferred`);
+    }
+    const bookingLinks = matches(content, /<a\b[^>]*>/giu).map(([tag]) => tag).filter(tag => tag.includes("calendar.google.com"));
+    record(bookingLinks.length === (adult ? 7 : 6), `${relative}: incorrect booking link count`);
+    record(bookingLinks.every(tag => tag.includes(`href="${approvedCalendar}"`) && tag.includes(`data-measure-event="${prefix}_booking_click"`) && tag.includes('target="_blank"') && tag.includes('rel="noopener"')), `${relative}: booking destination, marker or navigation attributes changed`);
+    const forms = matches(content, /<form\b[^>]*data-contact-form[^>]*>/giu);
+    record(forms.length === 1 && forms[0][0].includes(`data-measure-event="${prefix}_enquiry_success"`) && forms[0][0].includes('action="https://formspree.io/f/meeynlze"'), `${relative}: incorrect enquiry form marker or destination`);
+    record(matches(content, /\bdata-measure-event=/giu).length === bookingLinks.length + 1, `${relative}: unexpected measurement markers`);
   } else {
     record(
-      adsMeasurementReferences.length === 0 && adsMeasurementConfigs.length === 0,
+      adsMeasurementReferences.length === 0 && adsMeasurementConfigs.length === 0 && !content.includes("data-measure-event"),
       `${relative}: Google Ads measurement is not approved for this page`,
     );
   }

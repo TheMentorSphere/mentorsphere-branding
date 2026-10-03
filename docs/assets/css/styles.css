@@ -2570,6 +2570,110 @@ tbody tr:hover {
 }
 
 /* Preserve readable text when light cards sit inside dark sections. */
+/* Adult landing page: compact journey, isolated from the campaign for young people. */
+.page-adhd-adults .section {
+  padding-block: clamp(2rem, 4vw, 3.5rem);
+}
+
+.page-adhd-adults .page-hero {
+  padding-block: clamp(1.25rem, 3vw, 2.5rem);
+}
+
+.page-adhd-adults .page-hero h1 {
+  max-width: 20ch;
+  margin-block: 0.6rem 0.8rem;
+  font-size: clamp(2rem, 1.4rem + 2.4vw, 3.5rem);
+}
+
+.page-adhd-adults .page-hero .lead {
+  font-size: clamp(1.05rem, 0.95rem + 0.5vw, 1.3rem);
+  margin-bottom: 0.8rem;
+}
+
+.page-adhd-adults .adult-hero-price { margin-bottom: 1rem; }
+.page-adhd-adults .hero-note { margin-block: 0.8rem 0; }
+.page-adhd-adults .section-heading { margin-bottom: 1.4rem; }
+
+.page-adhd-adults .adult-support-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem 2.5rem;
+  margin: 0;
+}
+
+.page-adhd-adults .adult-support-list > div {
+  border-top: 2px solid var(--sky-blue-soft);
+  padding-top: 0.8rem;
+}
+
+.page-adhd-adults .adult-support-list dt {
+  color: var(--deep-blue-ink);
+  font-weight: 800;
+}
+
+.page-adhd-adults .adult-support-list dd { margin: 0.4rem 0 0; }
+.page-adhd-adults .adult-aside { margin: 1.5rem 0 0; max-width: 75ch; }
+
+.page-adhd-adults .adult-two-column {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 2rem 3rem;
+}
+
+.page-adhd-adults .adult-session-steps { padding-left: 1.5rem; margin: 0; }
+.page-adhd-adults .adult-session-steps li { padding-left: 0.3rem; margin-bottom: 0.9rem; }
+.page-adhd-adults .adult-session-steps li::marker { color: var(--deep-blue); font-weight: 800; }
+.page-adhd-adults .adult-session-steps strong { display: block; }
+
+.page-adhd-adults .adult-price-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.page-adhd-adults .price-card { padding: 1.2rem; }
+.page-adhd-adults .price-card p:last-child { margin-bottom: 0; }
+.page-adhd-adults .section-link-row { align-items: center; }
+.page-adhd-adults .faq-list { max-width: var(--content-width); }
+.page-adhd-adults .form-card { padding: 1.25rem; box-shadow: var(--shadow-sm); }
+.page-adhd-adults .form-grid { gap: 0.8rem; }
+.page-adhd-adults .form-field textarea { min-height: 7rem; }
+
+/* Existing muted token: 5.86:1 against white, including unfocused boundaries. */
+.page-adhd-adults .form-field input:not([type="checkbox"]):not([aria-invalid="true"]):not(:focus),
+.page-adhd-adults .form-field textarea:not([aria-invalid="true"]):not(:focus) {
+  border-color: var(--muted);
+}
+
+.page-adhd-adults .adult-closing {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line-strong);
+}
+
+@media (max-width: 68rem) {
+  .page-adhd-adults .page-hero-grid {
+    grid-template-columns: minmax(0, 1fr) 9rem;
+    gap: 1.5rem;
+  }
+  .page-adhd-adults .page-hero-visual img { width: 9rem; height: auto; }
+}
+
+@media (max-width: 55rem) {
+  html:not(.js) .page-adhd-adults .site-header { position: static; }
+}
+
+@media (max-width: 42rem) {
+  .page-adhd-adults .page-hero-grid,
+  .page-adhd-adults .adult-two-column,
+  .page-adhd-adults .adult-support-list,
+  .page-adhd-adults .adult-price-grid { grid-template-columns: 1fr; }
+  .page-adhd-adults .page-hero-visual { display: none; }
+  .page-adhd-adults .adult-two-column { gap: 0.75rem; }
+  .page-adhd-adults .page-hero .button-row { gap: 0.65rem; }
+  .page-adhd-adults .form-card { padding: 1rem; }
+}
+
 .section-blue .feature-panel,
 .section-blue .icon-card {
   color: var(--charcoal);

@@ -207,19 +207,24 @@ describe(`Privacy Policy V${privacy.version} across formats`, () => {
     checkDocumentControl(privacy, 'Privacy Policy');
   });
 
-  it(`retains V${privacy.previousVersion} provisions while distinguishing page context from supplied individual health information`, () => {
+  it(`retains V${privacy.previousVersion} provisions with only the approved scope changes`, () => {
     const previous = docx(privacy.previousDocx).body;
     const current = webBlocks(privacy.html);
-    const notRetained = previous.filter((block) => !current.includes(block));
-    expect(notRetained).toEqual([
-      'health, disability, diagnosis, SEND or neurodiversity information;',
-    ]);
-    expect(current.filter((block) => !previous.includes(block))).toEqual([
-      'the page title and the address of the referring page, where available;',
-      'Google may send page-view measurement when its code loads after you accept, even if you do not send an enquiry or open the booking page. Page addresses and titles may indicate that the page relates to ADHD coaching. This page or service context is separate from personal information you enter into a form and does not establish that you have ADHD or another condition.',
-      'individual health, disability, diagnosis, SEND or neurodiversity information supplied through enquiries, ADHD Coaching Intake or learner profiles;',
-      current.find((block) => block.startsWith(`V${privacy.version}, ${privacy.effectiveDate}:`)),
-    ]);
+    const changed = previous.filter((block) => !current.includes(block));
+    expect(changed).toHaveLength(4);
+    for (const block of changed) {
+      const revised = block
+        .replace('This is currently limited to the ADHD coaching page for young people and parents.', 'This is currently limited to the ADHD coaching landing page for young people and parents and the ADHD coaching landing page for adults.')
+        .replace('on that page. This is recorded', 'on either of these pages. This is recorded')
+        .replace('A click from that page through', 'A click from either of these pages through')
+        .replace('remembers your advertising measurement choice and the date you made it,', 'remembers your advertising measurement choice, the date you made it and the scope covered by that choice,');
+      expect(revised).not.toBe(block);
+      expect(current).toContain(revised);
+    }
+    const additions = current.filter((block) => !previous.includes(block));
+    expect(additions).toHaveLength(6);
+    expect(additions.filter((block) => block.startsWith('An existing acceptance'))).toHaveLength(1);
+    expect(additions.filter((block) => block.startsWith(`V${privacy.version}, ${privacy.effectiveDate}:`))).toHaveLength(1);
     // Retained provisions stay in their original order.
     const retained = previous.filter((block) => current.includes(block));
     expect(retained.map((block) => current.indexOf(block))).toEqual([...retained.map((block) => current.indexOf(block))].sort((a, b) => a - b));
