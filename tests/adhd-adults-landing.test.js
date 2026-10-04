@@ -16,17 +16,17 @@ const metadata = (name) => page.match(new RegExp(`<meta (?:name|property)="${nam
 const graph = JSON.parse(page.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1])['@graph'];
 
 describe('adult ADHD coaching landing page', () => {
-  it('immediately identifies the adult, online, UK-based and self-funded audience', () => {
+  it('immediately identifies the adult, online, UK-based audience and both funding routes', () => {
     expect(page.match(/<h1\b/g)).toHaveLength(1);
     expect(hero).toContain('<h1>Online ADHD coaching for adults</h1>');
-    for (const wording of ['UK-based', 'Adults aged 18+', 'Self-funded', '£70 for a 60-minute session']) {
+    for (const wording of ['UK-based', 'Adults aged 18+', 'Self-funded', 'Access to Work', 'Free 60-minute introduction']) {
       expect(textOf(hero)).toContain(wording);
     }
-    expect(textOf(main)).not.toMatch(/Access to Work|employer-funded|international|young people|parents|children/i);
+    expect(textOf(main)).not.toMatch(/employer-funded|international|young people|parents|children/i);
   });
 
   it('provides the complete adult journey in the agreed order', () => {
-    const ids = ['recognition', 'how-coaching-works', 'pricing', 'introduction', 'questions', 'enquiry'];
+    const ids = ['funding', 'recognition', 'how-coaching-works', 'pricing', 'introduction', 'questions', 'enquiry'];
     const positions = ids.map((id) => {
       expect(section(id).length).toBeGreaterThan(100);
       return main.indexOf(`id="${id}"`);
@@ -36,7 +36,7 @@ describe('adult ADHD coaching landing page', () => {
     const journeyPositions = journey.map(id => main.indexOf(`id="${id}"`));
     expect(journeyPositions.every(position => position >= 0)).toBe(true);
     expect(journeyPositions).toEqual([...journeyPositions].sort((a, b) => a - b));
-    expect(main.match(/<section\b/g)).toHaveLength(7);
+    expect(main.match(/<section\b/g)).toHaveLength(8);
     expect(section('recognition')).toContain('<dl');
     expect(section('recognition').match(/<dt>/g)).toHaveLength(4);
     expect(section('how-coaching-works')).toContain('id="practical-details"');
@@ -50,7 +50,7 @@ describe('adult ADHD coaching landing page', () => {
     for (const fact of ['Six sessions', '£390', '£65 per session', 'Six 60-minute sessions', 'Valid for six months']) expect(cards[1]).toContain(fact);
     for (const fact of ['Twelve sessions', '£740', 'About £61.67 per session', 'Twelve 60-minute sessions', 'Valid for twelve months']) expect(cards[2]).toContain(fact);
     expect(section('pricing')).toContain('Packages are optional');
-    expect(main).not.toMatch(/£110|guaranteed|success rate/i);
+    expect(main).not.toMatch(/guaranteed results|success rate/i);
   });
 
   it('uses the approved booking URL and one consistent CTA throughout', () => {
@@ -62,17 +62,18 @@ describe('adult ADHD coaching landing page', () => {
       expect(`${before}${after}`).toContain('rel="noopener"');
       expect(textOf(label)).toMatch(/^Book a free introduction(?: \(opens in a new tab\))?$/);
     }
-    expect(page).not.toMatch(/discovery call|introductory session|consultation|placeholder|BOOKING_BUTTON|ENQUIRY_SECTION/i);
+    expect(page).not.toMatch(/discovery call|consultation|placeholder|BOOKING_BUTTON|ENQUIRY_SECTION/i);
     expect(hero).toContain('Ask a question first');
     expect(section('enquiry')).toContain('class="button button-secondary" href="#enquiry"');
     expect(section('enquiry')).not.toContain('button-light');
   });
 
-  it('explains the free introduction without inventing a duration or intake requirement', () => {
+  it('explains the shared free 60-minute introduction without an intake requirement', () => {
     const introduction = textOf(section('introduction'));
     expect(introduction).toContain('free and there is no obligation to continue');
     expect(introduction).not.toMatch(/intake|questionnaire/i);
-    expect(introduction).not.toMatch(/\bminutes?\b|\bhours?\b/i);
+    expect(introduction).toContain('60-minute introductory session');
+    expect(introduction).toContain('same for both funding routes; ongoing coaching is paid');
     expect(page).not.toContain('forms/adhd-coaching-intake');
   });
 
@@ -150,9 +151,9 @@ describe('adult ADHD coaching landing page', () => {
     expect(service.name).toBe('Online ADHD coaching for adults');
     expect(service.provider).toEqual({ '@type': 'EducationalOrganization', name: 'The MentorSphere', url: 'https://www.thementorsphere.co.uk/' });
     expect(service.description).toContain('Luke Turner');
-    expect(service.audience).toMatchObject({ suggestedMinAge: 18, audienceType: 'Self-funded adults seeking ADHD coaching for themselves' });
+    expect(service.audience).toMatchObject({ suggestedMinAge: 18, audienceType: 'Adults seeking ADHD coaching for themselves, self-funded or through Access to Work' });
     expect(service.areaServed).toEqual({ '@type': 'Country', name: 'United Kingdom' });
-    expect(service.hasOfferCatalog.itemListElement.map((offer) => [offer.price, offer.priceCurrency])).toEqual([['70', 'GBP'], ['390', 'GBP'], ['740', 'GBP']]);
+    expect(service.hasOfferCatalog.itemListElement.map((offer) => [offer.price, offer.priceCurrency])).toEqual([['70', 'GBP'], ['390', 'GBP'], ['740', 'GBP'], ['110', 'GBP']]);
     expect(JSON.stringify(graph)).not.toMatch(/AggregateRating|"review|FAQPage|MedicalBusiness|hasCredential|young.people/i);
   });
 
@@ -173,18 +174,18 @@ describe('adult ADHD coaching landing page', () => {
     expect(form).toContain('action="https://formspree.io/f/meeynlze" method="POST"');
     expect(form).toContain(`<input type="hidden" name="source_page" value="${canonical}" data-source-page>`);
     const fields = [...form.matchAll(/\sname="([^"]+)"/g)].map((m) => m[1]);
-    expect(fields.sort()).toEqual(['_gotcha', 'area_of_support', 'email', 'message', 'name', 'phone', 'privacy_acknowledgement', 'source_page', 'subject']);
+    expect(fields.sort()).toEqual(['_gotcha', 'area_of_support', 'email', 'funding_route', 'message', 'name', 'phone', 'privacy_acknowledgement', 'source_page', 'subject']);
     const required = [...form.matchAll(/<(?:input|textarea)\b[^>]*\srequired\b[^>]*>/g)].map((m) => m[0].match(/name="([^"]+)"/)[1]);
     expect(required).toEqual(['name', 'email', 'message', 'privacy_acknowledgement']);
     expect(form).toContain('Do not include medical records, diagnosis details or other unnecessary sensitive personal information');
     expect(form).toContain('name="_gotcha" type="text" tabindex="-1"');
     expect(form).toContain('href="../../privacy-policy/"');
-    expect(form).not.toMatch(/type="(?:file|date)"|<select/);
+    expect(form).not.toMatch(/type="(?:file|date)"/);
   });
 
   it('provides labels, associated errors, live status and native HTML fallbacks', () => {
     expect(page).toContain('class="skip-link" href="#main-content"');
-    for (const id of ['name', 'email', 'phone', 'message']) expect(form).toContain(`<label for="${id}">`);
+    for (const id of ['name', 'email', 'phone', 'funding-route', 'message']) expect(form).toContain(`<label for="${id}">`);
     for (const id of ['name-error', 'email-error', 'message-error', 'privacy-error']) {
       expect(form).toContain(`id="${id}"`);
       expect(form).toMatch(new RegExp(`aria-describedby="[^"]*${id}`));
@@ -212,6 +213,31 @@ describe('adult ADHD coaching landing page', () => {
     expect(youngPeople).not.toContain('page-adhd-adults');
     expect(css).toMatch(/html:not\(\.js\) \.page-adhd-adults \.site-header\s*\{\s*position: static;/);
     expect(css).toMatch(/\.page-adhd-adults \.form-field textarea[^{}]*\{\s*border-color: var\(--muted\)/);
+  });
+
+
+  it('distinguishes funding routes and keeps both enquiry CTAs on this page', () => {
+    const funding = section('funding');
+    expect(funding.match(/<article/g)).toHaveLength(2);
+    expect(funding.match(/href="#enquiry"/g)).toHaveLength(2);
+    for (const value of ['£70', '£390', '£740', '£110', 'free 60-minute introduction']) expect(funding).toContain(value);
+    expect(section('pricing')).toContain('Funding and payment arrangements depend on your approved award');
+    expect(section('pricing')).toContain('approval is not guaranteed');
+    expect(section('pricing')).toContain('href="../access-to-work/"');
+    const atw = read('docs/adhd-coaching/access-to-work/index.html');
+    expect(atw).toContain('free 60-minute introductory session');
+    expect(atw).toContain('£110');
+    expect(atw).toContain('href="../adults/#enquiry"');
+    expect(atw).not.toMatch(/(?:15|20|30)[ -]minute|£70/);
+  });
+
+  it('offers an accessible funding choice without requiring knowledge of funding', () => {
+    expect(form).toContain('<label for="funding-route">How are you planning to fund coaching?</label>');
+    expect(form).toContain('name="funding_route" aria-describedby="funding-help"');
+    const options = [...form.matchAll(/<option value="([^"]+)"[^>]*>/g)].map(m => m[1]);
+    expect(options).toEqual(['Self-funded', 'Access to Work', "I'm not sure yet"]);
+    expect(form).toContain(`value="I'm not sure yet" selected`);
+    expect(form).toContain('id="funding-help"');
   });
 
   it('wires only the approved adult actions behind explicit scope 2', () => {
