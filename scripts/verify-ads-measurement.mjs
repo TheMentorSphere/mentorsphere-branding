@@ -65,6 +65,7 @@ async function fixture({ stored = null, tag = 'mock', viewport = { width: 1366, 
     }
     if (url.href === 'https://formspree.io/f/meeynlze') {
       run.forms.push(request.postData()); item.handling = 'mock-provider';
+      if (run.response === 'pending') await gate;
       if (run.response === 'network') return route.abort('failed');
       const status = ({ '4xx': 400, validation: 422, '5xx': 500 })[run.response] || 200;
       const json = run.response === 'validation' ? { errors: [{ field: 'email', message: 'Local QA validation rejection.' }] } : status === 200 ? { ok: true } : { error: 'Local QA failure.' };
@@ -197,6 +198,47 @@ try {
     const run = await fixture({ stored });
     try { await run.goto(); await submit(run); assert.equal(run.forms.length, 1); assert.deepEqual(await conversions(run.page), []); assert.equal(await googleScripts(run.page), 0); assert.match(await run.page.locator('[data-form-status]').innerText(), /Enquiry sent/); }
     finally { await run.close(); }
+  });
+  for (const funding of ['Self-funded', 'Access to Work', "I'm not sure yet"]) await check(`adult funding choice: ${funding}, payload and conversion isolation`, async () => {
+    const run = await fixture({ stored: choice('granted', 2) });
+    try {
+      await run.goto();
+      assert.deepEqual(await conversions(run.page), []);
+      await run.page.locator('#funding-route').selectOption(funding);
+      assert.deepEqual(await conversions(run.page), [], 'Selecting funding must not convert');
+      await submit(run);
+      assert.equal(run.forms.length, 1);
+      assert.ok(run.forms[0].includes(`name="funding_route"\r\n\r\n${funding}\r\n`), 'Selected funding reaches Formspree payload');
+      assert.match(await run.page.locator('[data-form-status]').innerText(), /Enquiry sent/);
+      assert.deepEqual(await conversions(run.page), [{ send_to: routes.adult.enquiry }]);
+      assert.ok(!JSON.stringify(await calls(run.page)).includes(funding), 'Funding is not sent to Google');
+      // The reset form cannot resubmit the previous enquiry or replay its conversion.
+      await run.page.locator('[data-submit-button]').click();
+      assert.equal(run.forms.length, 1);
+      assert.deepEqual(await conversions(run.page), [{ send_to: routes.adult.enquiry }]);
+      await run.page.reload();
+      assert.deepEqual(await conversions(run.page), []);
+      await run.page.goto(origin + '/privacy-policy/'); await run.goto();
+      assert.deepEqual(await conversions(run.page), []);
+      return { funding, payloadVerified: true, successConversions: 1, bookingConversions: 0, youngConversions: 0, reloadConversions: 0 };
+    } finally { await run.close(); }
+  });
+  await check('adult pending backend: repeated submit produces one enquiry and converts only after success', async () => {
+    const run = await fixture({ stored: choice('granted', 2) });
+    try {
+      await run.goto();
+      for (const [name, value] of Object.entries(values)) await run.page.locator(`#${name}`).fill(value);
+      await run.page.locator('#funding-route').selectOption('Access to Work');
+      await run.page.locator('#privacy-acknowledgement').check();
+      run.response = 'pending';
+      await run.page.locator('[data-submit-button]').click();
+      await run.page.locator('[data-contact-form]').evaluate(form => form.dispatchEvent(new Event('submit', { cancelable: true })));
+      assert.deepEqual(await conversions(run.page), []);
+      run.release();
+      await run.page.waitForFunction(() => !document.querySelector('[data-submit-button]').disabled);
+      assert.equal(run.forms.length, 1);
+      assert.deepEqual(await conversions(run.page), [{ send_to: routes.adult.enquiry }]);
+    } finally { await run.close(); }
   });
   for (const kind of ['adult', 'young']) await check(`${kind}: URL/referrer sanitisation and label isolation`, async () => {
     const run = await fixture({ stored: choice('granted', 2) });
