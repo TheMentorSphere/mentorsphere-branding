@@ -193,8 +193,6 @@ describe('adult ADHD coaching landing page', () => {
     expect(form).toContain('role="status" aria-live="polite" aria-atomic="true" tabindex="-1"');
     expect(form).not.toContain('novalidate');
     expect(page.match(/<details\b/g)).toHaveLength(5);
-    expect(page).toContain('animation: none !important');
-    expect(page).toContain('filter: none !important');
     expect(page).not.toMatch(/[\u2013\u2014]/u);
     const ids = [...page.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
     expect(new Set(ids).size).toBe(ids.length);
@@ -229,6 +227,23 @@ describe('adult ADHD coaching landing page', () => {
     expect(atw).toContain('£110');
     expect(atw).toContain('href="../adults/#enquiry"');
     expect(atw).not.toMatch(/(?:15|20|30)[ -]minute|£70/);
+  });
+
+  it('uses shared reveal components without adult-specific blanket motion suppression', () => {
+    // The former inline override made the observer work while the CSS stayed static.
+    expect(page).not.toMatch(/<style\b/i);
+    expect(page).not.toMatch(/style="[^"]*(?:animation|transition|opacity|transform|filter)\s*:/i);
+    const css = read('docs/assets/css/styles.css');
+    const adultRules = [...css.matchAll(/([^{}]*\.page-adhd-adults[^{}]*)\{([^{}]*)\}/g)];
+    expect(adultRules.length).toBeGreaterThan(0);
+    for (const [, selector, declarations] of adultRules) {
+      expect(declarations, selector).not.toMatch(/(?:animation(?:-name)?|transition(?:-property)?)\s*:\s*none\b|(?:animation|transition)-duration\s*:\s*0(?:s|ms)\b/i);
+      if (/\[data-reveal\]|main\s*\*/.test(selector)) {
+        expect(declarations, selector).not.toMatch(/opacity\s*:\s*1\b|(?:filter|transform)\s*:\s*none\b/i);
+      }
+    }
+    expect(section('how-coaching-works')).toContain('class="split adult-two-column"');
+    expect(section('introduction')).toContain('class="container split adult-two-column"');
   });
 
   it('offers an accessible funding choice without requiring knowledge of funding', () => {
