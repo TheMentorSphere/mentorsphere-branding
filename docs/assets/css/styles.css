@@ -2617,6 +2617,7 @@ tbody tr:hover {
 .page-adhd-adults .adult-two-column {
   display: grid;
   grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  align-items: stretch;
   gap: 2rem 3rem;
 }
 

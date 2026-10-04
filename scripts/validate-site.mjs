@@ -57,7 +57,7 @@ const organizationServices = ["Tutoring", "ADHD Coaching", "Education & SEND Sup
 const sharedStylesVersion = "styles.css?v=20260804-home-education-v2";
 // Adult-only CSS revision: leave protected campaign HTML and its cache key intact.
 const adultLandingPage = path.join(docsRoot, "adhd-coaching", "adults", "index.html");
-const adultStylesVersion = "styles.css?v=20261004-adult-funding";
+const adultStylesVersion = "styles.css?v=20261004-adult-motion";
 const sharedScriptVersion = "site.js?v=20260804-home-education-v2";
 const consentStylesVersion = "consent.css?v=20260929-consent-v1";
 const consentScriptVersion = "consent.js?v=20261003-consent-scope-v2";
